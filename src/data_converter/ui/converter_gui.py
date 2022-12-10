@@ -3,7 +3,8 @@ from typing import List, Optional, Tuple
 
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import (QApplication, QDialog, QHBoxLayout, QListWidget,
-                               QMainWindow, QPushButton, QVBoxLayout, QWidget)
+                               QMainWindow, QPushButton, QVBoxLayout, QWidget, 
+                               QLabel, QFileDialog, QMessageBox)
 
 from data_converter.ui.settings_window import SettingsWindow
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
@@ -32,6 +33,7 @@ class ConverterGui(QMainWindow):
         self._start_conversion = False
         self._config = config
         self._config_setup = config_setup
+        self._destination: None | Path = None
 
         # UI Elements
         self.settings_button = QPushButton(
@@ -39,10 +41,19 @@ class ConverterGui(QMainWindow):
         )
         self.add_button = QPushButton(text='+')
         self.remove_button = QPushButton(text='-')
+        self.set_destination_button = QPushButton(text='Set Destination')
         self.start_button = QPushButton(
             text="Start Conversion"
-            # TODO change size and text color
         )
+        self.folder_list = QListWidget()
+        self.folder_list.setSelectionMode(QListWidget.ExtendedSelection)
+        self.destination_display = QLabel("Not Set")
+        self.settings_dialog = SettingsWindow(self._config, self._config_setup)
+
+        self._connect_signals()
+        self._layout_window()
+
+    def _style_controls(self):
         self.start_button.setStyleSheet(
             "QPushButton {"
             "color: green;"
@@ -60,12 +71,6 @@ class ConverterGui(QMainWindow):
             "}"
         )
         self.start_button.setMinimumHeight(50)
-        self.folder_list = QListWidget()
-        self.folder_list.setSelectionMode(QListWidget.ExtendedSelection)
-        self.settings_dialog = SettingsWindow(self._config, self._config_setup)
-
-        self._connect_signals()
-        self._layout_window()
 
     def _connect_signals(self):
         """Connects all UI element signals to appropriate slots
@@ -74,16 +79,20 @@ class ConverterGui(QMainWindow):
             self.handle_button_clicked_settings
         )
         self.add_button.clicked.connect(  # type: ignore
-            self.handle_add_button_clicked
+            self.handle_button_clicked_add
         )
         self.remove_button.clicked.connect(  # type: ignore
-            self.handle_remove_button_clicked
+            self.handle_button_clicked_remove
         )
         self.start_button.clicked.connect(  # type: ignore
             self.handle_button_clicked_start
         )
+        self.set_destination_button.clicked.connect(  # type: ignore
+            self.handle_button_clicked_set_dest
+        )
         self.settings_dialog.finished.connect(  # type: ignore
-            self.handle_settings_closed)
+            self.handle_settings_closed
+        )
 
     def _set_window_params(self):
         """Sets up all UI window parameters
@@ -99,10 +108,16 @@ class ConverterGui(QMainWindow):
         list_edit_button_layout.addWidget(self.add_button)
         list_edit_button_layout.addWidget(self.remove_button)
         
+        destination_display_layout = QHBoxLayout()
+        destination_display_layout.addWidget(QLabel("Destination: "))
+        destination_display_layout.addWidget(self.destination_display)
+        
         layout = QVBoxLayout()
         layout.addWidget(self.settings_button)
         layout.addWidget(self.folder_list)
         layout.addLayout(list_edit_button_layout)
+        layout.addLayout(destination_display_layout)
+        layout.addWidget(self.set_destination_button)
         layout.addWidget(self.start_button)
 
         widget = QWidget()
@@ -122,6 +137,15 @@ class ConverterGui(QMainWindow):
         be changed.
         """
         return self._config
+    
+    @property
+    def destination(self) -> Path:
+        """This property gives the dataset destination, and should not be 
+        changed.
+        If no destination is set, this property defaults to the user's home 
+        folder."""
+        dest = self._destination
+        return dest if dest is not None else Path.home()
 
     @Slot()
     def handle_button_clicked_settings(self):
@@ -142,25 +166,42 @@ class ConverterGui(QMainWindow):
             self._config = self.settings_dialog.config
 
     @Slot()
-    def handle_add_button_clicked(self):
-        selected_folders = pick_multiple_folders(self, 'Choose Experiment Folder(s)')
+    def handle_button_clicked_add(self):
+        selected_folders = pick_multiple_folders(self, 
+                                                 'Choose Experiment Folder(s)')
         if selected_folders:
             valid_folders = [folder for folder in selected_folders 
                              if Path(folder).is_dir()]
             self.folder_list.addItems(valid_folders)
     
     @Slot()
-    def handle_remove_button_clicked(self):
-        current_selections = [index.row() for index in self.folder_list.selectedIndexes()]
+    def handle_button_clicked_remove(self):
+        current_selections = [index.row() for index 
+                              in self.folder_list.selectedIndexes()]
         current_selections.sort(reverse=True)
         for selection in current_selections:
             item = self.folder_list.takeItem(selection)
             del(item)
+    
+    @Slot()
+    def handle_button_clicked_set_dest(self):
+        selected_dest = QFileDialog.getExistingDirectory(
+            self, "Choose Dataset Destination")
+        if selected_dest:
+            self._destination = Path(selected_dest)
+            self.destination_display.setText(selected_dest)
 
     @Slot()
     def handle_button_clicked_start(self):
         """Slot handling click events on the "Start Conversion" button
         """
+        if self._destination is None:
+            QMessageBox.warning(
+                self, 
+                "Destination not set", 
+                "The dataset destination has not been set yet."+
+                " Please set it before starting conversion.")
+            return
         self._start_conversion = True
         self.close()
 
@@ -168,7 +209,7 @@ class ConverterGui(QMainWindow):
 def converter_gui(
     config: Config,
     config_setup: ConfigSetup
-) -> Tuple[Config, Optional[List[Path]]]:
+) -> Tuple[Config, None | list[Path], Path]:
     """Opens a GUI window for user input, including settings changes and folder selection
 
     Returns
@@ -190,11 +231,13 @@ def converter_gui(
             Path(converter_gui.folder_list.item(folder).text())
             for folder in range(converter_gui.folder_list.count())
         ]
+        destination = converter_gui.destination
     else:
         final_config = config
         folders = None
+        destination = Path()
 
-    return final_config, folders  # stub TODO finish this
+    return final_config, folders, destination
 
 
 if __name__ == "__main__":
@@ -204,6 +247,7 @@ if __name__ == "__main__":
 
     config_setup = load_config_setup()
     config = get_configuration({}, config_setup)
-    config, folder = converter_gui(config, config_setup)
+    config, folder, destination = converter_gui(config, config_setup)
     print(config)
     print(folder)
+    print(destination)

@@ -9,12 +9,11 @@ from distributed import Client
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
 from data_converter.conversion.support.constants import (
-    CAEN_CSV_FOLDER_NAME, CAEN_FILTERED_FOLDER_NAME,
-    CAEN_PROCESSED_PSD_FOLDER_NAME, CAEN_PROCESSED_SIGNALS_FOLDER_NAME,
-    CAEN_PROCESSED_SPECTRA_FOLDER_NAME, CAEN_RAW_FOLDER_NAME,
-    CAEN_UNFILTERED_FOLDER_NAME, DATASET_METADATA_FILE_TOML,
-    DATASET_PARQUET_FOLDER_NAME, DATASET_PROCESSED_DATA_FOLDER_NAME,
-    DATASET_RAW_DATA_FOLDER_NAME)
+    CAEN_FILTERED_FOLDER_NAME, CAEN_PROCESSED_PSD_FOLDER_NAME,
+    CAEN_PROCESSED_SIGNALS_FOLDER_NAME, CAEN_PROCESSED_SPECTRA_FOLDER_NAME,
+    CAEN_RAW_FOLDER_NAME, CAEN_UNFILTERED_FOLDER_NAME,
+    DATASET_METADATA_FILE_TOML, DATASET_PARQUET_FOLDER_NAME,
+    DATASET_PROCESSED_DATA_FOLDER_NAME, DATASET_RAW_DATA_FOLDER_NAME)
 from data_converter.conversion.support.csv_to_parquet import \
     convert_csv_folder_to_parquet
 from data_converter.conversion.support.spectrum_to_parquet import \
@@ -24,7 +23,6 @@ from utilities.utilities.check_type import get_and_check
 KEY_RAW_DATA = 'raw_data_folder'
 KEY_FILTERED_DATA = 'filtered_data_folder'
 KEY_UNFILTERED_DATA = 'unfiltered_data_folder'
-KEY_CONVERTED_DATASETS = 'converted_datasets_folder'
 KEY_DATASET_ROOT = 'dataset_root'
 KEY_DATASET_RAW = 'dataset_raw_data'
 KEY_DATASET_RAW_CSV = 'dataset_raw_data_csv'
@@ -60,14 +58,13 @@ class CaenDataConverter(AbstractDataConverter):
             CAEN_FILTERED_FOLDER_NAME)
         unfiltered_data_folder = self._experiment_root.joinpath(
             CAEN_UNFILTERED_FOLDER_NAME)
-        converted_datasets_folder = self._experiment_root.parent / 'converted'
-        dataset_root_folder = (converted_datasets_folder /
-                               self._experiment_root.name)
-        dataset_raw_folder = dataset_root_folder / DATASET_RAW_DATA_FOLDER_NAME
+        # dataset_root_folder = (self._destination /
+        #                        self._experiment_root.name)
+        dataset_raw_folder = self._destination / DATASET_RAW_DATA_FOLDER_NAME
         dataset_raw_csv_folder = dataset_raw_folder / CAEN_RAW_FOLDER_NAME
         dataset_raw_parquet_folder = dataset_raw_folder.joinpath(
             DATASET_PARQUET_FOLDER_NAME)
-        dataset_processed_folder = dataset_root_folder.joinpath(
+        dataset_processed_folder = self._destination.joinpath(
             DATASET_PROCESSED_DATA_FOLDER_NAME)
         dataset_filtered_folder = dataset_processed_folder / 'filtered'
         dataset_filtered_psd_folder = dataset_filtered_folder.joinpath(
@@ -87,8 +84,7 @@ class CaenDataConverter(AbstractDataConverter):
             KEY_RAW_DATA: raw_data_folder,
             KEY_FILTERED_DATA: filtered_data_folder,
             KEY_UNFILTERED_DATA: unfiltered_data_folder,
-            KEY_CONVERTED_DATASETS: converted_datasets_folder,
-            KEY_DATASET_ROOT: dataset_root_folder,
+            KEY_DATASET_ROOT: self._destination,
             KEY_DATASET_RAW: dataset_raw_folder,
             KEY_DATASET_RAW_CSV: dataset_raw_csv_folder,
             KEY_DATASET_RAW_PARQUET: dataset_raw_parquet_folder,
@@ -107,7 +103,6 @@ class CaenDataConverter(AbstractDataConverter):
         self,
         paths: dict[str, Path]
     ):
-        converted_datasets_folder = paths[KEY_CONVERTED_DATASETS]
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_folder = paths[KEY_DATASET_RAW]
         dataset_raw_csv_folder = paths[KEY_DATASET_RAW_CSV]
@@ -121,8 +116,6 @@ class CaenDataConverter(AbstractDataConverter):
             self._config, bool, 'fresh_destination', False
         )
         self._messenger.info('Preparing destination folders')
-        # deleting this folder might delete other datasets, so don't!
-        self._prepare_destinations(converted_datasets_folder, False)
         self._prepare_destinations(
             [dataset_root_folder,
                 dataset_raw_folder,

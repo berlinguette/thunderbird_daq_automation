@@ -39,9 +39,10 @@ def convert_neutron_data(
         If not provided, the UI window will be launched.
     """
     if folder_str is None:
-        config, folder_paths = converter_gui(config, config_setup)
+        config, folder_paths, destination = converter_gui(config, config_setup)
     else:
         folder_paths = [Path(folder_str)]
+        destination = Path.home()
 
     if folder_paths is not None:
         folders_count = len(folder_paths)
@@ -49,7 +50,7 @@ def convert_neutron_data(
         for folder_i, folder_path in enumerate(folder_paths):
             try:
                 converter = converter_factory.make_converter(
-                    folder_path, config, config_setup)
+                    folder_path, config, config_setup, destination)
             except ValueError as err:
                 setup_logger(logger, folder_path)
                 messenger.info(

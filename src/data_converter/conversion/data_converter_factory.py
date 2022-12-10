@@ -34,7 +34,8 @@ class DataConverterFactory:
         self,
         exp_folder: Path,
         config: Config,
-        config_setup: ConfigSetup
+        config_setup: ConfigSetup, 
+        destination: Path
     ) -> AbstractDataConverter:
         found_schema = self._determine_data_schema(exp_folder)
         if found_schema is None:
@@ -42,9 +43,9 @@ class DataConverterFactory:
                 f"Experiment root could not be found for folder {exp_folder}")
         exp_type, exp_root = found_schema
         if exp_type == ExperimentType.PICO:
-            return PicoDataConverter(exp_root, config, config_setup)
+            return PicoDataConverter(exp_root, config, config_setup, destination)
         elif exp_type == ExperimentType.CAEN:
-            return CaenDataConverter(exp_root, config, config_setup)
+            return CaenDataConverter(exp_root, config, config_setup, destination)
         else:
             raise ValueError(f"Invalid experiment type {exp_type}")
 

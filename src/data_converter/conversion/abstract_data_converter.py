@@ -11,10 +11,11 @@ from utilities.utilities.logging_helpers.setup_logger import (Messenger,
 
 
 class AbstractDataConverter(ABC):
-    def __init__(self, experiment_root: Path, config: Config, config_setup: ConfigSetup):
+    def __init__(self, experiment_root: Path, config: Config, config_setup: ConfigSetup, destination: Path):
         self._experiment_root = experiment_root
         self._config = config
         self._config_setup = config_setup
+        self._destination = destination
 
         self._logger = logging.getLogger('converter')
         self._logfile_path = get_conversion_logfile_path(self._experiment_root)
@@ -47,6 +48,7 @@ class AbstractDataConverter(ABC):
         fresh_destination : bool
             If true, deletes any files or folders at each destination folder
         """
+        # TODO move fresh destination removal somewhere else
         if not isinstance(destinations, list):
             destinations = [destinations]
         for destination in destinations:

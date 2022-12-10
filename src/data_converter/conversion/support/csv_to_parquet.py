@@ -24,7 +24,7 @@ log_only_messenger = Messenger(logger, on_screen=False)
 
 DELIMITER = ';'
 SAMPLES_COL_NAME = 'SAMPLES'
-END_NUMBER_PATTERN = r'(.*_)(\d+)'
+END_NUMBER_PATTERN = r'^(.*_)(\d+)$'
 
 
 def _get_limited_files_with_extension(
@@ -172,7 +172,7 @@ def convert_csv_folder_to_parquet(
     else:
         first_file = [f for f
                       in _get_limited_files_with_extension(source, None, '.csv')
-                      if re.match(r'.*_\d+', f.stem) is None]
+                      if re.match(END_NUMBER_PATTERN, f.stem) is None]
         if len(first_file) == 0:
             raise ValueError('Could not find csv file with headers')
         source_file = first_file[0]

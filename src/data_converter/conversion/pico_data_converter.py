@@ -1,4 +1,5 @@
 from email.contentmanager import raw_data_manager
+from pathlib import Path
 from shutil import rmtree
 
 from data_converter.conversion.abstract_data_converter import \
@@ -9,8 +10,6 @@ from data_converter.conversion.support.matlab_parquetizer import \
 from data_converter.conversion.support.psdata_to_matlab import \
     convert_psdata_directory
 from utilities.utilities.check_type import get_and_check
-from utilities.utilities.logging_helpers.setup_logger import cleanup_logger
-from pathlib import Path
 
 KEY_PSDATA = 'source_psdata'
 KEY_DATASET_RAW = 'dataset_raw_data'
@@ -61,14 +60,11 @@ class PicoDataConverter(AbstractDataConverter):
         dataset_raw_data_folder = paths_dict[KEY_DATASET_RAW]
         matlab_folder = paths_dict[KEY_DATASET_MATLAB]
         parquet_folder = paths_dict[KEY_DATASET_PARQUET]
-        fresh_destination = get_and_check(
-            self._config, bool, 'fresh_destination', False)
         self._messenger.info('Preparing destination folders')
         self._prepare_destinations(
-            [dataset_raw_data_folder, matlab_folder], 
-            fresh_destination)
+            [dataset_raw_data_folder, matlab_folder])
         self._messenger.debug(' - Matlab destination done')
-        self._prepare_destinations(parquet_folder, fresh_destination)
+        self._prepare_destinations(parquet_folder)
         self._messenger.debug(' - Parquet destination done')
         self._screen_only_messenger.info('')
 

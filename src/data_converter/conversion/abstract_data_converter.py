@@ -1,7 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from shutil import rmtree
 
 from data_converter.utilities.logging import get_conversion_logfile_path
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
@@ -44,7 +43,7 @@ class AbstractDataConverter(ABC):
         pass
 
     def _prepare_destinations(
-        self, destinations: Path | list[Path], fresh_destination: bool
+        self, destinations: Path | list[Path]
     ):
         """Ensures that the destination paths exist, and are empty if needed
 
@@ -52,17 +51,10 @@ class AbstractDataConverter(ABC):
         ----------
         destination_path : Path | list[Path]
             Destination paths to prepare
-        fresh_destination : bool
-            If true, deletes any files or folders at each destination folder
         """
-        # TODO move fresh destination removal somewhere else
         if not isinstance(destinations, list):
             destinations = [destinations]
         for destination in destinations:
-            if fresh_destination and destination.is_dir():
-                self._log_only_messenger.debug(
-                    f'Deleting destination {destination}')
-                rmtree(destination)
             # destinations must exist for converters to work properly
             if not destination.exists():
                 self._log_only_messenger.debug(

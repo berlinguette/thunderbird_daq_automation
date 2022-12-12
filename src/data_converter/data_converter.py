@@ -1,10 +1,12 @@
 import logging
 from pathlib import Path
+from shutil import rmtree
 from typing import Optional
 
 from data_converter.conversion.data_converter_factory import \
     DataConverterFactory
 from data_converter.ui.converter_gui import converter_gui
+from utilities.utilities.check_type import get_and_check
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
 from utilities.utilities.logging_helpers.setup_logger import (Messenger,
                                                               cleanup_logger,
@@ -45,6 +47,13 @@ def convert_neutron_data(
         destination = Path.home()
 
     if folder_paths is not None:
+        fresh_destination = get_and_check(
+            config, bool, 'fresh_destination', False)
+        if fresh_destination and destination.is_dir():
+            log_only_messenger.debug(
+                f'Deleting destination {destination}')
+            rmtree(destination)
+
         folders_count = len(folder_paths)
         converter_factory = DataConverterFactory()
         for folder_i, folder_path in enumerate(folder_paths):

@@ -12,7 +12,6 @@ from data_converter.conversion.support.csv_to_parquet import \
     convert_csv_folder_to_parquet
 from data_converter.conversion.support.spectrum_to_parquet import \
     convert_spectra_to_parquet
-from utilities.utilities.check_type import get_and_check
 
 KEY_RAW_DATA = 'raw_data_folder'
 KEY_FILTERED_DATA = 'filtered_data_folder'
@@ -111,15 +110,11 @@ class CaenDataConverter(AbstractDataConverter):
         dataset_unfiltered_signals_folder = paths[KEY_DATASET_UNFILTERED_SIGNALS]
         dataset_unfiltered_spectra_folder = paths[KEY_DATASET_UNFILTERED_SPECTRA]
 
-        fresh_destination = get_and_check(
-            self._config, bool, 'fresh_destination', False
-        )
         self._messenger.info('Preparing destination folders')
         self._prepare_destinations(
             [dataset_root_folder,
                 dataset_raw_folder,
-                dataset_raw_csv_folder],
-            fresh_destination)
+                dataset_raw_csv_folder])
         self._messenger.debug(' - Raw CSV destination done')
         self._messenger.debug(' - Raw Parquet destination done')
         self._prepare_destinations(
@@ -127,8 +122,7 @@ class CaenDataConverter(AbstractDataConverter):
                 dataset_unfiltered_folder,
                 dataset_unfiltered_folder_psd,
                 dataset_unfiltered_signals_folder,
-                dataset_unfiltered_spectra_folder],
-            fresh_destination)
+                dataset_unfiltered_spectra_folder])
         self._messenger.debug(' - Processed data destination done')
 
         self._screen_only_messenger.info('')
@@ -137,7 +131,6 @@ class CaenDataConverter(AbstractDataConverter):
                             paths: dict[str, Path]
                             ):
         raw_data_folder = paths[KEY_RAW_DATA]
-        dataset_raw_folder = paths[KEY_DATASET_RAW]
         dataset_raw_csv_folder = paths[KEY_DATASET_RAW_CSV]
         unfiltered_data_folder = paths[KEY_UNFILTERED_DATA]
         dataset_unfiltered_psd_folder = paths[KEY_DATASET_UNFILTERED_PSD]

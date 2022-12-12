@@ -7,6 +7,7 @@ from data_converter.conversion.caen_data_converter import CaenDataConverter
 from data_converter.conversion.pico_data_converter import PicoDataConverter
 from data_converter.conversion.support import constants
 from data_converter.conversion.support.experiment_type import ExperimentType
+from data_converter.conversion.wendi_data_converter import WendiDataConverter
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
 
 PICO_RAW_DATA_FOLDERS = (
@@ -28,7 +29,7 @@ class DataConverterFactory:
         self,
         exp_folder: Path,
         config: Config,
-        config_setup: ConfigSetup, 
+        config_setup: ConfigSetup,
         destination: Path
     ) -> AbstractDataConverter:
         found_schema = self._determine_data_schema(exp_folder)
@@ -40,6 +41,8 @@ class DataConverterFactory:
             return PicoDataConverter(exp_root, config, config_setup, destination)
         elif exp_type == ExperimentType.CAEN:
             return CaenDataConverter(exp_root, config, config_setup, destination)
+        elif exp_type == ExperimentType.WENDI:
+            return WendiDataConverter(exp_root, config, config_setup, destination)
         else:
             raise ValueError(f"Invalid experiment type {exp_type}")
 
@@ -126,10 +129,21 @@ class DataConverterFactory:
                 root_path = source_path
         return root_path
 
+    def _is_wendi_logfile(self, source_path: Path) -> bool:
+        if source_path.is_file() and source_path.suffix.lower() == '.log':
+            with open(source_path, 'r') as source_file:
+                line = source_file.readline()
+            model_number = line[:5]
+            return model_number == "FH40G"
+        return False
+
     def _determine_data_schema(
         self,
         source_path: Path
     ) -> tuple[ExperimentType, Path] | None:
+        if self._is_wendi_logfile(source_path):
+            return ExperimentType.WENDI, source_path
+
         root_path = self._find_pico_root(source_path)
         if root_path is not None:
             return ExperimentType.PICO, root_path

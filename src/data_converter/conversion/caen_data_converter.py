@@ -1,19 +1,13 @@
 import re
 from datetime import datetime
 from pathlib import Path
-from shutil import copy
 
 import tomli_w
 from distributed import Client
 
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
-from data_converter.conversion.support.constants import (
-    CAEN_FILTERED_FOLDER_NAME, CAEN_PROCESSED_PSD_FOLDER_NAME,
-    CAEN_PROCESSED_SIGNALS_FOLDER_NAME, CAEN_PROCESSED_SPECTRA_FOLDER_NAME,
-    CAEN_RAW_FOLDER_NAME, CAEN_UNFILTERED_FOLDER_NAME,
-    DATASET_METADATA_FILE_TOML, DATASET_PARQUET_FOLDER_NAME,
-    DATASET_PROCESSED_DATA_FOLDER_NAME, DATASET_RAW_DATA_FOLDER_NAME)
+from data_converter.conversion.support import constants
 from data_converter.conversion.support.csv_to_parquet import \
     convert_csv_folder_to_parquet
 from data_converter.conversion.support.spectrum_to_parquet import \
@@ -53,33 +47,38 @@ class CaenDataConverter(AbstractDataConverter):
             return False
 
     def _determine_paths(self) -> dict[str, Path]:
-        raw_data_folder = self._experiment_root / CAEN_RAW_FOLDER_NAME
-        filtered_data_folder = self._experiment_root.joinpath(
-            CAEN_FILTERED_FOLDER_NAME)
-        unfiltered_data_folder = self._experiment_root.joinpath(
-            CAEN_UNFILTERED_FOLDER_NAME)
+        raw_data_folder = self._experiment_source.joinpath(
+            constants.CAEN_RAW_FOLDER_NAME)
+        filtered_data_folder = self._experiment_source.joinpath(
+            constants.CAEN_FILTERED_FOLDER_NAME)
+        unfiltered_data_folder = self._experiment_source.joinpath(
+            constants.CAEN_UNFILTERED_FOLDER_NAME)
         # dataset_root_folder = (self._destination /
         #                        self._experiment_root.name)
-        dataset_raw_folder = self._destination / DATASET_RAW_DATA_FOLDER_NAME
-        dataset_raw_csv_folder = dataset_raw_folder / CAEN_RAW_FOLDER_NAME
+        dataset_raw_folder = self._destination.joinpath(
+            constants.DATASET_RAW_DATA_FOLDER_NAME)
+        dataset_raw_csv_folder = dataset_raw_folder.joinpath(
+            constants.CAEN_RAW_FOLDER_NAME)
         dataset_raw_parquet_folder = dataset_raw_folder.joinpath(
-            DATASET_PARQUET_FOLDER_NAME)
+            constants.DATASET_PARQUET_FOLDER_NAME)
         dataset_processed_folder = self._destination.joinpath(
-            DATASET_PROCESSED_DATA_FOLDER_NAME)
-        dataset_filtered_folder = dataset_processed_folder / 'filtered'
+            constants.DATASET_PROCESSED_DATA_FOLDER_NAME)
+        dataset_filtered_folder = dataset_processed_folder.joinpath(
+            constants.CAEN_PROCESSED_FILTERED_FOLDER_NAME)
         dataset_filtered_psd_folder = dataset_filtered_folder.joinpath(
-            CAEN_PROCESSED_PSD_FOLDER_NAME)
+            constants.CAEN_PROCESSED_PSD_FOLDER_NAME)
         dataset_filtered_signals_folder = dataset_filtered_folder.joinpath(
-            CAEN_PROCESSED_SIGNALS_FOLDER_NAME)
+            constants.CAEN_PROCESSED_SIGNALS_FOLDER_NAME)
         dataset_filtered_spectra_folder = dataset_filtered_folder.joinpath(
-            CAEN_PROCESSED_SPECTRA_FOLDER_NAME)
-        dataset_unfiltered_folder = dataset_processed_folder / 'unfiltered'
+            constants.CAEN_PROCESSED_SPECTRA_FOLDER_NAME)
+        dataset_unfiltered_folder = dataset_processed_folder.joinpath(
+            constants.CAEN_PROCESSED_UNFILTERED_FOLDER_NAME)
         dataset_unfiltered_psd_folder = dataset_unfiltered_folder.joinpath(
-            CAEN_PROCESSED_PSD_FOLDER_NAME)
+            constants.CAEN_PROCESSED_PSD_FOLDER_NAME)
         dataset_unfiltered_signals_folder = dataset_unfiltered_folder.joinpath(
-            CAEN_PROCESSED_SIGNALS_FOLDER_NAME)
+            constants.CAEN_PROCESSED_SIGNALS_FOLDER_NAME)
         dataset_unfiltered_spectra_folder = dataset_unfiltered_folder.joinpath(
-            CAEN_PROCESSED_SPECTRA_FOLDER_NAME)
+            constants.CAEN_PROCESSED_SPECTRA_FOLDER_NAME)
         return {
             KEY_RAW_DATA: raw_data_folder,
             KEY_FILTERED_DATA: filtered_data_folder,
@@ -168,8 +167,9 @@ class CaenDataConverter(AbstractDataConverter):
 
     def _generate_metadata_file(self, paths: dict[str, Path]):
         dataset_root_folder = paths[KEY_DATASET_ROOT]
-        run_info_path = self._experiment_root / 'run.info'
-        metadata_dest_path = dataset_root_folder / DATASET_METADATA_FILE_TOML
+        run_info_path = self._experiment_source / 'run.info'
+        metadata_dest_path = dataset_root_folder.joinpath(
+            constants.DATASET_METADATA_FILE_TOML)
 
         with open(run_info_path, 'r') as infofile:
             info_lines = infofile.readlines()

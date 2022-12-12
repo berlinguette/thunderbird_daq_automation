@@ -11,14 +11,21 @@ from utilities.utilities.logging_helpers.setup_logger import (Messenger,
 
 
 class AbstractDataConverter(ABC):
-    def __init__(self, experiment_root: Path, config: Config, config_setup: ConfigSetup, destination: Path):
-        self._experiment_root = experiment_root
+    def __init__(
+        self,
+        experiment_source: Path,
+        config: Config,
+        config_setup: ConfigSetup,
+        destination: Path
+    ):
+        self._experiment_source = experiment_source
         self._config = config
         self._config_setup = config_setup
         self._destination = destination
 
         self._logger = logging.getLogger('converter')
-        self._logfile_path = get_conversion_logfile_path(self._experiment_root)
+        self._logfile_path = get_conversion_logfile_path(
+            self._experiment_source)
         setup_logger(self._logger, self._logfile_path)
         self._messenger = Messenger(self._logger)
         self._log_only_messenger = Messenger(self._logger, on_screen=False)
@@ -26,7 +33,7 @@ class AbstractDataConverter(ABC):
 
     @property
     def experiment_root(self) -> Path:
-        return self._experiment_root
+        return self._experiment_source
 
     @property
     def messenger(self) -> Messenger:
@@ -61,14 +68,14 @@ class AbstractDataConverter(ABC):
                 self._log_only_messenger.debug(
                     f'Making destination {destination}')
                 destination.mkdir()
-    
+
     def _initial_messages(self):
         self._screen_only_messenger.info('')
         self._log_only_messenger.debug(
             f'Final configuration: {self._config}')
-    
+
     def _finish_conversion(self):
         self._messenger.info(
-            f"Conversion of {self._experiment_root} complete")
+            f"Conversion of {self._experiment_source} complete")
         self._screen_only_messenger.info('')
         cleanup_logger(self._logger)

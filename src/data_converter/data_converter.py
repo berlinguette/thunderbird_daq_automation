@@ -65,7 +65,7 @@ def convert_neutron_data(
             result = converter.convert()
             if not result:
                 converter.messenger.info(
-                    f'Conversion of folder #{folder_i} at {folder_path}'+
+                    f'Conversion of folder #{folder_i} at {folder_path}' +
                     ' could not be completed'
                 )
 

@@ -4,19 +4,19 @@ import warnings
 from itertools import islice, repeat
 from pathlib import Path
 from typing import Iterable
-from tqdm import tqdm
 
 import modin.pandas as modin_pd
 import pandas as pd
+from tqdm import tqdm
+from tqdm.contrib.concurrent import thread_map
 
+from data_converter.utilities.constants import BAR_FORMAT
 from utilities.utilities.check_type import check_type, get_and_check
 from utilities.utilities.configuration.configuration import Config
 from utilities.utilities.logging_helpers.setup_logger import (Messenger,
                                                               cleanup_logger,
                                                               setup_logger)
 from utilities.utilities.timing import Timer
-from data_converter.utilities.constants import BAR_FORMAT
-from tqdm.contrib.concurrent import thread_map
 
 logger = logging.getLogger('csv_to_parquet')
 messenger = Messenger(logger)
@@ -103,7 +103,15 @@ def _get_split_cols(
 def _has_header_line(source_file: Path) -> bool:
     return re.match(END_NUMBER_PATTERN, source_file.stem) is None
 
-def _do_csv_conversion(source_file: Path, destination: Path | tuple[Path, Path], headers: list[str], total_cols: int, read_csv, logfile_path: Path):
+
+def _do_csv_conversion(
+    source_file: Path,
+    destination: Path | tuple[Path, Path],
+    headers: list[str],
+    total_cols: int,
+    read_csv,
+    logfile_path: Path
+) -> tuple[bool, str]:
     new_logger, _ = _set_up_file_logging(source_file, logfile_path)
     source_file_name = _get_destination_file_name(source_file)
     psd_destination, signals_destination = _get_split_data_destinations(
@@ -135,11 +143,11 @@ def _do_csv_conversion(source_file: Path, destination: Path | tuple[Path, Path],
             data_df = read_csv(source_file, sep=DELIMITER, dtype=str)
             data_df.to_parquet(psd_destination / destination_name)
     except (MemoryError, IOError) as err:
-            new_logger.exception(err)
-            tqdm.write(
-                f"Conversion failed for {source_file.name}. " +
-                "See conversion.log for details")
-            return False, source_file.name
+        new_logger.exception(err)
+        tqdm.write(
+            f"Conversion failed for {source_file.name}. " +
+            "See conversion.log for details")
+        return False, source_file.name
     return True, source_file.name
 
 
@@ -194,11 +202,11 @@ def convert_csv_folder_to_parquet(
         ) as progress_bar:
             for file_path in file_paths:
                 result = _do_csv_conversion(
-                    file_path, 
-                    destination, 
-                    headers, 
-                    total_cols, 
-                    modin_pd.read_csv, 
+                    file_path,
+                    destination,
+                    headers,
+                    total_cols,
+                    modin_pd.read_csv,
                     logfile_path
                 )
                 progress_bar.update()

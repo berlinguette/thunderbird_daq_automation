@@ -1,10 +1,13 @@
 import logging
 from pathlib import Path
+from shutil import rmtree
 from typing import Optional
 
 from data_converter.conversion.data_converter_factory import \
     DataConverterFactory
 from data_converter.ui.converter_gui import converter_gui
+from data_converter.utilities.logging import get_conversion_logfile_path
+from utilities.utilities.check_type import get_and_check
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
 from utilities.utilities.logging_helpers.setup_logger import (Messenger,
                                                               cleanup_logger,
@@ -45,6 +48,13 @@ def convert_neutron_data(
         destination = Path.home()
 
     if folder_paths is not None:
+        fresh_destination = get_and_check(
+            config, bool, 'fresh_destination', False)
+        if fresh_destination and destination.is_dir():
+            log_only_messenger.debug(
+                f'Deleting destination {destination}')
+            rmtree(destination)
+
         folders_count = len(folder_paths)
         converter_factory = DataConverterFactory()
         for folder_i, folder_path in enumerate(folder_paths):
@@ -52,7 +62,8 @@ def convert_neutron_data(
                 converter = converter_factory.make_converter(
                     folder_path, config, config_setup, destination)
             except ValueError as err:
-                setup_logger(logger, folder_path)
+                logfile_path = get_conversion_logfile_path(folder_path)
+                setup_logger(logger, logfile_path)
                 messenger.info(
                     f"Selected folder {folder_path} is not a valid experiment folder")
                 log_only_messenger.debug(str(err))
@@ -65,7 +76,7 @@ def convert_neutron_data(
             result = converter.convert()
             if not result:
                 converter.messenger.info(
-                    f'Conversion of folder #{folder_i} at {folder_path}'+
+                    f'Conversion of folder #{folder_i} at {folder_path}' +
                     ' could not be completed'
                 )
 

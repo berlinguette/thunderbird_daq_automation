@@ -4,8 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from data_converter.utilities.logging import get_conversion_logfile_path
-from utilities.utilities.configuration.configuration import Config
 from utilities.utilities.logging_helpers.setup_logger import (Messenger,
                                                               cleanup_logger,
                                                               setup_logger)
@@ -133,9 +131,7 @@ def _convert_time_spectrum(
 def convert_spectra_to_parquet(
     source: Path, destination: Path, logfile_path: Path
 ):
-    # TODO use logfile path
-    setup_logger(logger,
-                 get_conversion_logfile_path(source.parent))
+    setup_logger(logger, logfile_path)
     log_only_messenger.debug(f"Starting spectrum conversion in {source.name}")
     timer = Timer(start_now=True)
 

@@ -1,6 +1,7 @@
 from pathlib import Path
 
-def get_conversion_logfile_path(experiment_folder: Path) -> Path:
+
+def get_conversion_logfile_path(experiment_source: Path) -> Path:
     """Gives correct conversion log file path for given experiment folder
 
     Parameters
@@ -14,4 +15,7 @@ def get_conversion_logfile_path(experiment_folder: Path) -> Path:
         path to experiment's conversion log file
     """
     log_filename = 'conversion.log'
-    return experiment_folder / log_filename
+    if experiment_source.is_dir():
+        return experiment_source / log_filename
+    else:
+        return experiment_source.parent / log_filename

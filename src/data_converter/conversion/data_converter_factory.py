@@ -131,7 +131,7 @@ class DataConverterFactory:
 
     def _is_wendi_logfile(self, source_path: Path) -> bool:
         if source_path.is_file() and source_path.suffix.lower() == '.log':
-            with open(source_path, 'r') as source_file:
+            with open(source_path, 'r', encoding='cp1252', errors='replace') as source_file:
                 line = source_file.readline()
             model_number = line[:5]
             return model_number == "FH40G"

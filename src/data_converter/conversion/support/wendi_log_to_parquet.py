@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 from tqdm import tqdm
+from dateutil import tz
 
 from utilities.utilities.logging_helpers.setup_logger import (Messenger,
                                                               cleanup_logger,
@@ -21,15 +22,32 @@ def convert_wendi_log_to_parquet(
     log_only_messenger.debug(
         f"Starting wendi log conversion in {source_file.name}")
     timer = Timer(start_now=True)
+    
+    local_tz = tz.gettz()
 
     try:
+        names=[
+            'DATE',
+            'TIME',
+            'VALUE_INT',
+            'UNIT_INT',
+            'VALUE_EXT',
+            'UNIT_EXT',
+            'STATUS'
+        ]
         df = pd.read_csv(
             source_file,
             sep='\t',
-            header=8,
+            header=3,  # all the line breaks don't count as a line?
+            names=names,
+            parse_dates=[[0, 1]],
+            encoding='cp1252',
+            encoding_errors='replace',
             # TODO warn on bad lines, catch warnings and log
             on_bad_lines='skip'
         )
+        df = df.rename(columns={'DATE_TIME': 'DATETIME'})
+        df['DATETIME'] = df['DATETIME'].dt.tz_localize(local_tz).dt.tz_convert('UTC')
         df.to_parquet(destination)
     except (MemoryError, IOError) as err:
         logger.exception(err)

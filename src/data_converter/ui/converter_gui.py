@@ -39,7 +39,8 @@ class ConverterGui(QMainWindow):
         self._settings_button = QPushButton(
             text="Settings"
         )
-        self._add_button = QPushButton(text='+')
+        self._add_file_button = QPushButton(text='+📄')
+        self._add_folder_button = QPushButton(text='+📂')
         self._remove_button = QPushButton(text='-')
         self._set_destination_button = QPushButton(text='Set Destination')
         self._start_button = QPushButton(
@@ -78,8 +79,11 @@ class ConverterGui(QMainWindow):
         self._settings_button.clicked.connect(  # type: ignore
             self.handle_button_clicked_settings
         )
-        self._add_button.clicked.connect(  # type: ignore
-            self.handle_button_clicked_add
+        self._add_file_button.clicked.connect(  # type: ignore
+            self.handle_button_clicked_add_file
+        )
+        self._add_folder_button.clicked.connect(  # type: ignore
+            self.handle_button_clicked_add_folder
         )
         self._remove_button.clicked.connect(  # type: ignore
             self.handle_button_clicked_remove
@@ -105,7 +109,8 @@ class ConverterGui(QMainWindow):
         """
         list_edit_button_layout = QHBoxLayout()
         list_edit_button_layout.addStretch()
-        list_edit_button_layout.addWidget(self._add_button)
+        list_edit_button_layout.addWidget(self._add_file_button)
+        list_edit_button_layout.addWidget(self._add_folder_button)
         list_edit_button_layout.addWidget(self._remove_button)
 
         destination_display_layout = QHBoxLayout()
@@ -173,9 +178,15 @@ class ConverterGui(QMainWindow):
             self._config = self._settings_dialog.config
 
     @Slot()
-    def handle_button_clicked_add(self):
+    def handle_button_clicked_add_file(self):
         selected_source, _ = QFileDialog.getOpenFileName(
-            self, 'Choose Experiment Data Source')
+            self, 'Choose Experiment Data File')
+        self._source_list.addItem(selected_source)
+    
+    @Slot()
+    def handle_button_clicked_add_folder(self):
+        selected_source = QFileDialog.getExistingDirectory(
+            self, 'Choose Experiment Data Folder')
         self._source_list.addItem(selected_source)
 
     @Slot()

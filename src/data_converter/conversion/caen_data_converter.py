@@ -1,9 +1,9 @@
 import re
 from datetime import datetime
 from pathlib import Path
+from shutil import move
 
 import tomli_w
-from distributed import Client
 
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
@@ -12,7 +12,6 @@ from data_converter.conversion.support.csv_to_parquet import \
     convert_csv_folder_to_parquet
 from data_converter.conversion.support.spectrum_to_parquet import \
     convert_spectra_to_parquet
-from shutil import move
 
 KEY_RAW_DATA = 'raw_data_folder'
 KEY_FILTERED_DATA = 'filtered_data_folder'
@@ -34,7 +33,6 @@ KEY_DATASET_UNFILTERED_SPECTRA = 'dataset_unfiltered_spectra'
 
 class CaenDataConverter(AbstractDataConverter):
     def convert(self) -> bool:
-        client = Client()
         try:
             paths_dict = self._determine_paths()
             self._initial_messages()

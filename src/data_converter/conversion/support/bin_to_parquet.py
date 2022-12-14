@@ -5,4 +5,4 @@
 #   bit 1: Calib_energy saved
 #   bit 2: Energyshort saved
 #   bit 3: Waveform samples saved
-# calculate
+# calculate 

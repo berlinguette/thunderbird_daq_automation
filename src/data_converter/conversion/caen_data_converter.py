@@ -148,17 +148,10 @@ class CaenDataConverter(AbstractDataConverter):
         for file in raw_data_folder.iterdir():
             if file.is_file() and file.suffix.lower() == '.csv':
                 file_dest = dataset_raw_csv_folder / file.name
-                try:
-                    file.rename(file_dest)
-                except OSError:
-                    move(str(file.resolve()), file_dest)
+                move(str(file.resolve()), file_dest)
         for file in experiment_root.iterdir():
             if file.is_file() and file.name.lower() == 'settings.xml':
-                file_dest = dataset_raw_folder / file.name
-                try:
-                    file.rename(file_dest)
-                except OSError:
-                    move(str(file.resolve()), file_dest)
+                move(str(file.resolve()), file_dest)
 
         self._screen_only_messenger.info('')
 

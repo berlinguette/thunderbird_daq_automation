@@ -12,6 +12,7 @@ from data_converter.conversion.support.csv_to_parquet import \
     convert_csv_folder_to_parquet
 from data_converter.conversion.support.spectrum_to_parquet import \
     convert_spectra_to_parquet
+from shutil import move
 
 KEY_RAW_DATA = 'raw_data_folder'
 KEY_FILTERED_DATA = 'filtered_data_folder'
@@ -130,7 +131,9 @@ class CaenDataConverter(AbstractDataConverter):
     def _conversion_process(self,
                             paths: dict[str, Path]
                             ):
+        experiment_root = paths[KEY_DATASET_ROOT]
         raw_data_folder = paths[KEY_RAW_DATA]
+        dataset_raw_folder = paths[KEY_DATASET_RAW]
         dataset_raw_csv_folder = paths[KEY_DATASET_RAW_CSV]
         unfiltered_data_folder = paths[KEY_UNFILTERED_DATA]
         dataset_unfiltered_psd_folder = paths[KEY_DATASET_UNFILTERED_PSD]
@@ -143,10 +146,20 @@ class CaenDataConverter(AbstractDataConverter):
 
         self._messenger.info("Moving raw data files to destination")
         for file in raw_data_folder.iterdir():
-            if (file.is_file() and
-                    (file.suffix.lower() == '.csv' or
-                     file.name == 'settings.xml')):
-                file.rename(dataset_raw_csv_folder / file.name)
+            if file.is_file() and file.suffix.lower() == '.csv':
+                file_dest = dataset_raw_csv_folder / file.name
+                try:
+                    file.rename(file_dest)
+                except OSError:
+                    move(str(file.resolve()), file_dest)
+        for file in experiment_root.iterdir():
+            if file.is_file() and file.name.lower() == 'settings.xml':
+                file_dest = dataset_raw_folder / file.name
+                try:
+                    file.rename(file_dest)
+                except OSError:
+                    move(str(file.resolve()), file_dest)
+
         self._screen_only_messenger.info('')
 
         self._messenger.info("Converting unfiltered data to Parquet")

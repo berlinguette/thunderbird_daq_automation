@@ -31,20 +31,24 @@ class DataConverterFactory:
         config: Config,
         config_setup: ConfigSetup,
         destination: Path
-    ) -> AbstractDataConverter:
+    ) -> tuple[AbstractDataConverter, ExperimentType]:
         found_schema = self._determine_data_schema(exp_folder)
         if found_schema is None:
             raise ValueError(
                 f"Experiment root could not be found for folder {exp_folder}")
         exp_type, exp_root = found_schema
         if exp_type == ExperimentType.PICO:
-            return PicoDataConverter(exp_root, config, config_setup, destination)
+            converter = PicoDataConverter(
+                exp_root, config, config_setup, destination)
         elif exp_type == ExperimentType.CAEN:
-            return CaenDataConverter(exp_root, config, config_setup, destination)
+            converter = CaenDataConverter(
+                exp_root, config, config_setup, destination)
         elif exp_type == ExperimentType.WENDI:
-            return WendiDataConverter(exp_root, config, config_setup, destination)
+            converter = WendiDataConverter(
+                exp_root, config, config_setup, destination)
         else:
             raise ValueError(f"Invalid experiment type {exp_type}")
+        return converter, exp_type
 
     def _find_pico_root(
         self, source_path: Path, found_psdata: bool = False, found_pico_rawdata: bool = False

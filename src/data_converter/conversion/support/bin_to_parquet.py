@@ -15,3 +15,32 @@
 # convert to DataFrame every X records, add to list
 # concat DataFrames every N DataFrame conversions
 
+HEADER_PATTERN = b'\xe0\xca'
+HEADER_UPPER_BITMASK = b'\xf0\xff'
+
+def is_header_valid(value: bytes) -> bool:
+    """Checks if header follows CAEN binary save file pattern (0xCAE?)
+
+    Parameters
+    ----------
+    value : bytes
+        Header bytes
+
+    Returns
+    -------
+    bool
+        True if header follows expected pattern
+    """
+    return False  # STUB
+
+def get_energy_flag(header: bytes) -> bool:
+    return False  # STUB
+
+def get_calibrated_energy_flag(header: bytes) -> bool:
+    return False  # STUB
+
+def get_energyshort_flag(header: bytes) -> bool:
+    return False  # STUB
+
+def get_waveform_samples_flag(header: bytes) -> bool:
+    return False  # STUB

@@ -1,0 +1,1 @@
+FileConversionResult = tuple[bool, str]

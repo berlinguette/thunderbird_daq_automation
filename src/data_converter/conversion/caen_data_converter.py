@@ -8,8 +8,8 @@ from distributed import Client
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
 from data_converter.conversion.support import constants
-from data_converter.conversion.support.csv_to_parquet import \
-    convert_csv_folder_to_parquet
+from data_converter.conversion.support.csv_folder_to_parquet import \
+    CSVtoParquetFolderConverter
 from data_converter.conversion.support.spectrum_to_parquet import \
     convert_spectra_to_parquet
 
@@ -150,10 +150,16 @@ class CaenDataConverter(AbstractDataConverter):
         self._screen_only_messenger.info('')
 
         self._messenger.info("Converting unfiltered data to Parquet")
-        convert_csv_folder_to_parquet(
+        # convert_csv_folder_to_parquet(
+        #     unfiltered_data_folder,
+        #     (dataset_unfiltered_psd_folder, dataset_unfiltered_signals_folder),
+        #     self._config, self._logfile_path)
+        csv_converter = CSVtoParquetFolderConverter(
             unfiltered_data_folder,
-            (dataset_unfiltered_psd_folder, dataset_unfiltered_signals_folder),
-            self._config, self._logfile_path)
+            [dataset_unfiltered_psd_folder, dataset_unfiltered_signals_folder],
+            self._config,
+            self._logfile_path)
+        csv_converter.convert_folder()
         convert_spectra_to_parquet(
             unfiltered_data_folder, dataset_unfiltered_spectra_folder, self._logfile_path)
         self._screen_only_messenger.info('')

@@ -18,6 +18,8 @@ from utilities.utilities.logging_helpers.setup_logger import (Messenger,
                                                               setup_logger)
 from utilities.utilities.timing import Timer
 
+# TODO convert to using subclassed FolderConverter and FileConverter
+
 logger = logging.getLogger('csv_to_parquet')
 messenger = Messenger(logger)
 log_only_messenger = Messenger(logger, on_screen=False)
@@ -152,7 +154,10 @@ def _do_csv_conversion(
 
 
 def convert_csv_folder_to_parquet(
-    source: Path, destination: Path | tuple[Path, Path], config: Config, logfile_path: Path
+    source: Path, 
+    destination: Path | tuple[Path, Path], 
+    config: Config, 
+    logfile_path: Path
 ):
     setup_logger(logger, logfile_path)
     timer = Timer(start_now=True)

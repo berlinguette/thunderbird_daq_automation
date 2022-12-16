@@ -10,6 +10,8 @@ from utilities.utilities.logging_helpers.setup_logger import (Messenger,
                                                               setup_logger)
 from utilities.utilities.timing import Timer
 
+# TODO convert to using subclassed FileConverter
+
 logger = logging.getLogger('wendi_log_to_parquet')
 messenger = Messenger(logger)
 log_only_messenger = Messenger(logger, on_screen=False)

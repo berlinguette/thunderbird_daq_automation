@@ -142,17 +142,6 @@ class CaenDataConverter(AbstractDataConverter):
         self._generate_metadata_file(paths)
         self._screen_only_messenger.info('')
 
-        self._messenger.info("Moving raw data files to destination")
-        for file in raw_data_folder.iterdir():
-            if file.is_file() and file.suffix.lower() == '.csv':
-                file_dest = dataset_raw_csv_folder / file.name
-                move(str(file.resolve()), file_dest)
-        for file in experiment_root.iterdir():
-            if file.is_file() and file.name.lower() == 'settings.xml':
-                move(str(file.resolve()), file_dest)
-
-        self._screen_only_messenger.info('')
-
         self._messenger.info("Converting unfiltered data to Parquet")
         convert_csv_folder_to_parquet(
             unfiltered_data_folder,
@@ -161,6 +150,17 @@ class CaenDataConverter(AbstractDataConverter):
         convert_spectra_to_parquet(
             unfiltered_data_folder, dataset_unfiltered_spectra_folder, self._logfile_path)
         self._screen_only_messenger.info('')
+
+        self._messenger.info("Moving raw data files to destination")
+        for file in raw_data_folder.iterdir():
+            if file.is_file() and file.suffix.lower() == '.csv':
+                file_dest = dataset_raw_csv_folder / file.name
+                move(str(file.resolve()), file_dest)
+        for file in experiment_root.iterdir():
+            if file.is_file() and file.name.lower() == 'settings.xml':
+                move(str(file.resolve()), file_dest)
+        self._screen_only_messenger.info('')
+        
 
     def _generate_metadata_file(self, paths: dict[str, Path]):
         dataset_root_folder = paths[KEY_DATASET_ROOT]

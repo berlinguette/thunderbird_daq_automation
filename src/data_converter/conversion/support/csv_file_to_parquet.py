@@ -1,12 +1,13 @@
-from pathlib import Path
-import warnings
-import logging
-from utilities.utilities.logging_helpers.setup_logger import (Messenger,
-                                                              cleanup_logger,
-                                                              setup_logger)
-from tqdm import tqdm
 import re
+import warnings
+from pathlib import Path
 from typing import Iterable
+
+from tqdm import tqdm
+
+from data_converter.utilities.logging import set_up_file_logging
+from utilities.utilities.logging_helpers.setup_logger import cleanup_logger
+from data_converter.conversion.support.types import FolderResult
 
 SAMPLES_COL_NAME = 'SAMPLES'
 DELIMITER = ';'
@@ -21,7 +22,7 @@ def convert_csv_file_to_parquet(
     read_csv,
     logfile_path: Path
 ) -> FolderResult:
-    new_logger, _ = _set_up_file_logging(source_file, logfile_path)
+    new_logger, _ = set_up_file_logging(source_file, logfile_path)
     source_file_name = _get_destination_file_name(source_file)
     psd_destination, signals_destination = _get_split_data_destinations(
         destination)
@@ -47,34 +48,21 @@ def convert_csv_file_to_parquet(
             signals_df = df_raw[signal_cols]
             psd_df.to_parquet(psd_destination / psd_dest_name)
             signals_df.to_parquet(signals_destination / signals_dest_name)
-            worked=True
+            worked = True
         else:
             destination_name = f"caen_{source_file_name}.parquet"
             data_df = read_csv(source_file, sep=DELIMITER, dtype=str)
             data_df.to_parquet(psd_destination / destination_name)
-            worked=True
+            worked = True
     except (MemoryError, IOError) as err:
         new_logger.exception(err)
         tqdm.write(
             f"Conversion failed for {source_file.name}. " +
             "See conversion.log for details")
         worked = False
-        
+
     cleanup_logger(new_logger)
     return worked, source_file.name
-
-
-def _set_up_file_logging(
-    source_file: Path,
-    logfile_path: Path
-) -> tuple[logging.Logger, Messenger]:
-    source_name = source_file.name
-    new_logger = logging.getLogger(f'proc-{source_name}')
-    # source_file parent is RAW folder, so root is one more level up
-    setup_logger(new_logger, logfile_path)
-    new_messenger = Messenger(new_logger, on_screen=False)
-    new_messenger.debug(f"Converting {source_name}...")
-    return new_logger, new_messenger
 
 
 def _get_destination_file_name(source_file: Path) -> str:
@@ -104,7 +92,7 @@ def _get_split_data_destinations(destination: Path | Iterable[Path]):
         try:
             signals_destination, *_ = rest
         except ValueError:
-            signals_destination = psd_destination            
+            signals_destination = psd_destination
     return psd_destination, signals_destination
 
 

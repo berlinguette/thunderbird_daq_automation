@@ -1,4 +1,8 @@
+import logging
 from pathlib import Path
+
+from utilities.utilities.logging_helpers.setup_logger import (Messenger,
+                                                              setup_logger)
 
 
 def get_conversion_logfile_path(experiment_source: Path) -> Path:
@@ -19,3 +23,15 @@ def get_conversion_logfile_path(experiment_source: Path) -> Path:
         return experiment_source / log_filename
     else:
         return experiment_source.parent / log_filename
+
+
+def set_up_file_logging(
+    source_file: Path,
+    logfile_path: Path
+) -> tuple[logging.Logger, Messenger]:
+    source_name = source_file.name
+    new_logger = logging.getLogger(f'proc-{source_name}')
+    setup_logger(new_logger, logfile_path)
+    new_messenger = Messenger(new_logger, on_screen=False)
+    new_messenger.debug(f"Converting {source_name}...")
+    return new_logger, new_messenger

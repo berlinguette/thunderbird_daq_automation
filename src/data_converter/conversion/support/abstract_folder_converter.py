@@ -4,7 +4,7 @@ from itertools import islice
 from pathlib import Path
 from typing import Iterable
 
-from data_converter.conversion.support.types import FileConversionResult
+from data_converter.conversion.support.types import FolderResult
 from utilities.utilities.configuration.configuration import Config
 from utilities.utilities.logging_helpers.setup_logger import (Messenger,
                                                               cleanup_logger,
@@ -38,7 +38,7 @@ class AbstractFolderConverter(ABC):
         setup_logger(self._logger, self._logfile_path)
         self._timer.start_timer()
 
-    def _post_conversion_actions(self, results: list[FileConversionResult]):
+    def _post_conversion_actions(self, results: list[FolderResult]):
         exec_time = self._timer.stop_timer()
         formatted_time = self._timer.format_elapsed_time(exec_time, decimals=4)
         good_results = [filename for worked, filename in results if worked]

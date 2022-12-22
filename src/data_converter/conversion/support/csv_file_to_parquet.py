@@ -20,7 +20,7 @@ def convert_csv_file_to_parquet(
     total_cols: int,
     read_csv,
     logfile_path: Path
-) -> tuple[bool, str]:
+) -> FolderResult:
     new_logger, _ = _set_up_file_logging(source_file, logfile_path)
     source_file_name = _get_destination_file_name(source_file)
     psd_destination, signals_destination = _get_split_data_destinations(

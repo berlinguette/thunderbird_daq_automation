@@ -27,8 +27,6 @@ from utilities.utilities.timing import Timer
 
 if TYPE_CHECKING:
     from numpy import ndarray
-    
-# TODO convert to using subclassed FolderConverter and FileConverter
 
 logger = logging.getLogger('parquetizer')
 messenger = Messenger(logger)

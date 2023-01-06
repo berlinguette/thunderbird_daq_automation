@@ -33,7 +33,6 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
     def convert_folder(self):
         self._pre_conversion_actions()
 
-        # TODO main conversion
         num_files = self._config.get('files_limit')
         if num_files is not None:
             num_files = check_type(num_files, int, 'files_limit')
@@ -71,8 +70,6 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
             headers = header_line.strip().split(DELIMITER)
             data_sample = data_line.strip().split(DELIMITER)
             total_cols = len(data_sample)
-
-        results = []  # STUB
 
         if large_files_support:
             results = []

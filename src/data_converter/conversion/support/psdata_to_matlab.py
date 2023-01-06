@@ -21,8 +21,6 @@ from utilities.utilities.logging_helpers.setup_logger import (Messenger,
                                                               setup_logger)
 from utilities.utilities.timing import Timer
 
-# TODO convert to using subclassed FolderConverter and FileConverter
-
 FORMAT = 'mat'
 T = TypeVar('T')
 logger = logging.getLogger('psdata_converter')

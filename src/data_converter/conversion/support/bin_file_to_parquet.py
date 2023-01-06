@@ -336,7 +336,6 @@ def _save_dataframes(
         signals_stem = f"{signals_filename.stem}_{file_idx}"
         psd_path = psd_filename.with_stem(psd_stem)
         signals_path = signals_filename.with_stem(signals_stem)
-        pass # TODO handle separate psd/signals filenames
     psd_concat.to_parquet(psd_path)
     signals_concat.to_parquet(signals_path)
     return file_idx + 1

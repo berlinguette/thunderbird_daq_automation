@@ -28,7 +28,6 @@ class AbstractFolderConverter(ABC):
         self._messenger = Messenger(self._logger)
         self._log_only_messenger = Messenger(self._logger, on_screen=False)
         self._timer = Timer()
-        pass  # STUB
 
     @abstractmethod
     def convert_folder(self):

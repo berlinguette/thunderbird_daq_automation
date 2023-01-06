@@ -17,7 +17,7 @@ def convert_bin_file_to_parquet(
     source_file: Path,
     destination: Path | Iterable[Path],
     logfile_path: Path,
-    mem_use_threshold: int = 14*1024*1024
+    mem_use_threshold: int = 14*1024*1024*1024
 ) -> FolderResult:
     """Converts CAEN binary (.BIN) format file to Parquet format
 
@@ -109,7 +109,8 @@ def convert_bin_file_to_parquet(
                     )
                 if mem_used >= mem_use_threshold:
                     file_name_idx = _save_dataframes(
-                        destination, file_name_idx, psd_df_list, signals_df_list)
+                        destination, file_name_idx, wave_samples_flag, 
+                        psd_df_list, signals_df_list)
                     psd_df_list = []
                     signals_df_list = []
 
@@ -123,7 +124,8 @@ def convert_bin_file_to_parquet(
                     psd_df_list, signals_df_list,
                     psd_array, signals_array)
                 file_name_idx = _save_dataframes(
-                    destination, file_name_idx, psd_df_list, signals_df_list)
+                    destination, file_name_idx, wave_samples_flag, 
+                    psd_df_list, signals_df_list)
                 if reason == Reason.FILE_ENDS:
                     # File ended at end of last record, so valid end state!
                     file_result = True
@@ -162,7 +164,8 @@ def convert_bin_file_to_parquet(
                             psd_df_list, signals_df_list,
                             psd_array, signals_array)
                         file_name_idx = _save_dataframes(
-                            destination, file_name_idx, psd_df_list, signals_df_list)
+                            destination, file_name_idx, wave_samples_flag, 
+                            psd_df_list, signals_df_list)
                         if reason == Reason.FILE_ENDS:
                             # File ended after PSD data, but signals expected
                             # Invalid end state!
@@ -213,9 +216,9 @@ def is_header_valid(value: bytes) -> bool:
     bool
         True if header follows expected pattern
     """
-    bitmask = int.from_bytes(HEADER_BITMASK, byteorder='little')
-    masked_value = int.from_bytes(value, byteorder='little') & bitmask
-    return masked_value == HEADER_PATTERN
+    bitmask = int.from_bytes(HEADER_BITMASK, byteorder=BYTEORDER)
+    masked_value = int.from_bytes(value, byteorder=BYTEORDER) & bitmask
+    return masked_value.to_bytes(2, BYTEORDER) == HEADER_PATTERN
 
 
 def get_header_flags(header: bytes) -> tuple[bool, bool, bool, bool]:
@@ -262,18 +265,23 @@ def _get_psd_dtype(
     energyshort_flag: bool,
     wave_samples_flag: bool
 ) -> np.dtype:
-    dtype_list = [('BOARD', np.uint8), ('CHANNEL', np.uint8),
-                  ('TIMESTAMP', np.uint64)]
+    names = ['BOARD', 'CHANNEL', 'TIMESTAMP']
+    formats = [np.uint8, np.uint8, np.uint64]
     if energy_flag:
-        dtype_list.append([('ENERGY', np.int16)])
+        names.append('ENERGY')
+        formats.append(np.int16)
     if calib_energy_flag:
-        dtype_list.append([('CALIB_ENERGY', np.float64)])
+        names.append('CALIB_ENERGY')
+        formats.append(np.float64)
     if energyshort_flag:
-        dtype_list.append([('ENERGYSHORT', np.int16)])
-    dtype_list.append([('FLAGS', np.uint32)])
+        names.append('ENERGYSHORT')
+        formats.append(np.int16)
+    names.append('FLAGS')
+    formats.append(np.uint32)
     if wave_samples_flag:
-        dtype_list.append([('WAVEFORM_CODE', np.uint8)])
-    return np.dtype(dtype_list)
+        names.append('WAVEFORM_CODE')
+        formats.append(np.uint8)
+    return np.dtype({'names': names, 'formats': formats})
 
 
 def _get_psd_array(count: int,
@@ -319,11 +327,23 @@ def _store_to_dataframe(
 def _save_dataframes(
     destination: Path | Iterable[Path],
     file_idx: int,
+    wave_samples_flag: bool,
     psd_df_list: list[pd.DataFrame],
     signals_df_list: list[pd.DataFrame]
 ) -> int:
     psd_concat = pd.concat(psd_df_list)
     signals_concat = pd.concat(signals_df_list)
+    psd_path, signals_path = _get_save_file_names(destination, file_idx)
+    psd_concat.to_parquet(psd_path)
+    if wave_samples_flag:
+        signals_concat.to_parquet(signals_path)
+    return file_idx + 1
+
+
+def _get_save_file_names(
+    destination: Path | Iterable[Path], 
+    file_idx: int
+) -> tuple[Path, Path]:
     if isinstance(destination, Path):
         stem = destination.stem
         psd_stem = f"{stem}_psd_{file_idx}"
@@ -336,9 +356,7 @@ def _save_dataframes(
         signals_stem = f"{signals_filename.stem}_{file_idx}"
         psd_path = psd_filename.with_stem(psd_stem)
         signals_path = signals_filename.with_stem(signals_stem)
-    psd_concat.to_parquet(psd_path)
-    signals_concat.to_parquet(signals_path)
-    return file_idx + 1
+    return psd_path, signals_path
 
 
 def _get_n_samples(data_file: BufferedReader) -> int:

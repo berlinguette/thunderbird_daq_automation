@@ -17,7 +17,7 @@ def convert_bin_file_to_parquet(
     source_file: Path,
     destination: Path | Iterable[Path],
     logfile_path: Path,
-    mem_use_threshold: int = 64*1024*1024
+    mem_use_threshold: int = 14*1024*1024
 ) -> FolderResult:
     """Converts CAEN binary (.BIN) format file to Parquet format
 
@@ -44,82 +44,160 @@ def convert_bin_file_to_parquet(
     # indexing gets simpler when we do both at the same time
     max_count = 100_000
     new_logger, new_messenger = set_up_file_logging(source_file, logfile_path)
+    file_result = False
+    file_reason = "Not yet set"
 
     with open(source_file, 'rb') as datafile:
         header = datafile.read(2)
         if not is_header_valid(header):
             cleanup_logger(new_logger)
             return False, source_file.name
-        energy_flag = get_energy_flag(header)
-        calib_energy_flag = get_calibrated_energy_flag(header)
-        energyshort_flag = get_energyshort_flag(header)
-        wave_samples_flag = get_waveform_samples_flag(header)
-        flags = energy_flag, calib_energy_flag, energyshort_flag, wave_samples_flag
+        flags = get_header_flags(header)
+        wave_samples_flag = flags[3]
 
         # First record - set up buffer data structures
-        idx = 0
-        file_idx = 0
-        # psd_df_idx_start = 0
+        record_array_idx = 0  # current record index in array, reset on array reset
+        dataframe_start_idx = 0  # current starting record index for next dataframe, reset on file save, used in df indexing
+        file_name_idx = 0  # current file index over all records, incr. on new file
+        
+        # PSD buffer structures
         psd_struct = _get_psd_struct(*flags)
         psd_dtype = _get_psd_dtype(*flags)
         psd_array = _get_psd_array(max_count, psd_dtype)
         psd_df_list: list[pd.DataFrame] = []
 
-        result, reason = _store_entry(idx, datafile, psd_struct, psd_array)
+        # Read and store first PSD entry
+        result, reason = _store_entry(
+            record_array_idx, datafile, psd_struct, psd_array)
         if not result:
             return False, str(reason)  # TODO create better reason string
 
+        # Creating dummy signals buffers simplifies later code
         if wave_samples_flag:
             n_samples = _get_n_samples(datafile)
         else:
             n_samples = 1
 
-        # signals_df_idx_start = 0
+        # Signals buffer structures
         signals_struct = struct.Struct(f'{n_samples}h')
         signals_array = _get_signals_array(max_count, n_samples)
         signals_df_list: list[pd.DataFrame] = []
 
+        # Read and store first signals entry
         if wave_samples_flag:
             result, reason = _store_entry(
-                idx, datafile, signals_struct, signals_array)
+                record_array_idx, datafile, signals_struct, signals_array)
             if not result:
                 return False, str(reason)  # TODO better reason string
 
+        # Loop to read all following entries
         done = False
         while not done:
-            # TODO iterate over datafile, storing psd and signals each time
-            idx += 1
-            if idx >= max_count:
-                _store_to_dataframe(
-                    psd_df_list, signals_df_list, psd_array, signals_array)
+            record_array_idx += 1  # index now = number of added elements
+            if record_array_idx >= max_count:  # need to clear array
+                dataframe_start_idx = _store_to_dataframe(
+                    dataframe_start_idx, record_array_idx, 
+                    psd_df_list, signals_df_list, 
+                    psd_array, signals_array)
                 psd_array = _get_psd_array(max_count, psd_dtype)
                 signals_array = _get_signals_array(max_count, n_samples)
+                record_array_idx = record_array_idx % max_count
+                # Save to disk if too much memory used
+                mem_used = sum(
+                    [df.memory_usage(deep=True).sum()
+                     for df in psd_df_list+signals_df_list]
+                    )
+                if mem_used >= mem_use_threshold:
+                    file_name_idx = _save_dataframes(
+                        destination, file_name_idx, psd_df_list, signals_df_list)
+                    psd_df_list = []
+                    signals_df_list = []
 
+            # Store PSD entry and handle result
             result, reason = _store_entry(
-                idx, datafile, psd_struct, psd_array)
+                record_array_idx, datafile, psd_struct, psd_array)
             if not result:
-                if reason in [Reason.FILE_ENDS, Reason.INSUFFICIENT_BYTES]:
-                    _store_to_dataframe(
-                        psd_df_list, signals_df_list, psd_array, signals_array)
-                    _save_dataframes(
-                        destination, file_idx, psd_df_list, signals_df_list)
-                    if reason == Reason.FILE_ENDS and not wave_samples_flag:
-                        return True, ""
-                        pass  # TODO check if file end is valid, return
-                    pass  # TODO move all data to dataframes, save, return
-                pass  # TODO check for end of file
-            #  TODO check if n_samples matches
-            if wave_samples_flag:
-                result, reason = _store_entry(
-                    idx, datafile, signals_struct, signals_array)
-                if not result:
-                    pass  # TODO check for end of file
+                done = True
+                dataframe_start_idx = _store_to_dataframe(
+                    dataframe_start_idx, record_array_idx, 
+                    psd_df_list, signals_df_list,
+                    psd_array, signals_array)
+                file_name_idx = _save_dataframes(
+                    destination, file_name_idx, psd_df_list, signals_df_list)
+                if reason == Reason.FILE_ENDS:
+                    # File ended at end of last record, so valid end state!
+                    file_result = True
+                    file_reason = "OK"
+                    new_messenger.debug(f"Finished reading {source_file.name}")
+                elif reason == Reason.INSUFFICIENT_BYTES:
+                    file_result = False
+                    file_reason = "Insufficient bytes found for last record"
+                    new_messenger.debug(file_reason)
+                elif reason == Reason.OUT_OF_RANGE:
+                    file_result = False
+                    file_reason = (
+                        f"Tried to store record index {record_array_idx} " + 
+                        f"in storage array of length {max_count}"
+                        )
+                    new_messenger.debug(file_reason)
+                else:
+                    file_result = False
+                    file_reason = f"Unexpected failure reason: {str(reason)}"
+                    new_messenger.debug(file_reason)
+                continue  # since done = True, loop completes
 
-    # use n_samples to read/decode samples, add to list
-    # convert to DataFrame every X records, add to list
-    # concat DataFrames every N DataFrame conversions
+            # Store wave samples entry and handle result
+            if wave_samples_flag:
+                # Each entry stores number of signal samples, 
+                # but this should be consistent across entries
+                # No idea why CAEN does this. Thanks for the complication! >_<
+                current_n_samples = _get_n_samples(datafile)
+                if current_n_samples == n_samples:
+                    result, reason = _store_entry(
+                        record_array_idx, datafile, signals_struct, signals_array)
+                    if not result:
+                        done = True
+                        dataframe_start_idx = _store_to_dataframe(
+                            dataframe_start_idx, record_array_idx, 
+                            psd_df_list, signals_df_list,
+                            psd_array, signals_array)
+                        file_name_idx = _save_dataframes(
+                            destination, file_name_idx, psd_df_list, signals_df_list)
+                        if reason == Reason.FILE_ENDS:
+                            # File ended after PSD data, but signals expected
+                            # Invalid end state!
+                            file_result = False
+                            file_reason = "File ended early"
+                            new_messenger.debug(f"File {source_file.name} ended early")
+                        elif reason == Reason.INSUFFICIENT_BYTES:
+                            file_result = False
+                            file_reason = "Insufficient bytes found for last record"
+                            new_messenger.debug(file_reason)
+                        elif reason == Reason.OUT_OF_RANGE:
+                            file_result = False
+                            file_reason = (
+                                f"Tried to store record index {record_array_idx} " + 
+                                f"in storage array of length {max_count}"
+                                )
+                            new_messenger.debug(file_reason)
+                        else:
+                            file_result = False
+                            file_reason = f"Unexpected failure reason: {str(reason)}"
+                            new_messenger.debug(file_reason)
+                        continue  # since done = True, loop completes
+                else:
+                    # Incorrect number of samples, skip this entry entirely
+                    new_messenger.debug(
+                        "Record at expected index "+
+                        f"{record_array_idx+dataframe_start_idx} "+
+                        f"has {current_n_samples} samples, "+
+                        f"expected {n_samples}; record was skipped")
+                    temp_struct = struct.Struct(f'{current_n_samples}h')
+                    datafile.read(temp_struct.size)
+                    record_array_idx -= 1  # so next entry overwrites this one
+
     cleanup_logger(new_logger)
-    return False, ''  # STUB
+    return file_result, file_reason
 
 
 def is_header_valid(value: bytes) -> bool:
@@ -138,6 +216,14 @@ def is_header_valid(value: bytes) -> bool:
     bitmask = int.from_bytes(HEADER_BITMASK, byteorder='little')
     masked_value = int.from_bytes(value, byteorder='little') & bitmask
     return masked_value == HEADER_PATTERN
+
+
+def get_header_flags(header: bytes) -> tuple[bool, bool, bool, bool]:
+    energy_flag = get_energy_flag(header)
+    calib_energy_flag = get_calibrated_energy_flag(header)
+    energyshort_flag = get_energyshort_flag(header)
+    waveform_flag = get_waveform_samples_flag(header)
+    return energy_flag, calib_energy_flag, energyshort_flag, waveform_flag
 
 
 def get_energy_flag(header: bytes) -> bool:
@@ -215,13 +301,19 @@ def _store_entry(index: int,
 
 
 def _store_to_dataframe(
+    dataframe_start_idx: int, 
+    records_count: int, 
     psd_df_list: list[pd.DataFrame],
     signals_df_list: list[pd.DataFrame],
     psd_array: np.ndarray,
     signals_array: np.ndarray
-):
-    psd_df_list.append(pd.DataFrame(psd_array))
-    signals_df_list.append(pd.DataFrame(signals_array))
+) -> int:
+    if records_count == 0:
+        return dataframe_start_idx
+    index = pd.RangeIndex(dataframe_start_idx, dataframe_start_idx+records_count)
+    psd_df_list.append(pd.DataFrame(psd_array[:records_count], index=index))
+    signals_df_list.append(pd.DataFrame(signals_array[:records_count], index=index))
+    return dataframe_start_idx + records_count
 
 
 def _save_dataframes(
@@ -229,9 +321,25 @@ def _save_dataframes(
     file_idx: int,
     psd_df_list: list[pd.DataFrame],
     signals_df_list: list[pd.DataFrame]
-):
-    # concats dataframes in list, saves to parquet
-    pass  # STUB
+) -> int:
+    psd_concat = pd.concat(psd_df_list)
+    signals_concat = pd.concat(signals_df_list)
+    if isinstance(destination, Path):
+        stem = destination.stem
+        psd_stem = f"{stem}_psd_{file_idx}"
+        signals_stem = f"{stem}_signals_{file_idx}"
+        psd_path = destination.with_stem(psd_stem)
+        signals_path = destination.with_stem(signals_stem)
+    else:
+        psd_filename, signals_filename, *_ = destination
+        psd_stem = f"{psd_filename.stem}_{file_idx}"
+        signals_stem = f"{signals_filename.stem}_{file_idx}"
+        psd_path = psd_filename.with_stem(psd_stem)
+        signals_path = signals_filename.with_stem(signals_stem)
+        pass # TODO handle separate psd/signals filenames
+    psd_concat.to_parquet(psd_path)
+    signals_concat.to_parquet(signals_path)
+    return file_idx + 1
 
 
 def _get_n_samples(data_file: BufferedReader) -> int:

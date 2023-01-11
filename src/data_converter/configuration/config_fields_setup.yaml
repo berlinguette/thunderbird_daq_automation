@@ -145,3 +145,20 @@ large_files:
     help: "properly handle large CSV files. 
       Setting this means that files are handled one by one, 
       but are read in chunks"
+mem_use_threshold:
+  config:
+    allowed_types:
+      - 'int'
+    default: 512
+    gui:
+      title: "Memory use threshold for BIN conversion"
+      control: 'spin'
+      order: 80
+  cli:
+    flags:
+      - "--mem_use_threshold"
+    type: 'int'
+    help: "memory use threshold for BIN conversion. 
+      When converted rows take up more memory than the threshold, 
+      they are saved to disk as a Parquet file, 
+      freeing memory for further conversion"

@@ -6,7 +6,7 @@ from data_converter.conversion.abstract_data_converter import \
 from data_converter.conversion.caen_data_converter import CaenDataConverter
 from data_converter.conversion.pico_data_converter import PicoDataConverter
 from data_converter.conversion.support import constants
-from data_converter.conversion.support.experiment_type import ExperimentType
+from data_converter.conversion.support.enums import ExperimentType
 from data_converter.conversion.wendi_data_converter import WendiDataConverter
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
 

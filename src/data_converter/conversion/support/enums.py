@@ -7,6 +7,11 @@ class ExperimentType(Enum):
     WENDI = "WENDI II"
 
 
+class CAENDataFormat(Enum):
+    CSV = ".csv"
+    BIN = ".bin"
+
+
 class Reason(Enum):
     OK = 'OK'
     FILE_ENDS = 'File ends'

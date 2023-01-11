@@ -8,8 +8,8 @@ from distributed import Client
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
 from data_converter.conversion.support import constants
-from data_converter.conversion.support.csv_folder_to_parquet import \
-    CSVtoParquetFolderConverter
+from data_converter.conversion.support.folder_converter_factory import \
+    FolderConverterFactory
 from data_converter.conversion.support.spectrum_to_parquet import \
     convert_spectra_to_parquet
 
@@ -144,7 +144,7 @@ class CaenDataConverter(AbstractDataConverter):
         self._messenger.info("Moving raw data files to destination")
         for file in raw_data_folder.iterdir():
             if (file.is_file() and
-                    (file.suffix.lower() == '.csv' or
+                    (file.suffix.lower() in ['.csv', '.bin'] or
                      file.name == 'settings.xml')):
                 file.rename(dataset_raw_csv_folder / file.name)
         self._screen_only_messenger.info('')
@@ -154,12 +154,19 @@ class CaenDataConverter(AbstractDataConverter):
         #     unfiltered_data_folder,
         #     (dataset_unfiltered_psd_folder, dataset_unfiltered_signals_folder),
         #     self._config, self._logfile_path)
-        csv_converter = CSVtoParquetFolderConverter(
+        # TODO create appropriate folder converter using factory
+        # csv_converter = CSVtoParquetFolderConverter(
+        #     unfiltered_data_folder,
+        #     [dataset_unfiltered_psd_folder, dataset_unfiltered_signals_folder],
+        #     self._config,
+        #     self._logfile_path)
+        folder_converter = FolderConverterFactory().make_folder_converter(
             unfiltered_data_folder,
             [dataset_unfiltered_psd_folder, dataset_unfiltered_signals_folder],
             self._config,
-            self._logfile_path)
-        csv_converter.convert_folder()
+            self._logfile_path
+        )
+        folder_converter.convert_folder()
         convert_spectra_to_parquet(
             unfiltered_data_folder, dataset_unfiltered_spectra_folder, self._logfile_path)
         self._screen_only_messenger.info('')

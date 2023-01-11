@@ -1,23 +1,28 @@
+import re
+import struct
+from io import BufferedReader
 from pathlib import Path
 from typing import Iterable
-from data_converter.utilities.logging import set_up_file_logging
-from data_converter.conversion.support.types import FolderResult, FileResult, Reason
-from utilities.utilities.logging_helpers.setup_logger import cleanup_logger
-import struct
+
 import numpy as np
-from io import BufferedReader
 import pandas as pd
+
+from data_converter.conversion.support.types import (FileResult, FolderResult,
+                                                     Reason)
+from data_converter.utilities.logging import set_up_file_logging
+from utilities.utilities.logging_helpers.setup_logger import cleanup_logger
 
 HEADER_PATTERN: bytes = b'\xe0\xca'
 HEADER_BITMASK: bytes = b'\xf0\xff'
 BYTEORDER = 'little'
+END_NUMBER_PATTERN = r'^(.*_)(\d+)$'
 
 
 def convert_bin_file_to_parquet(
     source_file: Path,
     destination: Path | Iterable[Path],
     logfile_path: Path,
-    mem_use_threshold: int = 14*1024*1024*1024
+    mem_use_threshold: int | None = None
 ) -> FolderResult:
     """Converts CAEN binary (.BIN) format file to Parquet format
 
@@ -30,20 +35,29 @@ def convert_bin_file_to_parquet(
     logfile_path : Path
         Path to log file used during conversion
     mem_use_threshold : int, optional
-        memory use threshold in bytes, by default 64 MB
+        memory use threshold in MB, by default 512 MB
         Memory is used to store decoded rows during conversion. When memory use
         is over the set threshold, stored rows are collected and saved, so 
         memory is free for further use.
 
     Returns
     -------
-    FileConversionResult
-        _description_
+    FolderResult
+        whether the conversion was successful (as boolean), 
+        and a explanatory success/failure message
     """
     # Even though psd data is smaller and could be framed less often,
     # indexing gets simpler when we do both at the same time
+    if mem_use_threshold is None:
+        mem_use_threshold = 512
+
+    if not source_file.suffix.lower() == '.bin':
+        return False, f"File {source_file.name} is not a BIN file"
     max_count = 100_000
     new_logger, new_messenger = set_up_file_logging(source_file, logfile_path)
+    source_file_name = _get_destination_file_name(source_file)
+    psd_dest_folder, signals_dest_folder = _get_split_data_destinations(
+        destination)
     file_result = False
     file_reason = "Not yet set"
 
@@ -54,12 +68,21 @@ def convert_bin_file_to_parquet(
             return False, source_file.name
         flags = get_header_flags(header)
         wave_samples_flag = flags[3]
+        if wave_samples_flag:
+            psd_dest_name, signals_dest_name = _get_split_parquet_names(
+                source_file_name)
+            file_destination = (psd_dest_folder / psd_dest_name,
+                                signals_dest_folder / signals_dest_name)
+        else:
+            psd_dest_name = f"caen_{source_file_name}.parquet"
+            file_destination = psd_dest_folder / psd_dest_name
 
         # First record - set up buffer data structures
         record_array_idx = 0  # current record index in array, reset on array reset
-        dataframe_start_idx = 0  # current starting record index for next dataframe, reset on file save, used in df indexing
+        # current starting record index for next dataframe, reset on file save, used in df indexing
+        dataframe_start_idx = 0
         file_name_idx = 0  # current file index over all records, incr. on new file
-        
+
         # PSD buffer structures
         psd_struct = _get_psd_struct(*flags)
         psd_dtype = _get_psd_dtype(*flags)
@@ -96,20 +119,21 @@ def convert_bin_file_to_parquet(
             record_array_idx += 1  # index now = number of added elements
             if record_array_idx >= max_count:  # need to clear array
                 dataframe_start_idx = _store_to_dataframe(
-                    dataframe_start_idx, record_array_idx, 
-                    psd_df_list, signals_df_list, 
+                    dataframe_start_idx, record_array_idx,
+                    psd_df_list, signals_df_list,
                     psd_array, signals_array)
                 psd_array = _get_psd_array(max_count, psd_dtype)
                 signals_array = _get_signals_array(max_count, n_samples)
                 record_array_idx = record_array_idx % max_count
                 # Save to disk if too much memory used
-                mem_used = sum(
+                mem_used_bytes = sum(
                     [df.memory_usage(deep=True).sum()
                      for df in psd_df_list+signals_df_list]
-                    )
-                if mem_used >= mem_use_threshold:
+                )
+                mem_used_MB = mem_used_bytes / (1024*1024)
+                if mem_used_MB >= mem_use_threshold:
                     file_name_idx = _save_dataframes(
-                        destination, file_name_idx, wave_samples_flag, 
+                        file_destination, file_name_idx, wave_samples_flag,
                         psd_df_list, signals_df_list)
                     psd_df_list = []
                     signals_df_list = []
@@ -120,11 +144,11 @@ def convert_bin_file_to_parquet(
             if not result:
                 done = True
                 dataframe_start_idx = _store_to_dataframe(
-                    dataframe_start_idx, record_array_idx, 
+                    dataframe_start_idx, record_array_idx,
                     psd_df_list, signals_df_list,
                     psd_array, signals_array)
                 file_name_idx = _save_dataframes(
-                    destination, file_name_idx, wave_samples_flag, 
+                    destination, file_name_idx, wave_samples_flag,
                     psd_df_list, signals_df_list)
                 if reason == Reason.FILE_ENDS:
                     # File ended at end of last record, so valid end state!
@@ -138,9 +162,9 @@ def convert_bin_file_to_parquet(
                 elif reason == Reason.OUT_OF_RANGE:
                     file_result = False
                     file_reason = (
-                        f"Tried to store record index {record_array_idx} " + 
+                        f"Tried to store record index {record_array_idx} " +
                         f"in storage array of length {max_count}"
-                        )
+                    )
                     new_messenger.debug(file_reason)
                 else:
                     file_result = False
@@ -150,7 +174,7 @@ def convert_bin_file_to_parquet(
 
             # Store wave samples entry and handle result
             if wave_samples_flag:
-                # Each entry stores number of signal samples, 
+                # Each entry stores number of signal samples,
                 # but this should be consistent across entries
                 # No idea why CAEN does this. Thanks for the complication! >_<
                 current_n_samples = _get_n_samples(datafile)
@@ -160,18 +184,19 @@ def convert_bin_file_to_parquet(
                     if not result:
                         done = True
                         dataframe_start_idx = _store_to_dataframe(
-                            dataframe_start_idx, record_array_idx, 
+                            dataframe_start_idx, record_array_idx,
                             psd_df_list, signals_df_list,
                             psd_array, signals_array)
                         file_name_idx = _save_dataframes(
-                            destination, file_name_idx, wave_samples_flag, 
+                            destination, file_name_idx, wave_samples_flag,
                             psd_df_list, signals_df_list)
                         if reason == Reason.FILE_ENDS:
                             # File ended after PSD data, but signals expected
                             # Invalid end state!
                             file_result = False
                             file_reason = "File ended early"
-                            new_messenger.debug(f"File {source_file.name} ended early")
+                            new_messenger.debug(
+                                f"File {source_file.name} ended early")
                         elif reason == Reason.INSUFFICIENT_BYTES:
                             file_result = False
                             file_reason = "Insufficient bytes found for last record"
@@ -179,9 +204,9 @@ def convert_bin_file_to_parquet(
                         elif reason == Reason.OUT_OF_RANGE:
                             file_result = False
                             file_reason = (
-                                f"Tried to store record index {record_array_idx} " + 
+                                f"Tried to store record index {record_array_idx} " +
                                 f"in storage array of length {max_count}"
-                                )
+                            )
                             new_messenger.debug(file_reason)
                         else:
                             file_result = False
@@ -191,9 +216,9 @@ def convert_bin_file_to_parquet(
                 else:
                     # Incorrect number of samples, skip this entry entirely
                     new_messenger.debug(
-                        "Record at expected index "+
-                        f"{record_array_idx+dataframe_start_idx} "+
-                        f"has {current_n_samples} samples, "+
+                        "Record at expected index " +
+                        f"{record_array_idx+dataframe_start_idx} " +
+                        f"has {current_n_samples} samples, " +
                         f"expected {n_samples}; record was skipped")
                     temp_struct = struct.Struct(f'{current_n_samples}h')
                     datafile.read(temp_struct.size)
@@ -309,8 +334,8 @@ def _store_entry(index: int,
 
 
 def _store_to_dataframe(
-    dataframe_start_idx: int, 
-    records_count: int, 
+    dataframe_start_idx: int,
+    records_count: int,
     psd_df_list: list[pd.DataFrame],
     signals_df_list: list[pd.DataFrame],
     psd_array: np.ndarray,
@@ -318,9 +343,11 @@ def _store_to_dataframe(
 ) -> int:
     if records_count == 0:
         return dataframe_start_idx
-    index = pd.RangeIndex(dataframe_start_idx, dataframe_start_idx+records_count)
+    index = pd.RangeIndex(dataframe_start_idx,
+                          dataframe_start_idx+records_count)
     psd_df_list.append(pd.DataFrame(psd_array[:records_count], index=index))
-    signals_df_list.append(pd.DataFrame(signals_array[:records_count], index=index))
+    signals_df_list.append(pd.DataFrame(
+        signals_array[:records_count], index=index))
     return dataframe_start_idx + records_count
 
 
@@ -341,22 +368,60 @@ def _save_dataframes(
 
 
 def _get_save_file_names(
-    destination: Path | Iterable[Path], 
+    destination: Path | Iterable[Path],
     file_idx: int
 ) -> tuple[Path, Path]:
+    idx_length = 2
+    padded_idx = str(file_idx).zfill(idx_length)
     if isinstance(destination, Path):
         stem = destination.stem
-        psd_stem = f"{stem}_psd_{file_idx}"
-        signals_stem = f"{stem}_signals_{file_idx}"
+        psd_stem = f"{stem}_{padded_idx}"
         psd_path = destination.with_stem(psd_stem)
-        signals_path = destination.with_stem(signals_stem)
+        signals_path = destination.with_stem(psd_stem)
     else:
         psd_filename, signals_filename, *_ = destination
-        psd_stem = f"{psd_filename.stem}_{file_idx}"
-        signals_stem = f"{signals_filename.stem}_{file_idx}"
+        psd_stem = f"{psd_filename.stem}_{padded_idx}"
+        signals_stem = f"{signals_filename.stem}_{padded_idx}"
         psd_path = psd_filename.with_stem(psd_stem)
         signals_path = signals_filename.with_stem(signals_stem)
     return psd_path, signals_path
+
+
+def _get_destination_file_name(source_file: Path) -> str:
+    file_number_length = 5  # i.e. run_00000, supports 100,000 files
+    pattern = r'.+_\d{' + re.escape(str(file_number_length)) + r'}'
+    source_file_name = source_file.stem
+    if not re.match(pattern, source_file_name):
+        match = re.match(END_NUMBER_PATTERN, source_file_name)
+        if match:
+            start, number = match.group(1, 2)
+            fixed_number = str(number).zfill(file_number_length)
+            source_file_name = str(start) + fixed_number
+        else:
+            starting_file_number = '0'.zfill(file_number_length)
+            # source_file_name = source_file_name + '_00000'
+            source_file_name = f"{source_file_name}_{starting_file_number}"
+    return source_file_name
+
+
+def _get_split_data_destinations(destination: Path | Iterable[Path]):
+    if isinstance(destination, Path):
+        # put everything in the same folder, even if signals exists
+        psd_destination = destination
+        signals_destination = destination
+    else:
+        psd_destination, *rest = destination
+        try:
+            signals_destination, *_ = rest
+        except ValueError:
+            signals_destination = psd_destination
+    return psd_destination, signals_destination
+
+
+def _get_split_parquet_names(source_file_name: str) -> tuple[str, str]:
+    psd_dest_name = f"caen_psd_{source_file_name}.parquet"
+    signals_dest_name = f"caen_samples_{source_file_name}.parquet"
+    return psd_dest_name, signals_dest_name
 
 
 def _get_n_samples(data_file: BufferedReader) -> int:

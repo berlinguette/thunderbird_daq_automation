@@ -5,9 +5,9 @@ from typing import Iterable
 
 from tqdm import tqdm
 
+from data_converter.conversion.support.types import FolderResult
 from data_converter.utilities.logging import set_up_file_logging
 from utilities.utilities.logging_helpers.setup_logger import cleanup_logger
-from data_converter.conversion.support.types import FolderResult
 
 SAMPLES_COL_NAME = 'SAMPLES'
 DELIMITER = ';'
@@ -22,6 +22,9 @@ def convert_csv_file_to_parquet(
     read_csv,
     logfile_path: Path
 ) -> FolderResult:
+    if not source_file.suffix.lower() == ".csv":
+        return False, f"File {source_file.name} is not a CSV file"
+
     new_logger, _ = set_up_file_logging(source_file, logfile_path)
     source_file_name = _get_destination_file_name(source_file)
     psd_destination, signals_destination = _get_split_data_destinations(

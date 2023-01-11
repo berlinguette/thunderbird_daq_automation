@@ -36,8 +36,8 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
         num_files = self._config.get('files_limit')
         if num_files is not None:
             num_files = check_type(num_files, int, 'files_limit')
-        csv_workers = get_and_check(self._config, int, 'csv_tasks', 0)
-        csv_timeout = get_and_check(self._config, int, 'csv_timeout', 0)
+        max_workers = get_and_check(self._config, int, 'caen_tasks', 0)
+        task_timeout = get_and_check(self._config, int, 'caen_timeout', 0)
         large_files_support = get_and_check(
             self._config, bool, 'large_files', False)
 
@@ -47,9 +47,9 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
             )
         ]
 
-        csv_timeout = csv_timeout * len(source_files)
-        if csv_timeout == 0:
-            csv_timeout = None
+        folder_timeout = task_timeout * len(source_files)
+        if folder_timeout == 0:
+            folder_timeout = None
 
         if len(source_files) == 0:
             headers = []
@@ -99,8 +99,8 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                 repeat(total_cols),
                 repeat(pd.read_csv),
                 repeat(self._logfile_path),
-                timeout=csv_timeout,
-                max_workers=csv_workers,
+                timeout=folder_timeout,
+                max_workers=max_workers,
                 desc='CSV files',
                 unit='file',
                 total=len(source_files),

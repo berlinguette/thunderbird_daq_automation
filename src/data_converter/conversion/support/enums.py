@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class ExperimentType(Enum):
-    PICO = "PicoScope"
+    PICO = "PicoScope"  # TODO DEPRECATED Remove in v4.0.0
     CAEN = "CAEN"
     WENDI = "WENDI II"
 

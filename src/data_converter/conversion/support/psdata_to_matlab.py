@@ -21,6 +21,8 @@ from utilities.utilities.logging_helpers.setup_logger import (Messenger,
                                                               setup_logger)
 from utilities.utilities.timing import Timer
 
+# TODO DEPRECATED Delete in v4.0.0
+
 FORMAT = 'mat'
 T = TypeVar('T')
 logger = logging.getLogger('psdata_converter')

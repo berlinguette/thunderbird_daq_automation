@@ -12,13 +12,13 @@ config:
     help: "location of YAML configuration file. 
       This file will override any default configuration file, 
       and will be overridden by any arguments given here"
-keep_matlab:
+keep_matlab:  # TODO DEPRECATED Remove in v4.0.0
   config: 
     allowed_types:
       - 'bool'
     default: false
     gui:
-      title: "Keep Matlab files"
+      title: "(DEPRECATED) Keep Matlab files"
       control: 'checkbox'
       order: 100
   cli:
@@ -26,7 +26,7 @@ keep_matlab:
       - "--keep-matlab"
       - "-k"
     action: 'store_true'
-    help: "keep generated Matlab files when conversion is done"
+    help: "(DEPRECATED) keep generated Matlab files when conversion is done"
 fresh_destination:
   config: 
     allowed_types:
@@ -41,7 +41,7 @@ fresh_destination:
       - '--fresh-destination'
       - '-f'
     action: 'store_true'
-    help: "delete any previous Matlab and Parquet files if they exist"
+    help: "delete any previous conversion files if they exist"
 files_limit:
   config: 
     allowed_types:
@@ -53,52 +53,52 @@ files_limit:
       - '--files-limit'
       - '-l'
     type: 'int'
-    help: "limit number of PSData files processed. 
+    help: "limit number of original files processed. 
       Omit this (or use 0) for no limit (process all files in folder)"
-psdata_tasks:
+psdata_tasks:  # TODO DEPRECATED Remove in v4.0.0
   config:
     allowed_types:
       - 'int'
     default: 5
     gui:
-      title: "Max simultaneous Stage 1 (PSData to Matlab) conversions"
+      title: "(DEPRECATED) Max simultaneous Stage 1 (PSData to Matlab) conversions"
       control: 'spin'
       order: 10
   cli:
     flags:
       - '--psdata-tasks'
     type: 'int'
-    help: "max number of simultaneous PSData to Matlab conversions. 
+    help: "(DEPRECATED) max number of simultaneous PSData to Matlab conversions. 
       Use 0 for no limit (process all given files at the same time)"
-matlab_tasks:
+matlab_tasks:  # TODO DEPRECATED Remove in v4.0.0
   config:
     allowed_types:
       - 'int'
     default: 4
     gui:
-      title: "Max simultaneous Matlab to Parquet conversions"
+      title: "(DEPRECATED) Max simultaneous Matlab to Parquet conversions"
       control: 'spin'
       order: 20
   cli:
     flags:
       - '--parquet-tasks'
     type: 'int'
-    help: "max number of simultaneous Matlab to Parquet conversions. 
+    help: "(DEPRECATED) max number of simultaneous Matlab to Parquet conversions. 
       Use 0 to do as many tasks as possible on this machine"
-matlab_files:
+matlab_files:  # TODO DEPRECATED Delete in v4.0.0
   config:
     allowed_types:
       - 'int'
     default: 4
     gui:
-      title: "Max simultaneous file loads per Matlab to Parquet conversion"
+      title: "(DEPRECATED) Max simultaneous file loads per Matlab to Parquet conversion"
       control: 'spin'
       order: 30
   cli:
     flags:
       '--parquet-files'
     type: 'int'
-    help: "max number of simultaneous Matlab files loaded per conversion. 
+    help: "(DEPRECATED) max number of simultaneous Matlab files loaded per conversion. 
       Use 0 to load as many files as possible"
 caen_tasks:
   config:
@@ -142,7 +142,7 @@ small_files:
     flags:
       - "--small-files"
     action: 'store_true'
-    help: "handle small CSV files in parallel. 
+    help: "handle small CAEN CSV files in parallel. 
       When this is set, multiple CSV files will be converted simultaneously.
       When this is not set, CSV files will be read one by one, 
       but as parallel chunks."
@@ -152,7 +152,7 @@ mem_use_threshold:
       - 'int'
     default: 512
     gui:
-      title: "Memory use threshold for BIN conversion"
+      title: "Memory use threshold for CAEN BIN conversion"
       control: 'spin'
       order: 80
   cli:

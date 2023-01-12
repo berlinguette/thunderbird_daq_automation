@@ -27,6 +27,8 @@ from utilities.utilities.timing import Timer
 
 if TYPE_CHECKING:
     from numpy import ndarray
+    
+# TODO DEPRECATED Delete in v4.0.0
 
 logger = logging.getLogger('parquetizer')
 messenger = Messenger(logger)

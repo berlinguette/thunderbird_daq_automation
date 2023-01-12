@@ -38,6 +38,7 @@ class DataConverterFactory:
                 f"Experiment root could not be found for folder {exp_folder}")
         exp_type, exp_root = found_schema
         if exp_type == ExperimentType.PICO:
+            # TODO DEPRECATED Remove in v4.0.0
             return PicoDataConverter(exp_root, config, config_setup, destination)
         elif exp_type == ExperimentType.CAEN:
             return CaenDataConverter(exp_root, config, config_setup, destination)
@@ -49,6 +50,7 @@ class DataConverterFactory:
     def _find_pico_root(
         self, source_path: Path, found_psdata: bool = False, found_pico_rawdata: bool = False
     ) -> Path | None:
+        # TODO DEPRECATED Remove in v4.0.0
         root_path = None
         if not source_path.is_dir():
             return self._find_pico_root(source_path.parent)

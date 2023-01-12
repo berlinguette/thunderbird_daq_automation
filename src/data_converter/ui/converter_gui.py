@@ -49,7 +49,8 @@ class ConverterGui(QMainWindow):
         self._source_list = QListWidget()
         self._source_list.setSelectionMode(QListWidget.ExtendedSelection)
         self._destination_display = QLabel("Not Set")
-        self._settings_dialog = SettingsWindow(self._config, self._config_setup)
+        self._settings_dialog = SettingsWindow(
+            self._config, self._config_setup)
 
         self._connect_signals()
         self._layout_window()
@@ -179,15 +180,23 @@ class ConverterGui(QMainWindow):
 
     @Slot()
     def handle_button_clicked_add_file(self):
-        selected_source, _ = QFileDialog.getOpenFileName(
+        selected_files, _ = QFileDialog.getOpenFileNames(
             self, 'Choose Experiment Data File')
-        self._source_list.addItem(selected_source)
-    
+        if selected_files:
+            if not isinstance(selected_files, list):
+                selected_files = [selected_files]
+            valid_files = [source for source in selected_files
+                                if Path(str(source)).is_file()]
+            self._source_list.addItems(valid_files)
+
     @Slot()
     def handle_button_clicked_add_folder(self):
-        selected_source = QFileDialog.getExistingDirectory(
-            self, 'Choose Experiment Data Folder')
-        self._source_list.addItem(selected_source)
+        selected_folders = pick_multiple_folders(self, 
+                                                 'Choose Experiment Folder(s)')
+        if selected_folders:
+            valid_folders = [folder for folder in selected_folders 
+                             if Path(folder).is_dir()]
+            self._source_list.addItems(valid_folders)
 
     @Slot()
     def handle_button_clicked_remove(self):

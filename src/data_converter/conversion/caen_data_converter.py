@@ -1,9 +1,9 @@
 import re
 from datetime import datetime
 from pathlib import Path
+from shutil import move
 
 import tomli_w
-from distributed import Client
 
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
@@ -33,7 +33,6 @@ KEY_DATASET_UNFILTERED_SPECTRA = 'dataset_unfiltered_spectra'
 
 class CaenDataConverter(AbstractDataConverter):
     def convert(self) -> bool:
-        client = Client()
         try:
             paths_dict = self._determine_paths()
             self._initial_messages()
@@ -130,6 +129,7 @@ class CaenDataConverter(AbstractDataConverter):
     def _conversion_process(self,
                             paths: dict[str, Path]
                             ):
+        experiment_root = paths[KEY_DATASET_ROOT]
         raw_data_folder = paths[KEY_RAW_DATA]
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_csv_folder = paths[KEY_DATASET_RAW_CSV]
@@ -143,16 +143,6 @@ class CaenDataConverter(AbstractDataConverter):
         self._screen_only_messenger.info('')
         
         self._messenger.info("Converting unfiltered data to Parquet")
-        # convert_csv_folder_to_parquet(
-        #     unfiltered_data_folder,
-        #     (dataset_unfiltered_psd_folder, dataset_unfiltered_signals_folder),
-        #     self._config, self._logfile_path)
-        # TODO create appropriate folder converter using factory
-        # csv_converter = CSVtoParquetFolderConverter(
-        #     unfiltered_data_folder,
-        #     [dataset_unfiltered_psd_folder, dataset_unfiltered_signals_folder],
-        #     self._config,
-        #     self._logfile_path)
         folder_converter = FolderConverterFactory().make_folder_converter(
             unfiltered_data_folder,
             [dataset_unfiltered_psd_folder, dataset_unfiltered_signals_folder],

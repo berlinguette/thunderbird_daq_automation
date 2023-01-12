@@ -3,8 +3,11 @@ from pathlib import Path
 from shutil import rmtree
 from typing import Optional
 
+from distributed import Client
+
 from data_converter.conversion.data_converter_factory import \
     DataConverterFactory
+from data_converter.conversion.support.experiment_type import ExperimentType
 from data_converter.ui.converter_gui import converter_gui
 from data_converter.utilities.logging import get_conversion_logfile_path
 from utilities.utilities.check_type import get_and_check
@@ -42,12 +45,12 @@ def convert_neutron_data(
         If not provided, the UI window will be launched.
     """
     if folder_str is None:
-        config, folder_paths, destination = converter_gui(config, config_setup)
+        config, sources, destination = converter_gui(config, config_setup)
     else:
-        folder_paths = [Path(folder_str)]
+        sources = [Path(folder_str)]
         destination = Path.home()
 
-    if folder_paths is not None:
+    if sources is not None:
         fresh_destination = get_and_check(
             config, bool, 'fresh_destination', False)
         if fresh_destination and destination.is_dir():
@@ -55,28 +58,35 @@ def convert_neutron_data(
                 f'Deleting destination {destination}')
             rmtree(destination)
 
-        folders_count = len(folder_paths)
+        source_count = len(sources)
         converter_factory = DataConverterFactory()
-        for folder_i, folder_path in enumerate(folder_paths):
+        dask_client = None
+        for source_idx, source_path in enumerate(sources):
+            if source_path.is_dir():
+                converter_dest = destination / source_path.name
+            else:
+                converter_dest = destination / source_path.parent.name
             try:
-                converter = converter_factory.make_converter(
-                    folder_path, config, config_setup, destination)
+                converter, exp_type = converter_factory.make_converter(
+                    source_path, config, config_setup, converter_dest)
             except ValueError as err:
-                logfile_path = get_conversion_logfile_path(folder_path)
+                logfile_path = get_conversion_logfile_path(source_path)
                 setup_logger(logger, logfile_path)
                 messenger.info(
-                    f"Selected folder {folder_path} is not a valid experiment folder")
+                    f"Selected folder {source_path} is not a valid experiment folder")
                 log_only_messenger.debug(str(err))
                 continue
 
             converter.messenger.info(
-                f'Converting files in folder {folder_i+1}/{folders_count}:' +
+                f'Converting source {source_idx+1}/{source_count}:' +
                 f' {converter.experiment_root}'
             )
+            if dask_client is None and exp_type == ExperimentType.CAEN:
+                dask_client = Client()
             result = converter.convert()
             if not result:
                 converter.messenger.info(
-                    f'Conversion of folder #{folder_i} at {folder_path}' +
+                    f'Conversion of source #{source_idx} at {source_path}' +
                     ' could not be completed'
                 )
 

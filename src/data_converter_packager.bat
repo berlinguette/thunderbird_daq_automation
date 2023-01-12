@@ -15,6 +15,7 @@ echo - Packaging starts - %yyyy%/%mm%/%DD% %hh%:%mn%:%ss% - >%logfile%
 echo -- Generating spec file -- >>%logfile%
 pyi-makespec --onefile ^
     --add-data="data_converter/configuration/config_fields_setup.yaml;data_converter/configuration" ^
+    --add-data="../.venv/Lib/site-packages/distributed;distributed" ^
     --splash="data_converter/splash.png" ^
     data_converter.py >>%logfile% 2>&1
 echo -- Editing spec file for splash screen -- >>%logfile%

@@ -8,8 +8,8 @@ import tomli_w
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
 from data_converter.conversion.support import constants
-from data_converter.conversion.support.csv_to_parquet import \
-    convert_csv_folder_to_parquet
+from data_converter.conversion.support.folder_converter_factory import \
+    FolderConverterFactory
 from data_converter.conversion.support.spectrum_to_parquet import \
     convert_spectra_to_parquet
 
@@ -55,7 +55,7 @@ class CaenDataConverter(AbstractDataConverter):
         #                        self._experiment_root.name)
         dataset_raw_folder = self._destination.joinpath(
             constants.DATASET_RAW_DATA_FOLDER_NAME)
-        dataset_raw_csv_folder = dataset_raw_folder.joinpath(
+        dataset_raw_original_folder = dataset_raw_folder.joinpath(
             constants.CAEN_RAW_FOLDER_NAME)
         dataset_raw_parquet_folder = dataset_raw_folder.joinpath(
             constants.DATASET_PARQUET_FOLDER_NAME)
@@ -83,7 +83,7 @@ class CaenDataConverter(AbstractDataConverter):
             KEY_UNFILTERED_DATA: unfiltered_data_folder,
             KEY_DATASET_ROOT: self._destination,
             KEY_DATASET_RAW: dataset_raw_folder,
-            KEY_DATASET_RAW_CSV: dataset_raw_csv_folder,
+            KEY_DATASET_RAW_CSV: dataset_raw_original_folder,
             KEY_DATASET_RAW_PARQUET: dataset_raw_parquet_folder,
             KEY_DATASET_PROCESSED: dataset_processed_folder,
             KEY_DATASET_FILTERED: dataset_filtered_folder,
@@ -102,7 +102,7 @@ class CaenDataConverter(AbstractDataConverter):
     ):
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_folder = paths[KEY_DATASET_RAW]
-        dataset_raw_csv_folder = paths[KEY_DATASET_RAW_CSV]
+        dataset_raw_original_folder = paths[KEY_DATASET_RAW_CSV]
         dataset_processed_folder = paths[KEY_DATASET_PROCESSED]
         dataset_unfiltered_folder = paths[KEY_DATASET_UNFILTERED]
         dataset_unfiltered_folder_psd = paths[KEY_DATASET_UNFILTERED_PSD]
@@ -113,7 +113,7 @@ class CaenDataConverter(AbstractDataConverter):
         self._prepare_destinations(
             [dataset_root_folder,
                 dataset_raw_folder,
-                dataset_raw_csv_folder])
+                dataset_raw_original_folder])
         self._messenger.debug(' - Raw CSV destination done')
         self._messenger.debug(' - Raw Parquet destination done')
         self._prepare_destinations(
@@ -131,7 +131,7 @@ class CaenDataConverter(AbstractDataConverter):
                             ):
         experiment_root = paths[KEY_DATASET_ROOT]
         raw_data_folder = paths[KEY_RAW_DATA]
-        dataset_raw_folder = paths[KEY_DATASET_RAW]
+        dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_csv_folder = paths[KEY_DATASET_RAW_CSV]
         unfiltered_data_folder = paths[KEY_UNFILTERED_DATA]
         dataset_unfiltered_psd_folder = paths[KEY_DATASET_UNFILTERED_PSD]
@@ -141,26 +141,27 @@ class CaenDataConverter(AbstractDataConverter):
         self._messenger.info("Generating metadata file")
         self._generate_metadata_file(paths)
         self._screen_only_messenger.info('')
-
+        
         self._messenger.info("Converting unfiltered data to Parquet")
-        convert_csv_folder_to_parquet(
+        folder_converter = FolderConverterFactory().make_folder_converter(
             unfiltered_data_folder,
-            (dataset_unfiltered_psd_folder, dataset_unfiltered_signals_folder),
-            self._config, self._logfile_path)
+            [dataset_unfiltered_psd_folder, dataset_unfiltered_signals_folder],
+            self._config,
+            self._logfile_path
+        )
+        folder_converter.convert_folder()
         convert_spectra_to_parquet(
             unfiltered_data_folder, dataset_unfiltered_spectra_folder, self._logfile_path)
         self._screen_only_messenger.info('')
 
         self._messenger.info("Moving raw data files to destination")
         for file in raw_data_folder.iterdir():
-            if file.is_file() and file.suffix.lower() == '.csv':
-                file_dest = dataset_raw_csv_folder / file.name
-                move(str(file.resolve()), file_dest)
-        for file in experiment_root.iterdir():
+            if file.is_file() and file.suffix.lower() in ['.csv', '.bin']:
+                file.rename(dataset_raw_csv_folder / file.name)
+        for file in self._experiment_source.iterdir():
             if file.is_file() and file.name.lower() == 'settings.xml':
-                move(str(file.resolve()), file_dest)
+                file.rename(dataset_root_folder / file.name)
         self._screen_only_messenger.info('')
-        
 
     def _generate_metadata_file(self, paths: dict[str, Path]):
         dataset_root_folder = paths[KEY_DATASET_ROOT]

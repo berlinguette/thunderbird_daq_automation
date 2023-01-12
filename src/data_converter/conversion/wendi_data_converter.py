@@ -1,5 +1,4 @@
 from pathlib import Path
-from shutil import move
 
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
@@ -86,5 +85,5 @@ class WendiDataConverter(AbstractDataConverter):
 
         self._messenger.info("Moving original WENDI log to destination")
         raw_dest = dataset_raw_wendi_folder / self._experiment_source.name
-        move(self._experiment_source, raw_dest)
+        self._experiment_source.rename(raw_dest)
         self._screen_only_messenger.info('')

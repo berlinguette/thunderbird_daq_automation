@@ -19,7 +19,10 @@ KEY_DATASET_PARQUET = 'dataset_raw_data_parquet'
 
 
 class PicoDataConverter(AbstractDataConverter):
+    # TODO DEPRECATED Remove in v4.0.0
     def convert(self) -> bool:
+        self._messenger.warning(
+            "DEPRECATION WARNING: PSData conversion will be removed in v4.0.0")
         try:
             paths_dict = self._determine_paths()
 

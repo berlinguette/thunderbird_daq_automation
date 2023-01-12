@@ -6,7 +6,7 @@ from data_converter.conversion.abstract_data_converter import \
 from data_converter.conversion.caen_data_converter import CaenDataConverter
 from data_converter.conversion.pico_data_converter import PicoDataConverter
 from data_converter.conversion.support import constants
-from data_converter.conversion.support.experiment_type import ExperimentType
+from data_converter.conversion.support.enums import ExperimentType
 from data_converter.conversion.wendi_data_converter import WendiDataConverter
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
 
@@ -38,7 +38,8 @@ class DataConverterFactory:
                 f"Experiment root could not be found for folder {exp_folder}")
         exp_type, exp_root = found_schema
         if exp_type == ExperimentType.PICO:
-            converter = PicoDataConverter(
+            # TODO DEPRECATED Remove in v4.0.0
+            return PicoDataConverter(
                 exp_root, config, config_setup, destination)
         elif exp_type == ExperimentType.CAEN:
             converter = CaenDataConverter(
@@ -53,6 +54,7 @@ class DataConverterFactory:
     def _find_pico_root(
         self, source_path: Path, found_psdata: bool = False, found_pico_rawdata: bool = False
     ) -> Path | None:
+        # TODO DEPRECATED Remove in v4.0.0
         root_path = None
         if not source_path.is_dir():
             return self._find_pico_root(source_path.parent)
@@ -103,12 +105,14 @@ class DataConverterFactory:
         if source_path.name in CAEN_RAW_DATA_FOLDERS:
             found_subfolder = source_path.name
             if source_path.name == constants.CAEN_RAW_FOLDER_NAME:
-                data_file_pattern = re.compile(r'SDataR_.*\.[Cc][Ss][Vv]$)')
+                data_file_pattern = re.compile(
+                    r'SDataR_.*\.[CSV|BIN]$)', flags=re.IGNORECASE)
                 if not self._does_matching_file_exist(
                         source_path, data_file_pattern):
                     return None
-            elif source_path.name == constants.CAEN_FILTERED_FOLDER_NAME:
-                data_file_pattern = re.compile(r'SDataF_.*\.[Cc][Ss][Vv]$')
+            elif source_path.name == constants.CAEN_UNFILTERED_FOLDER_NAME:
+                data_file_pattern = re.compile(
+                    r'SData_.*\.[CSV|BIN]$', flags=re.IGNORECASE)
                 if not self._does_matching_file_exist(
                         source_path, data_file_pattern):
                     return None

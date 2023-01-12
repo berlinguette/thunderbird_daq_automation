@@ -39,7 +39,7 @@ class DataConverterFactory:
         exp_type, exp_root = found_schema
         if exp_type == ExperimentType.PICO:
             # TODO DEPRECATED Remove in v4.0.0
-            return PicoDataConverter(
+            converter = PicoDataConverter(
                 exp_root, config, config_setup, destination)
         elif exp_type == ExperimentType.CAEN:
             converter = CaenDataConverter(

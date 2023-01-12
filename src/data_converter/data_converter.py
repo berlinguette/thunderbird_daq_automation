@@ -7,7 +7,7 @@ from distributed import Client
 
 from data_converter.conversion.data_converter_factory import \
     DataConverterFactory
-from data_converter.conversion.support.experiment_type import ExperimentType
+from data_converter.conversion.support.enums import ExperimentType
 from data_converter.ui.converter_gui import converter_gui
 from data_converter.utilities.logging import get_conversion_logfile_path
 from utilities.utilities.check_type import get_and_check

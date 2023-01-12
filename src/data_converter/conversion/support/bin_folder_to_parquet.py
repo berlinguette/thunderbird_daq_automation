@@ -1,13 +1,14 @@
-from itertools import repeat
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Iterable
 
-from tqdm.contrib.concurrent import thread_map
+from tqdm import tqdm
 
 from data_converter.conversion.support.abstract_folder_converter import \
     AbstractFolderConverter
 from data_converter.conversion.support.bin_file_to_parquet import \
     convert_bin_file_to_parquet
+from data_converter.conversion.support.types import FolderResult
 from data_converter.utilities.constants import BAR_FORMAT
 from utilities.utilities.check_type import check_type, get_and_check
 from utilities.utilities.configuration.configuration import Config
@@ -22,7 +23,10 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
         logfile_path: Path,
         logger_name: str = 'folder_converter'
     ):
-        super().__init__(source_folder, destination, config, logfile_path,
+        super().__init__(source_folder,
+                         destination,
+                         config,
+                         logfile_path,
                          logger_name=logger_name)
 
     def convert_folder(self):
@@ -47,18 +51,24 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
             folder_timeout = None
         if mem_use_threshold == 0:
             mem_use_threshold = None
-        results = thread_map(
-            convert_bin_file_to_parquet,
-            source_files,
-            repeat(self._destination),
-            repeat(self._logfile_path),
-            repeat(mem_use_threshold),
-            timeout=folder_timeout,
-            max_workers=max_workers,
-            desc='BIN files',
-            unit='file',
-            total=len(source_files),
-            bar_format=BAR_FORMAT
-        )
+        results: list[FolderResult] = []
+        with tqdm(total=len(source_files),
+                  desc='BIN files',
+                  unit='file',
+                  bar_format=BAR_FORMAT) as pbar:
+            with ThreadPoolExecutor(max_workers=max_workers) as ex:
+                futures = [
+                    ex.submit(
+                        convert_bin_file_to_parquet,
+                        source_file,
+                        self._destination,
+                        self._logfile_path,
+                        mem_use_threshold)
+                    for source_file in source_files]
+                for future in as_completed(futures,
+                                           timeout=folder_timeout):
+                    result = future.result()
+                    results.append(result)
+                    pbar.update(1)
 
         self._post_conversion_actions(results)

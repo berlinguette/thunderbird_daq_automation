@@ -148,7 +148,7 @@ def convert_bin_file_to_parquet(
                     psd_df_list, signals_df_list,
                     psd_array, signals_array)
                 file_name_idx = _save_dataframes(
-                    destination, file_name_idx, wave_samples_flag,
+                    file_destination, file_name_idx, wave_samples_flag,
                     psd_df_list, signals_df_list)
                 if reason == Reason.FILE_ENDS:
                     # File ended at end of last record, so valid end state!

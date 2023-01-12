@@ -106,14 +106,14 @@ caen_tasks:
       - 'int'
     default: 1
     gui:
-      title: "Max simultaneous CSV to Parquet conversions"
+      title: "Max simultaneous CAEN data file to Parquet conversions"
       control: 'spin'
       order: 40
   cli:
     flags:
       '--csv-tasks'
     type: 'int'
-    help: "max number of simultaneous CSV to Parquet conversions.
+    help: "max number of simultaneous CAEN data file to Parquet conversions.
       Use 0 to do as many tasks as possible on this machine"
 caen_timeout:
   config:
@@ -121,14 +121,14 @@ caen_timeout:
       - 'int'
     default: 120
     gui:
-      title: "Max allowable time for each CSV to Parquet conversion"
+      title: "Max allowable time for each CAEN data file to Parquet conversion"
       control: 'spin'
       order: 50
   cli:
     flags:
       '--csv-timeout'
     type: 'int'
-    help: "timeout for converting a CSV file to Parquet. Use 0 for no timeout"
+    help: "timeout for converting a CAEN data file to Parquet. Use 0 for no timeout"
 large_files:
   config: 
     allowed_types:

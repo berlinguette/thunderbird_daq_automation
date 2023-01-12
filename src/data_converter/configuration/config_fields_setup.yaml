@@ -129,22 +129,23 @@ caen_timeout:
       '--csv-timeout'
     type: 'int'
     help: "timeout for converting a CAEN data file to Parquet. Use 0 for no timeout"
-large_files:
+small_files:
   config: 
     allowed_types:
       - 'bool'
-    default: true
+    default: false
     gui:
-      title: "Handle large CSV files"
+      title: "Handle small CSV files in parallel"
       control: 'checkbox'
       order: 85
   cli:
     flags:
-      - "--large-files"
-    # action: 'store_true'  # TODO fix this later (or change to handle_small_files)
-    help: "properly handle large CSV files. 
-      Setting this means that files are handled one by one, 
-      but are read in chunks"
+      - "--small-files"
+    action: 'store_true'
+    help: "handle small CSV files in parallel. 
+      When this is set, multiple CSV files will be converted simultaneously.
+      When this is not set, CSV files will be read one by one, 
+      but as parallel chunks."
 mem_use_threshold:
   config:
     allowed_types:

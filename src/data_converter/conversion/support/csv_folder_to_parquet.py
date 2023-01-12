@@ -40,8 +40,8 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
             num_files = check_type(num_files, int, 'files_limit')
         max_workers = get_and_check(self._config, int, 'caen_tasks', 0)
         task_timeout = get_and_check(self._config, int, 'caen_timeout', 0)
-        large_files_support = get_and_check(
-            self._config, bool, 'large_files', False)
+        small_files_support = get_and_check(
+            self._config, bool, 'small_files', False)
 
         source_files = [
             f for f in self._get_limited_files_with_extension(
@@ -73,26 +73,7 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
             data_sample = data_line.strip().split(DELIMITER)
             total_cols = len(data_sample)
 
-        if large_files_support:
-            results = []
-            with tqdm(
-                desc='CSV Files',
-                unit='file',
-                total=len(source_files),
-                bar_format=BAR_FORMAT
-            ) as progress_bar:
-                for source_file in source_files:
-                    result = convert_csv_file_to_parquet(
-                        source_file,
-                        self._destination,
-                        headers,
-                        total_cols,
-                        modin_pd.read_csv,
-                        self._logfile_path
-                    )
-                    progress_bar.update()
-                    results.append(result)
-        else:
+        if small_files_support:
             results: list[FolderResult] = []
             with tqdm(total=len(source_files),
                       desc='CSV files',
@@ -114,5 +95,24 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                         result = future.result()
                         results.append(result)
                         pbar.update(1)
+        else:
+            results = []
+            with tqdm(
+                desc='CSV Files',
+                unit='file',
+                total=len(source_files),
+                bar_format=BAR_FORMAT
+            ) as progress_bar:
+                for source_file in source_files:
+                    result = convert_csv_file_to_parquet(
+                        source_file,
+                        self._destination,
+                        headers,
+                        total_cols,
+                        modin_pd.read_csv,
+                        self._logfile_path
+                    )
+                    progress_bar.update()
+                    results.append(result)
 
         self._post_conversion_actions(results)

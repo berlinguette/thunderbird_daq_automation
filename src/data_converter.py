@@ -9,6 +9,7 @@ from utilities.utilities.configuration.configuration import (
 from utilities.utilities.packaging.packaging import (finish_splash_screen,
                                                      is_pyinstaller_app,
                                                      is_using_pyinst_splash)
+from VERSION import VERSION
 
 
 def _setup_parser(config_setup: dict[str, Any]) -> ArgumentParser:
@@ -30,7 +31,7 @@ def _setup_parser(config_setup: dict[str, Any]) -> ArgumentParser:
 
 if __name__ == "__main__":
     if is_pyinstaller_app() and is_using_pyinst_splash():
-        finish_splash_screen(final_text="Finished loading - V3.1.2")
+        finish_splash_screen(final_text=f"Finished loading - v{VERSION}")
 
     freeze_support()  # needed for Windows multiprocessing/processpool
 

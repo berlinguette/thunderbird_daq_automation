@@ -1,6 +1,6 @@
-from email.contentmanager import raw_data_manager
 from pathlib import Path
 from shutil import rmtree
+from typing import Dict
 
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
@@ -37,7 +37,7 @@ class PicoDataConverter(AbstractDataConverter):
             self._logger.exception(err)
             return False
 
-    def _determine_paths(self) -> dict[str, Path]:
+    def _determine_paths(self) -> Dict[str, Path]:
         # TODO how to use self._destination here?
         raw_data_folder = self._experiment_source.joinpath(
             constants.DATASET_RAW_DATA_FOLDER_NAME)
@@ -59,7 +59,7 @@ class PicoDataConverter(AbstractDataConverter):
             KEY_DATASET_PARQUET: dataset_parquet_folder
         }
 
-    def _prepare_dataset_destinations(self, paths_dict: dict[str, Path]):
+    def _prepare_dataset_destinations(self, paths_dict: Dict[str, Path]):
         dataset_raw_data_folder = paths_dict[KEY_DATASET_RAW]
         matlab_folder = paths_dict[KEY_DATASET_MATLAB]
         parquet_folder = paths_dict[KEY_DATASET_PARQUET]
@@ -71,7 +71,7 @@ class PicoDataConverter(AbstractDataConverter):
         self._messenger.debug(' - Parquet destination done')
         self._screen_only_messenger.info('')
 
-    def _conversion_process(self, paths_dict: dict[str, Path]):
+    def _conversion_process(self, paths_dict: Dict[str, Path]):
         source_psdata_folder = paths_dict[KEY_PSDATA]
         dataset_psdata_folder = paths_dict[KEY_DATASET_PSDATA]
         dataset_matlab_folder = paths_dict[KEY_DATASET_MATLAB]

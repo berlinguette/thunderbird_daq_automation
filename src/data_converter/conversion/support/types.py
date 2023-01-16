@@ -1,3 +1,6 @@
+from typing import Tuple
+
 from data_converter.conversion.support.enums import Reason
-FolderResult = tuple[bool, str]
-FileResult = tuple[bool, Reason]
+
+FolderResult = Tuple[bool, str]
+FileResult = Tuple[bool, Reason]

@@ -1,22 +1,25 @@
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox,
                                QFileDialog, QFormLayout, QHBoxLayout,
                                QLineEdit, QMessageBox, QPushButton, QSpinBox,
                                QVBoxLayout)
+
 from utilities.utilities.configuration.configuration import (Config,
                                                              ConfigSetup,
                                                              is_config_valid,
                                                              load_config,
                                                              override_config,
                                                              save_config)
+
 # TODO store last settings locally, and pick them up on new load
+
 
 class CheckboxProxy():
     """Provides a simplified interface to the QCheckBox widget
-    
+
     CheckboxProxy follows the interface of SettingControlProxy, allowing it
     to be used as a strategy in that class
 
@@ -50,7 +53,7 @@ class CheckboxProxy():
 
 class TextInputProxy():
     """Provides a simplified interface to the QLineEdit widget
-    
+
     TextInputProxy follows the interface of SettingControlProxy, allowing it
     to be used as a strategy in that class
 
@@ -84,7 +87,7 @@ class TextInputProxy():
 
 class SpinboxProxy():
     """Provides a simplified interface to the QSpinBox widget
-    
+
     SpinboxProxy follows the interface of SettingControlProxy, allowing it
     to be used as a strategy in that class
 
@@ -118,7 +121,7 @@ class SpinboxProxy():
 
 class SettingControlProxy():
 
-    def __init__(self, setting_control: QCheckBox | QLineEdit | QSpinBox):
+    def __init__(self, setting_control: Union[QCheckBox, QLineEdit, QSpinBox]):
         """Provides a simpler interface to a setting control widget, allowing 
         values to be read and changed in the same way regardless of data type
 
@@ -142,14 +145,14 @@ class SettingControlProxy():
             raise ValueError('Unsupported setting control type')
 
     @property
-    def control_widget(self) -> QCheckBox | QLineEdit | QSpinBox:
+    def control_widget(self) -> Union[QCheckBox, QLineEdit, QSpinBox]:
         """This property gives the underlying setting control widget used here, 
         which should not be changed.
         """
         return self._strategy.control_widget
 
     @property
-    def value(self) -> bool | str | int:
+    def value(self) -> Union[bool, str, int]:
         """This property represents the current value of the widget, 
         and can be set.
         """
@@ -235,8 +238,8 @@ class SettingsWindow(QDialog):
         settings_file_filter = "Configuration Files (*.yaml)"
         self._save_dialog.setWindowTitle('Save Settings')
         self._save_dialog.setNameFilter(settings_file_filter)
-        self._save_dialog.setFileMode(QFileDialog.AnyFile)
-        self._save_dialog.setAcceptMode(QFileDialog.AcceptSave)
+        self._save_dialog.setFileMode(QFileDialog.AnyFile)  # type: ignore
+        self._save_dialog.setAcceptMode(QFileDialog.AcceptSave)  # type: ignore
         self._load_dialog.setWindowTitle('Load Settings')
         self._load_dialog.setNameFilter(settings_file_filter)
 
@@ -266,9 +269,9 @@ class SettingsWindow(QDialog):
             label, control = form_row
             form_layout.addRow(label, control.control_widget)
 
-        self.button_box.addButton(QDialogButtonBox.Ok)
-        self.button_box.addButton(QDialogButtonBox.Cancel)
-        
+        self.button_box.addButton(QDialogButtonBox.Ok)  # type: ignore
+        self.button_box.addButton(QDialogButtonBox.Cancel)  # type: ignore
+
         button_row = QHBoxLayout()
         button_row.addWidget(self.save_button)
         button_row.addWidget(self.load_button)

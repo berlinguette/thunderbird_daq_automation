@@ -1,7 +1,7 @@
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Union
 
 import modin.pandas as modin_pd
 import pandas as pd
@@ -21,7 +21,7 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
     def __init__(
         self,
         source_folder: Path,
-        destination: Path | Iterable[Path],
+        destination: Union[Path, Iterable[Path]],
         config: Config,
         logfile_path: Path,
         logger_name: str = 'csv_to_parquet'

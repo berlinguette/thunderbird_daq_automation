@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Dict
 
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
@@ -27,7 +28,7 @@ class WendiDataConverter(AbstractDataConverter):
             self._logger.exception(err)
             return False
 
-    def _determine_paths(self) -> dict[str, Path]:
+    def _determine_paths(self) -> Dict[str, Path]:
         # source paths are fine
         # need dataset_raw, raw_log for original file
         # need dataset_processed, proc_unfiltered, unfiltered_wendi for converted
@@ -50,7 +51,7 @@ class WendiDataConverter(AbstractDataConverter):
             KEY_DATASET_UNFILTERED_WENDI: dataset_unfiltered_wendi_folder
         }
 
-    def _prepare_dataset_destinations(self, paths: dict[str, Path]):
+    def _prepare_dataset_destinations(self, paths: Dict[str, Path]):
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_folder = paths[KEY_DATASET_RAW]
         dataset_raw_wendi_folder = paths[KEY_DATASET_RAW_WENDI]
@@ -72,7 +73,7 @@ class WendiDataConverter(AbstractDataConverter):
 
         self._screen_only_messenger.info('')
 
-    def _conversion_process(self, paths: dict[str, Path]):
+    def _conversion_process(self, paths: Dict[str, Path]):
         dataset_raw_wendi_folder = paths[KEY_DATASET_RAW_WENDI]
         dataset_unfiltered_wendi_folder = paths[KEY_DATASET_UNFILTERED_WENDI]
 

@@ -1,7 +1,7 @@
 import re
 import warnings
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, List, Optional, Tuple, Union
 
 from tqdm import tqdm
 
@@ -16,8 +16,8 @@ END_NUMBER_PATTERN = r'^(.*_)(\d+)$'
 
 def convert_csv_file_to_parquet(
     source_file: Path,
-    destination: Path | Iterable[Path],
-    headers: list[str],
+    destination: Union[Path, Iterable[Path]],
+    headers: List[str],
     total_cols: int,
     read_csv,
     logfile_path: Path
@@ -85,7 +85,7 @@ def _get_destination_file_name(source_file: Path) -> str:
     return source_file_name
 
 
-def _get_split_data_destinations(destination: Path | Iterable[Path]):
+def _get_split_data_destinations(destination: Union[Path, Iterable[Path]]):
     if isinstance(destination, Path):
         # put everything in the same folder, even if signals exists
         psd_destination = destination
@@ -99,16 +99,16 @@ def _get_split_data_destinations(destination: Path | Iterable[Path]):
     return psd_destination, signals_destination
 
 
-def _get_split_parquet_names(source_file_name: str) -> tuple[str, str]:
+def _get_split_parquet_names(source_file_name: str) -> Tuple[str, str]:
     psd_dest_name = f"caen_psd_{source_file_name}.parquet"
     signals_dest_name = f"caen_samples_{source_file_name}.parquet"
     return psd_dest_name, signals_dest_name
 
 
 def _get_split_cols(
-    headers: list[str],
+    headers: List[str],
     total_cols: int
-) -> tuple[list[str], list[str]]:
+) -> Tuple[List[str], List[str]]:
     psd_cols = [col for col in headers if col != SAMPLES_COL_NAME]
     signal_cols = [str(n) for n
                    in range(total_cols - len(psd_cols))]

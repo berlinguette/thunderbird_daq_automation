@@ -1,6 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import List, Union
 
 from data_converter.utilities.logging import get_conversion_logfile_path
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
@@ -43,7 +44,7 @@ class AbstractDataConverter(ABC):
         pass
 
     def _prepare_destinations(
-        self, destinations: Path | list[Path]
+        self, destinations: Union[Path, List[Path]]
     ):
         """Ensures that the destination paths exist, and are empty if needed
 

@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from typing import Optional, Tuple, Union
 
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
@@ -31,7 +32,7 @@ class DataConverterFactory:
         config: Config,
         config_setup: ConfigSetup,
         destination: Path
-    ) -> tuple[AbstractDataConverter, ExperimentType]:
+    ) -> Tuple[AbstractDataConverter, ExperimentType]:
         found_schema = self._determine_data_schema(exp_folder)
         if found_schema is None:
             raise ValueError(
@@ -53,7 +54,7 @@ class DataConverterFactory:
 
     def _find_pico_root(
         self, source_path: Path, found_psdata: bool = False, found_pico_rawdata: bool = False
-    ) -> Path | None:
+    ) -> Optional[Path]:
         # TODO DEPRECATED Remove in v4.0.0
         root_path = None
         if not source_path.is_dir():
@@ -97,8 +98,8 @@ class DataConverterFactory:
         return root_path
 
     def _find_caen_root(
-        self, source_path: Path, found_subfolder: None | str = None
-    ) -> Path | None:
+        self, source_path: Path, found_subfolder: Optional[str] = None
+    ) -> Optional[Path]:
         root_path = None
         if not source_path.is_dir():
             return self._find_caen_root(source_path.parent)
@@ -148,7 +149,7 @@ class DataConverterFactory:
     def _determine_data_schema(
         self,
         source_path: Path
-    ) -> tuple[ExperimentType, Path] | None:
+    ) -> Optional[Tuple[ExperimentType, Path]]:
         if self._is_wendi_logfile(source_path):
             return ExperimentType.WENDI, source_path
 

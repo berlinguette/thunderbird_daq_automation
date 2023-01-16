@@ -1,6 +1,7 @@
 import logging
 import re
 from pathlib import Path
+from typing import List, Tuple
 
 import pandas as pd
 
@@ -14,7 +15,7 @@ messenger = Messenger(logger)
 log_only_messenger = Messenger(logger, on_screen=False)
 
 
-def _find_matching_files(source_folder: Path, regex_string: str) -> list[Path]:
+def _find_matching_files(source_folder: Path, regex_string: str) -> List[Path]:
     expr = re.compile(regex_string)
     matching_files = [file for file in source_folder.iterdir()
                       if expr.match(file.name) and file.is_file()]
@@ -30,7 +31,7 @@ def _try_convert_str_to_int(string: str) -> int:
         return int_val
 
 
-def _split_spectrum_line(line: str) -> tuple[float, int, float]:
+def _split_spectrum_line(line: str) -> Tuple[float, int, float]:
     split_list = line.split(' ')
     index, count, energy, *_ = split_list
     # Energy spectrum channel can sometimes be a float
@@ -43,13 +44,13 @@ def _split_spectrum_line(line: str) -> tuple[float, int, float]:
     return index, count, energy
 
 
-def _read_file_lines(file: Path) -> list[str]:
+def _read_file_lines(file: Path) -> List[str]:
     with open(file, 'r') as readfile:
         lines = readfile.readlines()
     return lines
 
 
-def _convert_energy_spectrum(files: list[Path], destination_folder: Path):
+def _convert_energy_spectrum(files: List[Path], destination_folder: Path):
     energy_convert_timer = Timer(start_now=True)
 
     # do work
@@ -70,7 +71,7 @@ def _convert_energy_spectrum(files: list[Path], destination_folder: Path):
     log_only_messenger.debug(f"Elapsed time: {formatted_time}")
 
 
-def _convert_psd_spectrum(files: list[Path], destination_folder: Path):
+def _convert_psd_spectrum(files: List[Path], destination_folder: Path):
     psd_convert_timer = Timer(start_now=True)
 
     for i, file in enumerate(files):
@@ -97,7 +98,7 @@ def _convert_psd_spectrum(files: list[Path], destination_folder: Path):
 
 
 def _convert_time_spectrum(
-    files: list[Path],
+    files: List[Path],
     destination_folder: Path,
     min_time: float = 0.0,
     max_time: float = 1_000_000.0

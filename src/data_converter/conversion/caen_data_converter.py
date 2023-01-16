@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 from pathlib import Path
-from shutil import move
+from typing import Dict
 
 import tomli_w
 
@@ -44,7 +44,7 @@ class CaenDataConverter(AbstractDataConverter):
             self._logger.exception(err)
             return False
 
-    def _determine_paths(self) -> dict[str, Path]:
+    def _determine_paths(self) -> Dict[str, Path]:
         raw_data_folder = self._experiment_source.joinpath(
             constants.CAEN_RAW_FOLDER_NAME)
         filtered_data_folder = self._experiment_source.joinpath(
@@ -98,7 +98,7 @@ class CaenDataConverter(AbstractDataConverter):
 
     def _prepare_dataset_destinations(
         self,
-        paths: dict[str, Path]
+        paths: Dict[str, Path]
     ):
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_folder = paths[KEY_DATASET_RAW]
@@ -127,9 +127,9 @@ class CaenDataConverter(AbstractDataConverter):
         self._screen_only_messenger.info('')
 
     def _conversion_process(self,
-                            paths: dict[str, Path]
+                            paths: Dict[str, Path]
                             ):
-        experiment_root = paths[KEY_DATASET_ROOT]
+        # experiment_root = paths[KEY_DATASET_ROOT]  # TODO remove after testing
         raw_data_folder = paths[KEY_RAW_DATA]
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_csv_folder = paths[KEY_DATASET_RAW_CSV]
@@ -141,7 +141,7 @@ class CaenDataConverter(AbstractDataConverter):
         self._messenger.info("Generating metadata file")
         self._generate_metadata_file(paths)
         self._screen_only_messenger.info('')
-        
+
         self._messenger.info("Converting unfiltered data to Parquet")
         folder_converter = FolderConverterFactory().make_folder_converter(
             unfiltered_data_folder,
@@ -163,7 +163,7 @@ class CaenDataConverter(AbstractDataConverter):
                 file.rename(dataset_root_folder / file.name)
         self._screen_only_messenger.info('')
 
-    def _generate_metadata_file(self, paths: dict[str, Path]):
+    def _generate_metadata_file(self, paths: Dict[str, Path]):
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         run_info_path = self._experiment_source / 'run.info'
         metadata_dest_path = dataset_root_folder.joinpath(

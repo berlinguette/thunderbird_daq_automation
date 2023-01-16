@@ -2,8 +2,8 @@ import logging
 from pathlib import Path
 
 import pandas as pd
-from tqdm import tqdm
 from dateutil import tz
+from tqdm import tqdm
 
 from utilities.utilities.logging_helpers.setup_logger import (Messenger,
                                                               cleanup_logger,
@@ -22,11 +22,11 @@ def convert_wendi_log_to_parquet(
     log_only_messenger.debug(
         f"Starting wendi log conversion in {source_file.name}")
     timer = Timer(start_now=True)
-    
+
     local_tz = tz.gettz()
 
     try:
-        names=[
+        names = [
             'DATE',
             'TIME',
             'VALUE_INT',
@@ -47,7 +47,8 @@ def convert_wendi_log_to_parquet(
             on_bad_lines='skip'
         )
         df = df.rename(columns={'DATE_TIME': 'DATETIME'})
-        df['DATETIME'] = df['DATETIME'].dt.tz_localize(local_tz).dt.tz_convert('UTC')
+        df['DATETIME'] = df['DATETIME'].dt.tz_localize(
+            local_tz).dt.tz_convert('UTC')
         df.to_parquet(destination)
     except (MemoryError, IOError) as err:
         logger.exception(err)

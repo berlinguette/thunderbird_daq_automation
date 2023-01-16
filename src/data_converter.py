@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from multiprocessing import freeze_support
-from typing import Any
+from typing import Any, Dict
 
 from data_converter.configuration.configuration import load_config_setup
 from data_converter.data_converter import convert_neutron_data
@@ -12,7 +12,7 @@ from utilities.utilities.packaging.packaging import (finish_splash_screen,
 from VERSION import VERSION
 
 
-def _setup_parser(config_setup: dict[str, Any]) -> ArgumentParser:
+def _setup_parser(config_setup: Dict[str, Any]) -> ArgumentParser:
     """Produces ArgumentParser with all needed arguments
 
     Returns

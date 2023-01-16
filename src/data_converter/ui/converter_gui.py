@@ -1,10 +1,10 @@
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple, Union
 
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import (QApplication, QDialog, QHBoxLayout, QListWidget,
-                               QMainWindow, QPushButton, QVBoxLayout, QWidget,
-                               QLabel, QFileDialog, QMessageBox)
+from PySide6.QtWidgets import (QApplication, QDialog, QFileDialog, QHBoxLayout,
+                               QLabel, QListWidget, QMainWindow, QMessageBox,
+                               QPushButton, QVBoxLayout, QWidget)
 
 from data_converter.ui.settings_window import SettingsWindow
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
@@ -33,7 +33,7 @@ class ConverterGui(QMainWindow):
         self._start_conversion = False
         self._config = config
         self._config_setup = config_setup
-        self._destination: None | Path = None
+        self._destination: Optional[Path] = None
 
         # UI Elements
         self._settings_button = QPushButton(
@@ -47,7 +47,8 @@ class ConverterGui(QMainWindow):
             text="Start Conversion"
         )
         self._source_list = QListWidget()
-        self._source_list.setSelectionMode(QListWidget.ExtendedSelection)
+        self._source_list.setSelectionMode(
+            QListWidget.ExtendedSelection)  # type: ignore
         self._destination_display = QLabel("Not Set")
         self._settings_dialog = SettingsWindow(
             self._config, self._config_setup)
@@ -145,7 +146,7 @@ class ConverterGui(QMainWindow):
         return self._config
 
     @property
-    def sources(self) -> list[Path]:
+    def sources(self) -> List[Path]:
         """This property gives the selected data sources, and should not be 
         changed."""
         return [Path(self._source_list.item(source).text())
@@ -175,7 +176,7 @@ class ConverterGui(QMainWindow):
         result : int
             Dialog status code, indicating how it was closed (i.e. cancel/OK)
         """
-        if result == QDialog.Accepted:
+        if result == QDialog.Accepted:  # type: ignore
             self._config = self._settings_dialog.config
 
     @Slot()
@@ -186,15 +187,15 @@ class ConverterGui(QMainWindow):
             if not isinstance(selected_files, list):
                 selected_files = [selected_files]
             valid_files = [source for source in selected_files
-                                if Path(str(source)).is_file()]
+                           if Path(str(source)).is_file()]
             self._source_list.addItems(valid_files)
 
     @Slot()
     def handle_button_clicked_add_folder(self):
-        selected_folders = pick_multiple_folders(self, 
+        selected_folders = pick_multiple_folders(self,
                                                  'Choose Experiment Folder(s)')
         if selected_folders:
-            valid_folders = [folder for folder in selected_folders 
+            valid_folders = [folder for folder in selected_folders
                              if Path(folder).is_dir()]
             self._source_list.addItems(valid_folders)
 
@@ -233,7 +234,7 @@ class ConverterGui(QMainWindow):
 def converter_gui(
     config: Config,
     config_setup: ConfigSetup
-) -> Tuple[Config, None | list[Path], Path]:
+) -> Tuple[Config, Optional[List[Path]], Path]:
     """Opens a GUI window for user input, including settings changes and folder selection
 
     Returns

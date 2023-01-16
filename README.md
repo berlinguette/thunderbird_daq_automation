@@ -15,12 +15,12 @@ git submodule init
 git submodule update
 ```
 
-## Sample Dataset Updating
+## Utilities Updating
 
-To get all updates to the `sample_datasets` submodule:
+To get all updates to the `utilities` submodule:
 
 ```shell
-git submodule update --merge --remote
+git submodule update --remote --rebase
 ```
 
 ## Packaging

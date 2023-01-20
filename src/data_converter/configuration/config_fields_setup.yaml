@@ -1,9 +1,13 @@
-source:
+sources:
   cli:
     flags:
       - "--source"
       - "-s"
-    help: "location of raw data source folder"
+    nargs: "+"  # multiple sources collected into list, at least one required
+    help: "location of raw data sources. Sources can be folders or files.
+      Multiple sources can be entered after this argument. 
+      At least one source must be given if this argument is used.
+      If this argument is not used, the converter GUI is launched"
 config:
   cli:
     flags:
@@ -12,21 +16,14 @@ config:
     help: "location of YAML configuration file. 
       This file will override any default configuration file, 
       and will be overridden by any arguments given here"
-keep_matlab:  # TODO DEPRECATED Remove in v4.0.0
-  config: 
-    allowed_types:
-      - 'bool'
-    default: false
-    gui:
-      title: "(DEPRECATED) Keep Matlab files"
-      control: 'checkbox'
-      order: 100
+destination:
   cli:
     flags:
-      - "--keep-matlab"
-      - "-k"
-    action: 'store_true'
-    help: "(DEPRECATED) keep generated Matlab files when conversion is done"
+      - "--destination"
+      - "-d"
+    help: "destination folder for converted data. 
+      Each raw data source makes a separate folder within the destination folder 
+      with the same name as the source"
 fresh_destination:
   config: 
     allowed_types:
@@ -55,51 +52,6 @@ files_limit:
     type: 'int'
     help: "limit number of original files processed. 
       Omit this (or use 0) for no limit (process all files in folder)"
-psdata_tasks:  # TODO DEPRECATED Remove in v4.0.0
-  config:
-    allowed_types:
-      - 'int'
-    default: 5
-    gui:
-      title: "(DEPRECATED) Max simultaneous Stage 1 (PSData to Matlab) conversions"
-      control: 'spin'
-      order: 10
-  cli:
-    flags:
-      - '--psdata-tasks'
-    type: 'int'
-    help: "(DEPRECATED) max number of simultaneous PSData to Matlab conversions. 
-      Use 0 for no limit (process all given files at the same time)"
-matlab_tasks:  # TODO DEPRECATED Remove in v4.0.0
-  config:
-    allowed_types:
-      - 'int'
-    default: 4
-    gui:
-      title: "(DEPRECATED) Max simultaneous Matlab to Parquet conversions"
-      control: 'spin'
-      order: 20
-  cli:
-    flags:
-      - '--parquet-tasks'
-    type: 'int'
-    help: "(DEPRECATED) max number of simultaneous Matlab to Parquet conversions. 
-      Use 0 to do as many tasks as possible on this machine"
-matlab_files:  # TODO DEPRECATED Delete in v4.0.0
-  config:
-    allowed_types:
-      - 'int'
-    default: 4
-    gui:
-      title: "(DEPRECATED) Max simultaneous file loads per Matlab to Parquet conversion"
-      control: 'spin'
-      order: 30
-  cli:
-    flags:
-      '--parquet-files'
-    type: 'int'
-    help: "(DEPRECATED) max number of simultaneous Matlab files loaded per conversion. 
-      Use 0 to load as many files as possible"
 caen_tasks:
   config:
     allowed_types:
@@ -128,7 +80,8 @@ caen_timeout:
     flags:
       '--csv-timeout'
     type: 'int'
-    help: "timeout for converting a CAEN data file to Parquet. Use 0 for no timeout"
+    help: "timeout for converting a CAEN data file to Parquet. 
+      Use 0 for no timeout"
 small_files:
   config: 
     allowed_types:

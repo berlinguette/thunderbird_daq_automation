@@ -15,17 +15,27 @@ WINDOW_TITLE = 'Experiment Data Conversion'
 
 class ConverterGui(QMainWindow):
     """The main GUI for the converter, 
-    used to change settings and choose experiment folders
+        used to change settings and choose experiment folders
 
-    Parameters
-    ----------
-    config : Dict
-        Converter configuration data
-    config_setup : Dict[str, Any]
-        Config setup data
-    """
+        Parameters
+        ----------
+        config : Config
+            Converter configuration data
+        config_setup : ConfigSetup
+            Config setup data
+        destination : Optional[Path], optional, default None
+            destination folder for data conversion.
+            Converted data folders are saved as separate subfolders.
+            If not provided, this must be selected in the GUI.
+        """
 
-    def __init__(self, config: Config, config_setup: ConfigSetup):
+    def __init__(
+        self,
+        config: Config,
+        config_setup: ConfigSetup,
+        destination: Optional[Path] = None
+    ):
+
         super().__init__()
         self._set_window_params()
 
@@ -33,7 +43,7 @@ class ConverterGui(QMainWindow):
         self._start_conversion = False
         self._config = config
         self._config_setup = config_setup
-        self._destination: Optional[Path] = None
+        self._destination: Optional[Path] = destination
 
         # UI Elements
         self._settings_button = QPushButton(
@@ -233,7 +243,8 @@ class ConverterGui(QMainWindow):
 
 def converter_gui(
     config: Config,
-    config_setup: ConfigSetup
+    config_setup: ConfigSetup,
+    destination: Optional[Path] = None
 ) -> Tuple[Config, Optional[List[Path]], Path]:
     """Opens a GUI window for user input, including settings changes and folder selection
 

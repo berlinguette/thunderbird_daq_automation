@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 from shutil import rmtree
-from typing import Optional
+from typing import List, Optional
 
 from distributed import Client
 
@@ -25,47 +25,57 @@ screen_only_messenger = Messenger(logger, in_log=False)
 def convert_neutron_data(
     config: Config,
     config_setup: ConfigSetup,
-    folder_str: Optional[str] = None
+    sources: Optional[List[str]] = None,
+    destination: Optional[str] = None
 ):
     """Runs the neutron data conversion process:
-    - Running the folder picker GUI if needed
-    - Iterating over given folders
-    - Generating appropriate Converters
-    - Performing data conversion, giving user feedback throughout the process
+        - Running the folder picker GUI if needed
+        - Iterating over given folders
+        - Generating appropriate Converters
+        - Performing data conversion, giving user feedback throughout the process
 
-    Parameters
-    ----------
-    config : Dict
-        Configuration data. See configuration.py for more info
-    config_setup: Dict[str, Any]
-        Configuration setup data
-    folder_str : Optional[str], optional
-        location of the experiment folder from command line arguments.
-        (This can also be the `raw_data` folder, or any of its subfolders.)
-        If not provided, the UI window will be launched.
-    """
-    if folder_str is None:
-        config, sources, destination = converter_gui(config, config_setup)
+        Parameters
+        ----------
+        config : Config
+            Configuration data. See configuration.py for more info
+        config_setup : ConfigSetup
+            Configuration setup data
+        sources : Optional[List[str]], optional, default None
+            location of the experiment folder from command line arguments.
+            (This can also be the `raw_data` folder, or any of its subfolders.)
+            If not provided, the UI window will be launched.
+        destination : Optional[str], optional
+            destination folder for data conversion.
+            Converted data folders are saved as separate subfolders.
+            If not provided, this must be selected in the GUI.
+        """
+    destination_path: Optional[Path] = None
+    if destination is not None:
+        destination_path = Path(destination)
+    if sources is None:
+        config, source_paths, destination_path = converter_gui(
+            config, config_setup)
     else:
-        sources = [Path(folder_str)]
-        destination = Path.home()
+        source_paths = [Path(source) for source in sources]
+        if destination_path is None:
+            destination_path = Path.home()
 
-    if sources is not None:
+    if source_paths is not None:
         fresh_destination = get_and_check(
             config, bool, 'fresh_destination', False)
-        if fresh_destination and destination.is_dir():
+        if fresh_destination and destination_path.is_dir():
             log_only_messenger.debug(
-                f'Deleting destination {destination}')
-            rmtree(destination)
+                f'Deleting destination {destination_path}')
+            rmtree(destination_path)
 
-        source_count = len(sources)
+        source_count = len(source_paths)
         converter_factory = DataConverterFactory()
         dask_client = None
-        for source_idx, source_path in enumerate(sources):
+        for source_idx, source_path in enumerate(source_paths):
             if source_path.is_dir():
-                converter_dest = destination / source_path.name
+                converter_dest = destination_path / source_path.name
             else:
-                converter_dest = destination / source_path.parent.name
+                converter_dest = destination_path / source_path.parent.name
             try:
                 converter, exp_type = converter_factory.make_converter(
                     source_path, config, config_setup, converter_dest)

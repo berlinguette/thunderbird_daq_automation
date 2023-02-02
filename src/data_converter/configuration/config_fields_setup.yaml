@@ -1,7 +1,7 @@
 sources:
   cli:
     flags:
-      - "--source"
+      - "--sources"
       - "-s"
     nargs: "+"  # multiple sources collected into list, at least one required
     help: "location of raw data sources. Sources can be folders or files.

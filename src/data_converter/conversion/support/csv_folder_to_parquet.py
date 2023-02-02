@@ -42,6 +42,7 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
         task_timeout = get_and_check(self._config, int, 'caen_timeout', 0)
         small_files_support = get_and_check(
             self._config, bool, 'small_files', False)
+        text_ui = get_and_check(self._config, bool, 'text_ui', False)
 
         source_files = [
             f for f in self._get_limited_files_with_extension(
@@ -78,7 +79,8 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
             with tqdm(total=len(source_files),
                       desc='CSV files',
                       unit='file',
-                      bar_format=BAR_FORMAT) as pbar:
+                      bar_format=BAR_FORMAT,
+                      disable=not text_ui) as pbar:
                 with ThreadPoolExecutor(max_workers=max_workers) as ex:
                     futures = [
                         ex.submit(
@@ -101,7 +103,8 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                 desc='CSV Files',
                 unit='file',
                 total=len(source_files),
-                bar_format=BAR_FORMAT
+                bar_format=BAR_FORMAT,
+                disable=not text_ui
             ) as progress_bar:
                 for source_file in source_files:
                     result = convert_csv_file_to_parquet(

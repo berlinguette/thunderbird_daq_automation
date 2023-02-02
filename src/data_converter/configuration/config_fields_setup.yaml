@@ -116,11 +116,12 @@ mem_use_threshold:
       When converted rows take up more memory than the threshold, 
       they are saved to disk as a Parquet file, 
       freeing memory for further conversion."
-progress_bars:
+text_ui:
   cli:
     flags:
-      - "--progress-bars"
+      - "--text-ui"
     action: 'store_true'
-    help: "show progress bars in console.
+    help: "show text UI, including progress bars.
       If GUI is used (i.e. sources are not provided), 
-      progress bars are always shown, and this argument has no effect."
+      partial text UI (i.e. progress bars) is always shown, 
+      and this argument has no effect."

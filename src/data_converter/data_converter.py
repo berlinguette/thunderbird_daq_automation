@@ -102,6 +102,8 @@ def convert_neutron_data(
 
         messenger.info("All conversions complete!")
         cleanup_logger(logger)
-        input("Press Enter to close window")
+        text_ui = get_and_check(config, bool, 'text_ui', False)
+        if text_ui:
+            input("Press Enter to close window")
     else:
         print('Closing...')

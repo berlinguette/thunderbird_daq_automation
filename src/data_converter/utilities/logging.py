@@ -6,7 +6,7 @@ from utilities.utilities.logging_helpers.setup_logger import (Messenger,
                                                               setup_logger)
 
 
-def get_conversion_logfile_path(experiment_source: Path) -> Path:
+def get_conversion_logfile_path(destination: Path) -> Path:
     """Gives correct conversion log file path for given experiment folder
 
     Parameters
@@ -20,10 +20,10 @@ def get_conversion_logfile_path(experiment_source: Path) -> Path:
         path to experiment's conversion log file
     """
     log_filename = 'conversion.log'
-    if experiment_source.is_dir():
-        return experiment_source / log_filename
+    if destination.is_dir():
+        return destination / log_filename
     else:
-        return experiment_source.parent / log_filename
+        return destination.parent / log_filename
 
 
 def set_up_file_logging(

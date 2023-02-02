@@ -25,7 +25,7 @@ class AbstractDataConverter(ABC):
 
         self._logger = logging.getLogger('converter')
         self._logfile_path = get_conversion_logfile_path(
-            self._experiment_source)
+            self._destination)
         setup_logger(self._logger, self._logfile_path)
         self._messenger = Messenger(self._logger)
         self._log_only_messenger = Messenger(self._logger, on_screen=False)

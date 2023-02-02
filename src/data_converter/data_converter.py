@@ -80,7 +80,7 @@ def convert_neutron_data(
                 converter, exp_type = converter_factory.make_converter(
                     source_path, config, config_setup, converter_dest)
             except ValueError as err:
-                logfile_path = get_conversion_logfile_path(source_path)
+                logfile_path = get_conversion_logfile_path(destination_path)
                 setup_logger(logger, logfile_path)
                 messenger.info(
                     f"Selected folder {source_path} is not a valid experiment folder")

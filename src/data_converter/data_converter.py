@@ -8,7 +8,6 @@ from distributed import Client
 from data_converter.conversion.data_converter_factory import \
     DataConverterFactory
 from data_converter.conversion.support.enums import ExperimentType
-from data_converter.ui.converter_gui import converter_gui
 from data_converter.utilities.logging import get_conversion_logfile_path
 from utilities.utilities.check_type import get_and_check
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
@@ -53,6 +52,7 @@ def convert_neutron_data(
     if destination is not None:
         destination_path = Path(destination)
     if sources is None:
+        from data_converter.ui.converter_gui import converter_gui
         config, source_paths, destination_path = converter_gui(
             config, config_setup)
     else:

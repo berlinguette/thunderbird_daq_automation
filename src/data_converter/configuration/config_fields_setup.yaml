@@ -110,9 +110,17 @@ mem_use_threshold:
       order: 80
   cli:
     flags:
-      - "--mem_use_threshold"
+      - "--mem-use-threshold"
     type: 'int'
     help: "memory use threshold for BIN conversion. 
       When converted rows take up more memory than the threshold, 
       they are saved to disk as a Parquet file, 
-      freeing memory for further conversion"
+      freeing memory for further conversion."
+progress_bars:
+  cli:
+    flags:
+      - "--progress-bars"
+    action: 'store_true'
+    help: "show progress bars in console.
+      If GUI is used (i.e. sources are not provided), 
+      progress bars are always shown, and this argument has no effect."

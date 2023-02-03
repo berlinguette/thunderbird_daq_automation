@@ -39,6 +39,20 @@ fresh_destination:
       - '-f'
     action: 'store_true'
     help: "delete any previous conversion files if they exist"
+move_files:
+  config:
+    allowed_types:
+      - 'bool'
+    default: false
+    gui:
+      title: "Move raw data files (instead of copying)"
+      control: 'checkbox'
+      order: 95
+  cli:
+    flags:
+      - '--move-files'
+    action: 'store_true'
+    help: 'Move raw CAEN data files instead of copying them'
 files_limit:
   config: 
     allowed_types:

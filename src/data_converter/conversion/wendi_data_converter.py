@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Dict
 
+from utilities.utilities.check_type import get_and_check
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
 from data_converter.conversion.support import constants
@@ -85,6 +86,10 @@ class WendiDataConverter(AbstractDataConverter):
         self._screen_only_messenger.info('')
 
         self._messenger.info("Moving original WENDI log to destination")
+        move_files = get_and_check(self._config, bool, 'move_files', False)
         raw_dest = dataset_raw_wendi_folder / self._experiment_source.name
-        self._experiment_source.rename(raw_dest)
+        # self._experiment_source.rename(raw_dest)
+        self._handle_raw_file(self._experiment_source,
+                              raw_dest,
+                              move_file=move_files)
         self._screen_only_messenger.info('')

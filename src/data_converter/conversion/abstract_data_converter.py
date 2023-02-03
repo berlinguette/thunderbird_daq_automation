@@ -23,6 +23,7 @@ class AbstractDataConverter(ABC):
         self._config = config
         self._config_setup = config_setup
         self._destination = destination
+        self._destination.mkdir(parents=True, exist_ok=True)
 
         self._logger = logging.getLogger('converter')
         self._logfile_path = get_conversion_logfile_path(

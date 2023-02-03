@@ -5,17 +5,11 @@ from typing import Optional, Tuple, Union
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
 from data_converter.conversion.caen_data_converter import CaenDataConverter
-from data_converter.conversion.pico_data_converter import PicoDataConverter
 from data_converter.conversion.support import constants
 from data_converter.conversion.support.enums import ExperimentType
 from data_converter.conversion.wendi_data_converter import WendiDataConverter
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
 
-PICO_RAW_DATA_FOLDERS = (
-    constants.PICO_PSDATA_FOLDER_NAME,
-    constants.DATASET_PARQUET_FOLDER_NAME,
-    constants.PICO_MATLAB_FOLDER_NAME
-)
 CAEN_RAW_DATA_FOLDERS = [
     constants.CAEN_FILTERED_FOLDER_NAME,
     constants.CAEN_OFFLINE_FOLDER_NAME,
@@ -38,11 +32,7 @@ class DataConverterFactory:
             raise ValueError(
                 f"Experiment root could not be found for folder {exp_folder}")
         exp_type, exp_root = found_schema
-        if exp_type == ExperimentType.PICO:
-            # TODO DEPRECATED Remove in v4.0.0
-            converter = PicoDataConverter(
-                exp_root, config, config_setup, destination)
-        elif exp_type == ExperimentType.CAEN:
+        if exp_type == ExperimentType.CAEN:
             converter = CaenDataConverter(
                 exp_root, config, config_setup, destination)
         elif exp_type == ExperimentType.WENDI:
@@ -51,51 +41,6 @@ class DataConverterFactory:
         else:
             raise ValueError(f"Invalid experiment type {exp_type}")
         return converter, exp_type
-
-    def _find_pico_root(
-        self, source_path: Path, found_psdata: bool = False, found_pico_rawdata: bool = False
-    ) -> Optional[Path]:
-        # TODO DEPRECATED Remove in v4.0.0
-        root_path = None
-        if not source_path.is_dir():
-            return self._find_pico_root(source_path.parent)
-        if source_path.name in PICO_RAW_DATA_FOLDERS:
-            is_psdata_folder = source_path.name == constants.PICO_PSDATA_FOLDER_NAME
-            if (is_psdata_folder and
-                    not self._are_psdata_files_here(source_path)):
-                return None
-            root_path = self._find_pico_root(
-                source_path.parent, found_psdata=is_psdata_folder)
-        elif source_path.name == constants.DATASET_RAW_DATA_FOLDER_NAME:
-            checks = [
-                (source_path / constants.PICO_RAW_DATA_METADATA_FILE).exists(),
-                found_psdata or (
-                    source_path / constants.PICO_PSDATA_FOLDER_NAME).exists()
-            ]
-            if all(checks):
-                root_path = self._find_pico_root(
-                    source_path.parent,
-                    found_psdata=found_psdata,
-                    found_pico_rawdata=True
-                )
-            pass
-        else:
-            psdata_folder = source_path.joinpath(
-                constants.DATASET_RAW_DATA_FOLDER_NAME,
-                constants.PICO_PSDATA_FOLDER_NAME)
-            checks = [
-                ((source_path / constants.DATASET_METADATA_FILE_TXT).exists() or
-                 (source_path / constants.DATASET_METADATA_FILE_TOML).exists()),
-                found_pico_rawdata or (
-                    source_path / constants.DATASET_RAW_DATA_FOLDER_NAME
-                ).exists(),
-                found_psdata or (
-                    psdata_folder.exists() and
-                    self._are_psdata_files_here(psdata_folder)),
-            ]
-            if all(checks):
-                root_path = source_path
-        return root_path
 
     def _find_caen_root(
         self, source_path: Path, found_subfolder: Optional[str] = None
@@ -152,10 +97,6 @@ class DataConverterFactory:
     ) -> Optional[Tuple[ExperimentType, Path]]:
         if self._is_wendi_logfile(source_path):
             return ExperimentType.WENDI, source_path
-
-        root_path = self._find_pico_root(source_path)
-        if root_path is not None:
-            return ExperimentType.PICO, root_path
 
         root_path = self._find_caen_root(source_path)
         if root_path is not None:

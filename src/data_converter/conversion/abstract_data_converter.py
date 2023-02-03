@@ -1,6 +1,8 @@
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import List, Union
+from shutil import copy
 
 from data_converter.utilities.logging import get_conversion_logfile_path
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
@@ -21,10 +23,11 @@ class AbstractDataConverter(ABC):
         self._config = config
         self._config_setup = config_setup
         self._destination = destination
+        self._destination.mkdir(parents=True, exist_ok=True)
 
         self._logger = logging.getLogger('converter')
         self._logfile_path = get_conversion_logfile_path(
-            self._experiment_source)
+            self._destination)
         setup_logger(self._logger, self._logfile_path)
         self._messenger = Messenger(self._logger)
         self._log_only_messenger = Messenger(self._logger, on_screen=False)
@@ -43,7 +46,7 @@ class AbstractDataConverter(ABC):
         pass
 
     def _prepare_destinations(
-        self, destinations: Path | list[Path]
+        self, destinations: Union[Path, List[Path]]
     ):
         """Ensures that the destination paths exist, and are empty if needed
 
@@ -71,3 +74,9 @@ class AbstractDataConverter(ABC):
             f"Conversion of {self._experiment_source} complete")
         self._screen_only_messenger.info('')
         cleanup_logger(self._logger)
+        
+    def _handle_raw_file(self, raw_file: Path, destination: Path, move_file: bool = False):
+        if move_file:
+            raw_file.rename(destination)
+        else:
+            copy(raw_file, destination)

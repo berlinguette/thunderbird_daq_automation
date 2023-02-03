@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from multiprocessing import freeze_support
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from data_converter.configuration.configuration import load_config_setup
 from data_converter.data_converter import convert_neutron_data
@@ -12,7 +12,7 @@ from utilities.utilities.packaging.packaging import (finish_splash_screen,
 from VERSION import VERSION
 
 
-def _setup_parser(config_setup: dict[str, Any]) -> ArgumentParser:
+def _setup_parser(config_setup: Dict[str, Any]) -> ArgumentParser:
     """Produces ArgumentParser with all needed arguments
 
     Returns
@@ -41,8 +41,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args_dict = vars(args)
     # source and config are only needed here, not in config
-    source_path = args_dict.pop('source', None)
-    config_path = args_dict.pop('config', None)
+    source_paths: Optional[List[str]] = args_dict.pop('sources', None)
+    config_path: Optional[str] = args_dict.pop('config', None)
+    dest_path: Optional[str] = args_dict.pop('destination', None)
     config = get_configuration(args_dict, config_setup, config_path)
 
-    convert_neutron_data(config, config_setup, folder_str=source_path)
+    convert_neutron_data(
+        config,
+        config_setup,
+        sources=source_paths,
+        destination=dest_path
+    )

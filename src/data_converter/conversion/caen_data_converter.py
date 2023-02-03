@@ -1,10 +1,11 @@
 import re
 from datetime import datetime
 from pathlib import Path
-from shutil import move
+from typing import Dict
 
 import tomli_w
 
+from utilities.utilities.check_type import get_and_check
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
 from data_converter.conversion.support import constants
@@ -44,7 +45,7 @@ class CaenDataConverter(AbstractDataConverter):
             self._logger.exception(err)
             return False
 
-    def _determine_paths(self) -> dict[str, Path]:
+    def _determine_paths(self) -> Dict[str, Path]:
         raw_data_folder = self._experiment_source.joinpath(
             constants.CAEN_RAW_FOLDER_NAME)
         filtered_data_folder = self._experiment_source.joinpath(
@@ -98,9 +99,8 @@ class CaenDataConverter(AbstractDataConverter):
 
     def _prepare_dataset_destinations(
         self,
-        paths: dict[str, Path]
+        paths: Dict[str, Path]
     ):
-        dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_folder = paths[KEY_DATASET_RAW]
         dataset_raw_original_folder = paths[KEY_DATASET_RAW_CSV]
         dataset_processed_folder = paths[KEY_DATASET_PROCESSED]
@@ -110,26 +110,25 @@ class CaenDataConverter(AbstractDataConverter):
         dataset_unfiltered_spectra_folder = paths[KEY_DATASET_UNFILTERED_SPECTRA]
 
         self._messenger.info('Preparing destination folders')
-        self._prepare_destinations(
-            [dataset_root_folder,
-                dataset_raw_folder,
-                dataset_raw_original_folder])
+        self._prepare_destinations([
+            dataset_raw_folder,
+            dataset_raw_original_folder])
         self._messenger.debug(' - Raw CSV destination done')
         self._messenger.debug(' - Raw Parquet destination done')
-        self._prepare_destinations(
-            [dataset_processed_folder,
-                dataset_unfiltered_folder,
-                dataset_unfiltered_folder_psd,
-                dataset_unfiltered_signals_folder,
-                dataset_unfiltered_spectra_folder])
+        self._prepare_destinations([
+            dataset_processed_folder,
+            dataset_unfiltered_folder,
+            dataset_unfiltered_folder_psd,
+            dataset_unfiltered_signals_folder,
+            dataset_unfiltered_spectra_folder])
         self._messenger.debug(' - Processed data destination done')
 
         self._screen_only_messenger.info('')
 
     def _conversion_process(self,
-                            paths: dict[str, Path]
+                            paths: Dict[str, Path]
                             ):
-        experiment_root = paths[KEY_DATASET_ROOT]
+        # experiment_root = paths[KEY_DATASET_ROOT]  # TODO remove after testing
         raw_data_folder = paths[KEY_RAW_DATA]
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_csv_folder = paths[KEY_DATASET_RAW_CSV]
@@ -141,7 +140,7 @@ class CaenDataConverter(AbstractDataConverter):
         self._messenger.info("Generating metadata file")
         self._generate_metadata_file(paths)
         self._screen_only_messenger.info('')
-        
+
         self._messenger.info("Converting unfiltered data to Parquet")
         folder_converter = FolderConverterFactory().make_folder_converter(
             unfiltered_data_folder,
@@ -155,15 +154,22 @@ class CaenDataConverter(AbstractDataConverter):
         self._screen_only_messenger.info('')
 
         self._messenger.info("Moving raw data files to destination")
+        move_files = get_and_check(self._config, bool, "move_files", False)
         for file in raw_data_folder.iterdir():
             if file.is_file() and file.suffix.lower() in ['.csv', '.bin']:
-                file.rename(dataset_raw_csv_folder / file.name)
+                # file.rename(dataset_raw_csv_folder / file.name)
+                self._handle_raw_file(file,
+                                      dataset_raw_csv_folder / file.name,
+                                      move_file=move_files)
         for file in self._experiment_source.iterdir():
             if file.is_file() and file.name.lower() == 'settings.xml':
-                file.rename(dataset_root_folder / file.name)
+                # file.rename(dataset_root_folder / file.name)
+                self._handle_raw_file(file,
+                                      dataset_root_folder / file.name,
+                                      move_file=move_files)
         self._screen_only_messenger.info('')
 
-    def _generate_metadata_file(self, paths: dict[str, Path]):
+    def _generate_metadata_file(self, paths: Dict[str, Path]):
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         run_info_path = self._experiment_source / 'run.info'
         metadata_dest_path = dataset_root_folder.joinpath(

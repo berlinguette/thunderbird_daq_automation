@@ -2,7 +2,7 @@ import re
 import struct
 from io import BufferedReader
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -20,9 +20,9 @@ END_NUMBER_PATTERN = r'^(.*_)(\d+)$'
 
 def convert_bin_file_to_parquet(
     source_file: Path,
-    destination: Path | Iterable[Path],
+    destination: Union[Path, Iterable[Path]],
     logfile_path: Path,
-    mem_use_threshold: int | None = None
+    mem_use_threshold: Optional[int] = None
 ) -> FolderResult:
     """Converts CAEN binary (.BIN) format file to Parquet format
 
@@ -246,7 +246,7 @@ def is_header_valid(value: bytes) -> bool:
     return masked_value.to_bytes(2, BYTEORDER) == HEADER_PATTERN
 
 
-def get_header_flags(header: bytes) -> tuple[bool, bool, bool, bool]:
+def get_header_flags(header: bytes) -> Tuple[bool, bool, bool, bool]:
     energy_flag = get_energy_flag(header)
     calib_energy_flag = get_calibrated_energy_flag(header)
     energyshort_flag = get_energyshort_flag(header)
@@ -336,8 +336,8 @@ def _store_entry(index: int,
 def _store_to_dataframe(
     dataframe_start_idx: int,
     records_count: int,
-    psd_df_list: list[pd.DataFrame],
-    signals_df_list: list[pd.DataFrame],
+    psd_df_list: List[pd.DataFrame],
+    signals_df_list: List[pd.DataFrame],
     psd_array: np.ndarray,
     signals_array: np.ndarray
 ) -> int:
@@ -352,11 +352,11 @@ def _store_to_dataframe(
 
 
 def _save_dataframes(
-    destination: Path | Iterable[Path],
+    destination: Union[Path, Iterable[Path]],
     file_idx: int,
     wave_samples_flag: bool,
-    psd_df_list: list[pd.DataFrame],
-    signals_df_list: list[pd.DataFrame]
+    psd_df_list: List[pd.DataFrame],
+    signals_df_list: List[pd.DataFrame]
 ) -> int:
     psd_concat = pd.concat(psd_df_list)
     signals_concat = pd.concat(signals_df_list)
@@ -368,22 +368,26 @@ def _save_dataframes(
 
 
 def _get_save_file_names(
-    destination: Path | Iterable[Path],
+    destination: Union[Path, Iterable[Path]],
     file_idx: int
-) -> tuple[Path, Path]:
+) -> Tuple[Path, Path]:
+    def with_stem(destination: Path, new_stem: str) -> Path:
+        new_name = f"{new_stem}{destination.suffix}"
+        return destination.with_name(new_name)
+
     idx_length = 2
     padded_idx = str(file_idx).zfill(idx_length)
     if isinstance(destination, Path):
         stem = destination.stem
         psd_stem = f"{stem}_{padded_idx}"
-        psd_path = destination.with_stem(psd_stem)
-        signals_path = destination.with_stem(psd_stem)
+        psd_path = with_stem(destination, psd_stem)
+        signals_path = with_stem(destination, psd_stem)
     else:
         psd_filename, signals_filename, *_ = destination
         psd_stem = f"{psd_filename.stem}_{padded_idx}"
         signals_stem = f"{signals_filename.stem}_{padded_idx}"
-        psd_path = psd_filename.with_stem(psd_stem)
-        signals_path = signals_filename.with_stem(signals_stem)
+        psd_path = with_stem(psd_filename, psd_stem)
+        signals_path = with_stem(signals_filename, signals_stem)
     return psd_path, signals_path
 
 
@@ -404,7 +408,7 @@ def _get_destination_file_name(source_file: Path) -> str:
     return source_file_name
 
 
-def _get_split_data_destinations(destination: Path | Iterable[Path]):
+def _get_split_data_destinations(destination: Union[Path, Iterable[Path]]):
     if isinstance(destination, Path):
         # put everything in the same folder, even if signals exists
         psd_destination = destination
@@ -418,7 +422,7 @@ def _get_split_data_destinations(destination: Path | Iterable[Path]):
     return psd_destination, signals_destination
 
 
-def _get_split_parquet_names(source_file_name: str) -> tuple[str, str]:
+def _get_split_parquet_names(source_file_name: str) -> Tuple[str, str]:
     psd_dest_name = f"caen_psd_{source_file_name}.parquet"
     signals_dest_name = f"caen_samples_{source_file_name}.parquet"
     return psd_dest_name, signals_dest_name

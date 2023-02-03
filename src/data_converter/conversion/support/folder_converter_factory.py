@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional, Union
 
 from data_converter.conversion.support.abstract_folder_converter import \
     AbstractFolderConverter
@@ -13,7 +13,7 @@ from utilities.utilities.configuration.configuration import Config
 
 
 class FolderConverterFactory:
-    def make_folder_converter(self, folder: Path, destination: Path | Iterable[Path], config: Config, logfile_path: Path) -> AbstractFolderConverter:
+    def make_folder_converter(self, folder: Path, destination: Union[Path, Iterable[Path]], config: Config, logfile_path: Path) -> AbstractFolderConverter:
         folder_format = self._determine_folder_contents(folder)
         if folder_format == CAENDataFormat.CSV:
             return CSVtoParquetFolderConverter(
@@ -25,7 +25,7 @@ class FolderConverterFactory:
             raise ValueError(
                 f"Folder {folder.name} contained unsupported file type")
 
-    def _determine_folder_contents(self, folder: Path) -> CAENDataFormat | None:
+    def _determine_folder_contents(self, folder: Path) -> Optional[CAENDataFormat]:
         bin_pattern = re.compile(r".*\.bin", flags=re.IGNORECASE)
         csv_pattern = re.compile(r".*\.csv", flags=re.IGNORECASE)
         contains_bin = any((

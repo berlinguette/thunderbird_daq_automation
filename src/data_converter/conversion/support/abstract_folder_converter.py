@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from itertools import islice
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, List, Optional, Union
 
 from data_converter.conversion.support.types import FolderResult
 from utilities.utilities.configuration.configuration import Config
@@ -15,7 +15,7 @@ from utilities.utilities.timing import Timer
 class AbstractFolderConverter(ABC):
     def __init__(self,
                  source_folder: Path,
-                 destination: Path | Iterable[Path],
+                 destination: Union[Path, Iterable[Path]],
                  config: Config,
                  logfile_path: Path,
                  logger_name: str = 'folder_converter'):
@@ -37,7 +37,7 @@ class AbstractFolderConverter(ABC):
         setup_logger(self._logger, self._logfile_path)
         self._timer.start_timer()
 
-    def _post_conversion_actions(self, results: list[FolderResult]):
+    def _post_conversion_actions(self, results: List[FolderResult]):
         exec_time = self._timer.stop_timer()
         formatted_time = self._timer.format_elapsed_time(exec_time, decimals=4)
         good_results = [filename for worked, filename in results if worked]
@@ -54,7 +54,7 @@ class AbstractFolderConverter(ABC):
 
     def _get_limited_files_with_extension(
         self,
-        limit: None | int,
+        limit: Optional[int],
         extension: str
     ) -> Iterable[Path]:
         ext_files_generator = (file for file in self._source_folder.iterdir()

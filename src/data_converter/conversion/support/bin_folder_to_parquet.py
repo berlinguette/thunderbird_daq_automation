@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Union
 
 from tqdm import tqdm
 
@@ -18,7 +18,7 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
     def __init__(
         self,
         source_folder: Path,
-        destination: Path | Iterable[Path],
+        destination: Union[Path, Iterable[Path]],
         config: Config,
         logfile_path: Path,
         logger_name: str = 'folder_converter'
@@ -39,6 +39,7 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
         task_timeout = get_and_check(self._config, int, 'caen_timeout', 0)
         mem_use_threshold = get_and_check(
             self._config, int, 'mem_use_threshold', 0)
+        text_ui = get_and_check(self._config, bool, 'text_ui', False)
 
         source_files = [
             f for f in self._get_limited_files_with_extension(
@@ -55,7 +56,8 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
         with tqdm(total=len(source_files),
                   desc='BIN files',
                   unit='file',
-                  bar_format=BAR_FORMAT) as pbar:
+                  bar_format=BAR_FORMAT,
+                  disable=not text_ui) as pbar:
             with ThreadPoolExecutor(max_workers=max_workers) as ex:
                 futures = [
                     ex.submit(

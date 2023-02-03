@@ -53,7 +53,6 @@ class WendiDataConverter(AbstractDataConverter):
         }
 
     def _prepare_dataset_destinations(self, paths: Dict[str, Path]):
-        dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_folder = paths[KEY_DATASET_RAW]
         dataset_raw_wendi_folder = paths[KEY_DATASET_RAW_WENDI]
         dataset_processed_folder = paths[KEY_DATASET_PROCESSED]
@@ -61,15 +60,14 @@ class WendiDataConverter(AbstractDataConverter):
         dataset_unfiltered_wendi_folder = paths[KEY_DATASET_UNFILTERED_WENDI]
 
         self._messenger.info('Preparing destination folders')
-        self._prepare_destinations(
-            [dataset_root_folder,
-             dataset_raw_folder,
-             dataset_raw_wendi_folder])
+        self._prepare_destinations([
+            dataset_raw_folder,
+            dataset_raw_wendi_folder])
         self._messenger.info(' - Raw WENDI log destination done')
-        self._prepare_destinations(
-            [dataset_processed_folder,
-             dataset_unfiltered_folder,
-             dataset_unfiltered_wendi_folder])
+        self._prepare_destinations([
+            dataset_processed_folder,
+            dataset_unfiltered_folder,
+            dataset_unfiltered_wendi_folder])
         self._messenger.info(' - Converted WENDI log destination done')
 
         self._screen_only_messenger.info('')

@@ -101,7 +101,6 @@ class CaenDataConverter(AbstractDataConverter):
         self,
         paths: Dict[str, Path]
     ):
-        dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_folder = paths[KEY_DATASET_RAW]
         dataset_raw_original_folder = paths[KEY_DATASET_RAW_CSV]
         dataset_processed_folder = paths[KEY_DATASET_PROCESSED]
@@ -111,18 +110,17 @@ class CaenDataConverter(AbstractDataConverter):
         dataset_unfiltered_spectra_folder = paths[KEY_DATASET_UNFILTERED_SPECTRA]
 
         self._messenger.info('Preparing destination folders')
-        self._prepare_destinations(
-            [dataset_root_folder,
-                dataset_raw_folder,
-                dataset_raw_original_folder])
+        self._prepare_destinations([
+            dataset_raw_folder,
+            dataset_raw_original_folder])
         self._messenger.debug(' - Raw CSV destination done')
         self._messenger.debug(' - Raw Parquet destination done')
-        self._prepare_destinations(
-            [dataset_processed_folder,
-                dataset_unfiltered_folder,
-                dataset_unfiltered_folder_psd,
-                dataset_unfiltered_signals_folder,
-                dataset_unfiltered_spectra_folder])
+        self._prepare_destinations([
+            dataset_processed_folder,
+            dataset_unfiltered_folder,
+            dataset_unfiltered_folder_psd,
+            dataset_unfiltered_signals_folder,
+            dataset_unfiltered_spectra_folder])
         self._messenger.debug(' - Processed data destination done')
 
         self._screen_only_messenger.info('')
@@ -160,8 +158,8 @@ class CaenDataConverter(AbstractDataConverter):
         for file in raw_data_folder.iterdir():
             if file.is_file() and file.suffix.lower() in ['.csv', '.bin']:
                 # file.rename(dataset_raw_csv_folder / file.name)
-                self._handle_raw_file(file, 
-                                      dataset_raw_csv_folder / file.name, 
+                self._handle_raw_file(file,
+                                      dataset_raw_csv_folder / file.name,
                                       move_file=move_files)
         for file in self._experiment_source.iterdir():
             if file.is_file() and file.name.lower() == 'settings.xml':

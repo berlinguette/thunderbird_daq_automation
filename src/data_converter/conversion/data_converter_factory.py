@@ -74,9 +74,9 @@ class DataConverterFactory:
                 (source_path / constants.CAEN_RUN_INFO).exists(),
                 (source_path / constants.CAEN_SETTINGS_XML).exists(),
                 check_caen_subfolder(constants.CAEN_FILTERED_FOLDER_NAME),
-                check_caen_subfolder(constants.CAEN_OFFLINE_FOLDER_NAME),
+                # check_caen_subfolder(constants.CAEN_OFFLINE_FOLDER_NAME),
                 check_caen_subfolder(constants.CAEN_RAW_FOLDER_NAME),
-                check_caen_subfolder(constants.CAEN_SCREENSHOTS_FOLDER_NAME),
+                # check_caen_subfolder(constants.CAEN_SCREENSHOTS_FOLDER_NAME),
                 check_caen_subfolder(constants.CAEN_UNFILTERED_FOLDER_NAME)
             ]
             if all(checks):

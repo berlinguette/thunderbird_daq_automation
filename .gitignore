@@ -73,6 +73,7 @@ __pypackages__/
 venv/
 .python-version
 .env.*
+.env
 
 # Log files
 *.log

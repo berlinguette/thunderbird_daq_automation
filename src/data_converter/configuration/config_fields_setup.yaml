@@ -119,17 +119,16 @@ mem_use_threshold:
       - 'int'
     default: 512
     gui:
-      title: "Memory use threshold for CAEN BIN conversion"
+      title: "Memory use threshold for conversion (in MB)"
       control: 'spin'
       order: 80
   cli:
     flags:
       - "--mem-use-threshold"
     type: 'int'
-    help: "memory use threshold for BIN conversion. 
-      When converted rows take up more memory than the threshold, 
-      they are saved to disk as a Parquet file, 
-      freeing memory for further conversion."
+    help: "memory use threshold for conversion (in MB). 
+      Files are converted in batches sized to use less than this amount of 
+      memory if possible. Use 0 for no memory limit."
 text_ui:
   cli:
     flags:

@@ -6,21 +6,29 @@ from typing import Iterable, List, Optional, Union
 
 from data_converter.conversion.support.types import FolderResult
 from utilities.utilities.configuration.configuration import Config
-from utilities.utilities.logging_helpers.setup_logger import (Messenger,
-                                                              cleanup_logger,
-                                                              setup_logger)
+from utilities.utilities.logging_helpers.setup_logger import (
+    Messenger,
+    cleanup_logger,
+    setup_logger,
+)
 from utilities.utilities.timing import Timer
 
 
 class AbstractFolderConverter(ABC):
-    def __init__(self,
-                 source_folder: Path,
-                 destination: Union[Path, Iterable[Path]],
-                 config: Config,
-                 logfile_path: Path,
-                 logger_name: str = 'folder_converter'):
+    def __init__(
+        self,
+        source_folder: Path,
+        destination_folder: Union[Path, Iterable[Path]],
+        config: Config,
+        logfile_path: Path,
+        logger_name: str = "folder_converter",
+    ):
         self._source_folder = source_folder
-        self._destination = destination
+        if isinstance(destination_folder, Path):
+            self._psd_dest = destination_folder
+            self._signals_dest = destination_folder
+        else:
+            self._psd_dest, self._signals_dest, _ = destination_folder
         self._config = config
         self._logfile_path = logfile_path
 
@@ -44,8 +52,9 @@ class AbstractFolderConverter(ABC):
         bad_results = [filename for worked, filename in results if not worked]
         self._messenger.info(f"Processed {len(results)} files")
         self._messenger.info(f"{len(good_results)} successful conversions")
-        self._messenger.info(f"{len(bad_results)} were unsuccessful. " +
-                             "See logs for more information")
+        self._messenger.info(
+            f"{len(bad_results)} were unsuccessful. " + "See logs for more information"
+        )
         self._log_only_messenger.debug("Failing files:")
         for result in bad_results:
             self._log_only_messenger.debug(f"     {result}")
@@ -53,13 +62,13 @@ class AbstractFolderConverter(ABC):
         cleanup_logger(self._logger)
 
     def _get_limited_files_with_extension(
-        self,
-        limit: Optional[int],
-        extension: str
+        self, limit: Optional[int], extension: str
     ) -> Iterable[Path]:
-        ext_files_generator = (file for file in self._source_folder.iterdir()
-                               if file.is_file()
-                               and file.suffix.lower() == extension)
+        ext_files_generator = (
+            file
+            for file in self._source_folder.iterdir()
+            if file.is_file() and file.suffix.lower() == extension
+        )
         if limit is None or limit == 0:
             files = ext_files_generator
         else:

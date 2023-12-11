@@ -158,8 +158,8 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                 signals_file_name = get_destination_file_name(
                     first_file_path, index, "signals"
                 )
-                save_to_parquet(dfs, "psd", self._psd_dest / psd_file_name)
-                save_to_parquet(dfs, "signals", self._signals_dest / signals_file_name)
+                save_to_parquet(dfs, pd.concat, "psd", self._psd_dest / psd_file_name)
+                save_to_parquet(dfs, pd.concat, "signals", self._signals_dest / signals_file_name)
 
                 while len(remaining) > 0:
                     index += 1
@@ -178,9 +178,9 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                     signals_file_name = get_destination_file_name(
                         first_file_path, index, "signals"
                     )
-                    save_to_parquet(dfs, "psd", self._psd_dest / psd_file_name)
+                    save_to_parquet(dfs, pd.concat, "psd", self._psd_dest / psd_file_name)
                     save_to_parquet(
-                        dfs, "signals", self._signals_dest / signals_file_name
+                        dfs, pd.concat, "signals", self._signals_dest / signals_file_name
                     )
 
         return folder_results
@@ -233,9 +233,9 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                     signals_file_name = get_destination_file_name(
                         first_file_path, index, "signals"
                     )
-                    save_to_parquet(dfs, "psd", self._psd_dest / psd_file_name)
+                    save_to_parquet(dfs, modin_pd.concat, "psd", self._psd_dest / psd_file_name)
                     save_to_parquet(
-                        dfs, "signals", self._signals_dest / signals_file_name
+                        dfs, modin_pd.concat, "signals", self._signals_dest / signals_file_name
                     )
                     index += 1
 

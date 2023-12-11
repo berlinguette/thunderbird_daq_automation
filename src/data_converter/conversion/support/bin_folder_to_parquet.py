@@ -65,27 +65,22 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
             disable=not text_ui,
         ) as pbar:
             with ThreadPoolExecutor(max_workers=max_workers) as ex:
-                # TODO new design to make bigger merged output parquet files
-                # read small batch of files, len = max-workers
-                # check df sizes, determine how many files to hit size limit
-                # read more files (get to calculated file limit)
-                # merge as we go
-                # continue with file batches until done
                 index = 0
                 sample_files, remaining = split_list_by_count(source_files, max_workers)
                 sample_folder_results, dfs = self._convert_some_files(
                     ex, sample_files, pbar, task_timeout
                 )
                 results.extend(sample_folder_results)
-                df_dict_mem_usage = [
-                    get_df_dict_mem_usage(df_dict) for _, df_dict in dfs
-                ]
-                total_mem_usage = sum(df_dict_mem_usage)
-                avg_mem_usage = total_mem_usage / len(sample_files)
                 if mem_use_threshold == 0:
                     batch_size = len(source_files)
                 else:
+                    df_dict_mem_usage = [
+                        get_df_dict_mem_usage(df_dict) for _, df_dict in dfs
+                    ]
+                    total_mem_usage = sum(df_dict_mem_usage)
+                    avg_mem_usage = total_mem_usage / len(sample_files)
                     batch_size = floor(mem_use_threshold / avg_mem_usage)
+                    batch_size = 1 if batch_size < 1 else batch_size
                 count_remaining = batch_size - len(sample_files)
 
                 if len(remaining) > 0 and count_remaining >= 1:
@@ -104,9 +99,7 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
                 signals_file_name = get_destination_file_name(
                     first_file, index, "signals"
                 )
-                # self._save_psd_data(dfs, psd_file_name)
                 save_to_parquet(dfs, "psd", self._psd_dest / psd_file_name)
-                # self._save_signals_data(dfs, signals_file_name)
                 save_to_parquet(dfs, "signals", self._signals_dest / signals_file_name)
 
                 while len(remaining) > 0:

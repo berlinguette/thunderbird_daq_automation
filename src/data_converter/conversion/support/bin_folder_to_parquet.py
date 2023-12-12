@@ -99,8 +99,8 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
                 signals_file_name = get_destination_file_name(
                     first_file, index, "signals"
                 )
-                save_to_parquet(dfs, pd.concat, "psd", self._psd_dest / psd_file_name)
-                save_to_parquet(dfs, pd.concat, "signals", self._signals_dest / signals_file_name)
+                save_to_parquet(dfs, 'pandas', "psd", self._psd_dest / psd_file_name)
+                save_to_parquet(dfs, 'pandas', "signals", self._signals_dest / signals_file_name)
 
                 while len(remaining) > 0:
                     index += 1
@@ -117,9 +117,9 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
                     signals_file_name = get_destination_file_name(
                         first_file, index, "signals"
                     )
-                    save_to_parquet(dfs, pd.concat, "psd", self._psd_dest / psd_file_name)
+                    save_to_parquet(dfs, 'pandas', "psd", self._psd_dest / psd_file_name)
                     save_to_parquet(
-                        dfs, pd.concat, "signals", self._signals_dest / signals_file_name
+                        dfs, 'pandas', "signals", self._signals_dest / signals_file_name
                     )
 
         self._post_conversion_actions(results)

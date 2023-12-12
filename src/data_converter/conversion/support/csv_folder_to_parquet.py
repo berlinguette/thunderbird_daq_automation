@@ -74,7 +74,7 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
             )
         else:
             results = self._convert_normal_files(
-                source_files, headers, total_cols, max_workers, text_ui
+                source_files, headers, total_cols, text_ui, mem_use_threshold
             )
 
         self._post_conversion_actions(results)
@@ -158,8 +158,8 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                 signals_file_name = get_destination_file_name(
                     first_file_path, index, "signals"
                 )
-                save_to_parquet(dfs, pd.concat, "psd", self._psd_dest / psd_file_name)
-                save_to_parquet(dfs, pd.concat, "signals", self._signals_dest / signals_file_name)
+                save_to_parquet(dfs, 'pandas', "psd", self._psd_dest / psd_file_name)
+                save_to_parquet(dfs, 'pandas', "signals", self._signals_dest / signals_file_name)
 
                 while len(remaining) > 0:
                     index += 1
@@ -178,9 +178,9 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                     signals_file_name = get_destination_file_name(
                         first_file_path, index, "signals"
                     )
-                    save_to_parquet(dfs, pd.concat, "psd", self._psd_dest / psd_file_name)
+                    save_to_parquet(dfs, 'pandas', "psd", self._psd_dest / psd_file_name)
                     save_to_parquet(
-                        dfs, pd.concat, "signals", self._signals_dest / signals_file_name
+                        dfs, 'pandas', "signals", self._signals_dest / signals_file_name
                     )
 
         return folder_results
@@ -217,7 +217,10 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                 results.append(result)
                 if df_dict is not None:
                     dfs.append(df_dict)
-                    mem_usage = get_df_dict_mem_usage(df_dict)
+                    sampler_df_dict = {k: df.head(100)._to_pandas() for k, df in df_dict.items()}
+                    sampler_mem_usage = get_df_dict_mem_usage(sampler_df_dict, index=False)
+                    total_rows = df_dict['psd'].shape[0]
+                    mem_usage = sampler_mem_usage*(total_rows/100)
                     total_mem_usage += mem_usage
                     future_mem_usage = total_mem_usage + mem_usage
                 else:
@@ -233,10 +236,12 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                     signals_file_name = get_destination_file_name(
                         first_file_path, index, "signals"
                     )
-                    save_to_parquet(dfs, modin_pd.concat, "psd", self._psd_dest / psd_file_name)
+                    save_to_parquet(dfs, 'modin', "psd", self._psd_dest / psd_file_name)
                     save_to_parquet(
-                        dfs, modin_pd.concat, "signals", self._signals_dest / signals_file_name
+                        dfs, 'modin', "signals", self._signals_dest / signals_file_name
                     )
+                    dfs = []
+                    total_mem_usage = 0
                     index += 1
 
         return results

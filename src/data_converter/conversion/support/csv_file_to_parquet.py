@@ -42,6 +42,7 @@ def convert_csv_file_to_df(
                 # TODO warn on bad lines, catch warnings, log
                 on_bad_lines="skip",
             )
+            df_raw.reset_index(inplace=True)
             psd_df = df_raw[psd_cols]
             signals_df = df_raw[signal_cols]
             dfs = {"psd": psd_df, "signals": signals_df}

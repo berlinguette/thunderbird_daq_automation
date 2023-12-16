@@ -214,11 +214,11 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                     modin_pd.read_csv,
                     self._logfile_path,
                 )
-                progress_bar.update()
+                progress_bar.update(1)
                 results.append(result)
                 if df_dict is not None:
                     dfs.append(df_dict)
-                    sampler_df_dict = {k: df.head(100)._to_pandas() for k, df in df_dict.items()}
+                    sampler_df_dict = {k: df.head(100)._to_pandas() for k, df in df_dict.items()}  # type: ignore
                     sampler_mem_usage = get_df_dict_mem_usage(sampler_df_dict, index=False)
                     total_rows = df_dict['psd'].shape[0]
                     mem_usage = sampler_mem_usage*(total_rows/100)
@@ -228,8 +228,9 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                     future_mem_usage = total_mem_usage
                 # check if already over, or if one more would put us >10% over limit
                 if (
-                    total_mem_usage >= mem_usage_limit
-                    or future_mem_usage >= 1.10 * mem_usage_limit
+                    mem_usage_limit > 0 
+                    and (total_mem_usage >= mem_usage_limit
+                    or future_mem_usage >= 1.10 * mem_usage_limit)
                 ):
                     psd_file_name = get_destination_file_name(
                         first_file_path, index, "psd"
@@ -245,6 +246,18 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                     total_mem_usage = 0
                     future_mem_usage = 0
                     index += 1
+            
+            # One last save
+            psd_file_name = get_destination_file_name(
+                first_file_path, index, "psd"
+            )
+            signals_file_name = get_destination_file_name(
+                first_file_path, index, "signals"
+            )
+            save_to_parquet(dfs, 'modin', "psd", self._psd_dest / psd_file_name)
+            save_to_parquet(
+                dfs, 'modin', "signals", self._signals_dest / signals_file_name
+            )
 
         return results
 

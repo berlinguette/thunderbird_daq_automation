@@ -105,13 +105,13 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
                 while len(remaining) > 0:
                     index += 1
                     batch_files, remaining = split_list_by_count(remaining, batch_size)
-                    batch_results, batch_dfs = self._convert_some_files(
+                    batch_results, dfs = self._convert_some_files(
                         ex, batch_files, pbar, task_timeout
                     )
                     results.extend(batch_results)
 
-                    batch_dfs.sort(key=lambda x: x[0])
-                    batch_dfs = [df_dict for _, df_dict in dfs]
+                    dfs.sort(key=lambda x: x[0])
+                    dfs = [df_dict for _, df_dict in dfs]
 
                     psd_file_name = get_destination_file_name(first_file, index, "psd")
                     signals_file_name = get_destination_file_name(

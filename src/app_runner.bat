@@ -1,3 +1,0 @@
-@echo off
-echo Starting data converter...
-python3 data_converter.py

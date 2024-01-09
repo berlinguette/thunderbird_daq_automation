@@ -28,7 +28,7 @@ class AbstractFolderConverter(ABC):
             self._psd_dest = destination_folder
             self._signals_dest = destination_folder
         else:
-            self._psd_dest, self._signals_dest, *_ = destination_folder
+            self._psd_dest, self._signals_dest, _ = destination_folder
         self._config = config
         self._logfile_path = logfile_path
 

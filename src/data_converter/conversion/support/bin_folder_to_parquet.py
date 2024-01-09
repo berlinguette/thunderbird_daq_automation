@@ -3,7 +3,7 @@ from math import floor
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple, Union
 
-import pandas as pd
+from pandas import DataFrame
 from tqdm import tqdm
 
 from data_converter.conversion.support.abstract_folder_converter import (
@@ -99,8 +99,8 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
                 signals_file_name = get_destination_file_name(
                     first_file, index, "signals"
                 )
-                save_to_parquet(dfs, pd.concat, "psd", self._psd_dest / psd_file_name)
-                save_to_parquet(dfs, pd.concat, "signals", self._signals_dest / signals_file_name)
+                save_to_parquet(dfs, "psd", self._psd_dest / psd_file_name)
+                save_to_parquet(dfs, "signals", self._signals_dest / signals_file_name)
 
                 while len(remaining) > 0:
                     index += 1
@@ -117,9 +117,9 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
                     signals_file_name = get_destination_file_name(
                         first_file, index, "signals"
                     )
-                    save_to_parquet(dfs, pd.concat, "psd", self._psd_dest / psd_file_name)
+                    save_to_parquet(dfs, "psd", self._psd_dest / psd_file_name)
                     save_to_parquet(
-                        dfs, pd.concat, "signals", self._signals_dest / signals_file_name
+                        dfs, "signals", self._signals_dest / signals_file_name
                     )
 
         self._post_conversion_actions(results)
@@ -130,9 +130,9 @@ class BINtoParquetFolderConverter(AbstractFolderConverter):
         source_files: List[Path],
         pbar: tqdm,
         task_timeout: float,
-    ) -> Tuple[List[FolderResult], List[Tuple[str, Dict[str, pd.DataFrame]]]]:
+    ) -> Tuple[List[FolderResult], List[Tuple[str, Dict[str, DataFrame]]]]:
         results: List[FolderResult] = []
-        dfs: List[Tuple[str, Dict[str, pd.DataFrame]]] = []
+        dfs: List[Tuple[str, Dict[str, DataFrame]]] = []
         futures = [
             ex.submit(convert_bin_file_to_parquet, source_file, self._logfile_path)
             for source_file in source_files

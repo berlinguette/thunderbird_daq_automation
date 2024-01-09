@@ -42,7 +42,7 @@ def convert_bin_file_to_parquet(
         whether the conversion was successful (as boolean),
         and a explanatory success/failure message
     """
-    # TODO batch process records (since record bitlength is constant per board)
+    # TODO get this to return dataframe dict also
     # Even though psd data is smaller and could be framed less often,
     # indexing gets simpler when we do both at the same time
     # if mem_use_threshold is None:
@@ -114,7 +114,6 @@ def convert_bin_file_to_parquet(
                 psd_array = _get_psd_array(max_count, psd_dtype)
                 signals_array = _get_signals_array(max_count, n_samples)
                 record_array_idx = record_array_idx % max_count
-                # TODO switch to generator, yield df early if over mem threshold
                 # # Save to disk if too much memory used
                 # mem_used_bytes = sum(
                 #     [df.memory_usage(deep=True).sum()
@@ -168,6 +167,9 @@ def convert_bin_file_to_parquet(
 
             # Store wave samples entry and handle result
             if wave_samples_flag:
+                # Each entry stores number of signal samples,
+                # but this should be consistent across entries
+                # No idea why CAEN does this. Thanks for the complication! >_<
                 current_n_samples = _get_n_samples(datafile)
                 if current_n_samples == n_samples:
                     result, reason = _store_entry(
@@ -183,6 +185,9 @@ def convert_bin_file_to_parquet(
                             psd_array,
                             signals_array,
                         )
+                        # file_name_idx = _save_dataframes(
+                        #     destination, file_name_idx, wave_samples_flag,
+                        #     psd_df_list, signals_df_list)
                         if reason == Reason.FILE_ENDS:
                             # File ended after PSD data, but signals expected
                             # Invalid end state!
@@ -387,6 +392,43 @@ def _get_save_file_names(
         psd_path = with_stem(psd_filename, psd_stem)
         signals_path = with_stem(signals_filename, signals_stem)
     return psd_path, signals_path
+
+
+def _get_destination_file_name(source_file: Path) -> str:
+    file_number_length = 5  # i.e. run_00000, supports 100,000 files
+    pattern = r".+_\d{" + re.escape(str(file_number_length)) + r"}"
+    source_file_name = source_file.stem
+    if not re.match(pattern, source_file_name):
+        match = re.match(END_NUMBER_PATTERN, source_file_name)
+        if match:
+            start, number = match.group(1, 2)
+            fixed_number = str(number).zfill(file_number_length)
+            source_file_name = str(start) + fixed_number
+        else:
+            starting_file_number = "0".zfill(file_number_length)
+            # source_file_name = source_file_name + '_00000'
+            source_file_name = f"{source_file_name}_{starting_file_number}"
+    return source_file_name
+
+
+def _get_split_data_destinations(destination: Union[Path, Iterable[Path]]):
+    if isinstance(destination, Path):
+        # put everything in the same folder, even if signals exists
+        psd_destination = destination
+        signals_destination = destination
+    else:
+        psd_destination, *rest = destination
+        try:
+            signals_destination, *_ = rest
+        except ValueError:
+            signals_destination = psd_destination
+    return psd_destination, signals_destination
+
+
+def _get_split_parquet_names(source_file_name: str) -> Tuple[str, str]:
+    psd_dest_name = f"caen_psd_{source_file_name}.parquet"
+    signals_dest_name = f"caen_samples_{source_file_name}.parquet"
+    return psd_dest_name, signals_dest_name
 
 
 def _get_n_samples(data_file: BufferedReader) -> int:

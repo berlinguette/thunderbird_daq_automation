@@ -164,13 +164,13 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                 while len(remaining) > 0:
                     index += 1
                     batch_files, remaining = split_list_by_count(remaining, batch_size)
-                    batch_results, dfs = self._convert_some_small_files(
+                    batch_results, batch_dfs = self._convert_some_small_files(
                         ex, headers, total_cols, batch_files, task_timeout, pbar
                     )
                     folder_results.extend(batch_results)
 
-                    dfs.sort(key=lambda x: x[0])
-                    dfs = [df_dict for _, df_dict in dfs]
+                    batch_dfs.sort(key=lambda x: x[0])
+                    batch_dfs = [df_dict for _, df_dict in dfs]
 
                     psd_file_name = get_destination_file_name(
                         first_file_path, index, "psd"
@@ -196,7 +196,6 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
         results = []
         dfs: List[Dict[str, pd.DataFrame]] = []
         total_mem_usage = 0
-        future_mem_usage = 0
         index = 0
         first_file_path = get_first_source_file(source_files, END_NUMBER_PATTERN)
         with tqdm(
@@ -241,9 +240,6 @@ class CSVtoParquetFolderConverter(AbstractFolderConverter):
                     save_to_parquet(
                         dfs, 'modin', "signals", self._signals_dest / signals_file_name
                     )
-                    dfs = []
-                    total_mem_usage = 0
-                    future_mem_usage = 0
                     index += 1
 
         return results

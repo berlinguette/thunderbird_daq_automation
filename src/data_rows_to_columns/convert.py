@@ -1,14 +1,24 @@
 import pandas as pd
+import easygui as g
+
 import sys
 
-if len(sys.argv) != 3:
-	print('Syntax: python convert.py <path to input csv file> <path to output directory>')
-	exit(1)
+g.msgbox(msg="Click OK and select the input CSV file that you want to convert:")
 
-df_path = sys.argv[1]
-output_dir = sys.argv[2]
+df_path = g.fileopenbox('Select Input CSV File', filetypes=[["*.csv", "CSV files"], ["*.*", "All files"]])
 
-df = pd.read_csv(df_path, encoding="utf-8", header=None)
+g.msgbox(msg="Click OK and select the output folder that you want to put converted files in:")
+
+output_dir = g.diropenbox('Select Output Folder')
+
+# if len(sys.argv) != 3:
+# 	print('Syntax: python convert.py <path to input csv file> <path to output directory>')
+# 	exit(1)
+
+# df_path = sys.argv[1]
+# output_dir = sys.argv[2]
+
+df = pd.read_csv(df_path, encoding="latin1", header=None)
 
 final_dfs = {}
 device_group = df.groupby(0)
@@ -55,3 +65,6 @@ for device_key, device_dict in final_dfs.items():
 	for param_key, param_df in device_dict.items():
 		param_df.to_csv(f'{output_dir}/{code_conversions[device_key][param_key]}.csv', encoding="utf-8", index=False)
 		print(f'Saved "{code_conversions[device_key][param_key]}.csv" file')
+
+
+g.msgbox(msg=f"Successfully converted files and stored in {output_dir}")

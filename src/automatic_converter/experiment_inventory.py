@@ -1,5 +1,8 @@
+from abc import ABC
 from typing import Any, Literal
 from loguru import logger
+import re
+
 
 class Experiment:
     """
@@ -40,9 +43,15 @@ class Experiment:
         }
 
 
-class ExperimentInventory:
-    def __init__(self) -> None:
+class ExperimentDict(ABC):
+    """
+    Abstract base class for working with a dict of Experiments
+    """
+
+    def __init__(self, experiments: dict[str, Experiment] | None = None) -> None:
         self.experiments: dict[str, Experiment] = {}
+        if experiments is not None:
+            self.experiments = experiments
 
     def add(
         self,
@@ -52,8 +61,8 @@ class ExperimentInventory:
         has_processed: bool | Literal["Error"] = False,
     ) -> bool:
         """
-        Add a new Experiment to inventory with given id.
-        Returns True if add was successful and False if id is already in inventory.
+        Add a new `Experiment` to dict with given id.
+        Returns True if add was successful and False if id is already in dict.
         """
         return self.add_exp(
             Experiment(id, has_unconverted, has_converted, has_processed)
@@ -61,7 +70,7 @@ class ExperimentInventory:
 
     def add_exp(self, exp: Experiment) -> bool:
         """
-        Add given `Experiment` to inventory.
+        Add given `Experiment` to dict.
         Returns True if succeeded or False if experiment already exists
         """
         if exp.id in self.experiments:
@@ -74,3 +83,68 @@ class ExperimentInventory:
 
     def get(self, id: str) -> Experiment | None:
         return self.experiments.get(id)
+
+
+class OverrideInventory(ExperimentDict):
+    """
+    Inventory of manual override values for experiments that will
+    take precedence over values of actual experiments on disk
+    """
+
+    def __init__(self, overrides: dict[str, Experiment]) -> None:
+        super().__init__(overrides)
+
+    def add(
+        self,
+        pattern: str,
+        has_unconverted: bool | Literal["Error"] = False,
+        has_converted: bool | Literal["Error"] = False,
+        has_processed: bool | Literal["Error"] = False,
+    ) -> bool:
+        """
+        Add a new override with given Regex pattern.
+        Any experiments matching this pattern will be overriden with the provided experiment parameters.
+        Returns True if add was successful and False if pattern is already in dict.
+        """
+        return super().add(pattern, has_unconverted, has_converted, has_processed)
+
+    def add_exp(self, exp: Experiment) -> bool:
+        """
+        Add given `Experiment` to override. The ID of the experiment can be any valid Regex pattern.
+        Returns True if succeeded or False if experiment already exists
+        """
+        return super().add_exp(exp)
+
+    def get(self, pattern: str) -> Experiment | None:
+        return self.experiments.get(pattern)
+    
+    def get_all(self) -> list[Experiment]:
+        logger.debug(f"All overrides: {self.experiments.values()}")
+        return list(self.experiments.values())
+
+class ExperimentInventory(ExperimentDict):
+    """Main inventory of experiments in QMI data drive"""
+
+    def __init__(self, override_inventory: OverrideInventory) -> None:
+        super().__init__()
+        self._override_inventory = override_inventory
+
+    def add_exp(self, exp: Experiment) -> bool:
+        """
+        Add given `Experiment` to inventory.
+        If the experiment ID matches any override patterns,
+        its parameters will be overwritten with the override experiment.
+        Returns True if succeeded or False if experiment already exists
+        """
+        for pattern, override_exp in self._override_inventory.experiments.items():
+            match = re.search(pattern, exp.id)
+            if match is not None:
+                new_overriden_exp = Experiment(
+                    exp.id,
+                    override_exp.has_unconverted,
+                    override_exp.has_converted,
+                    override_exp.has_processed
+                )
+                logger.info(f"Overriding experiment {exp.id} with {new_overriden_exp}")
+                return super().add_exp(new_overriden_exp)
+        return super().add_exp(exp)

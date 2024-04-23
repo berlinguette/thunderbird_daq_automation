@@ -1,3 +1,4 @@
+from automatic_converter.experiment_inventory import Experiment, OverrideInventory
 from automatic_converter.experiment_tracker import ExperimentTracker
 from data_converter.configuration.configuration import load_config_setup
 from utilities.utilities.configuration.configuration import (
@@ -47,7 +48,10 @@ def create_app():
         pass
 
     dir_watcher = DirectoryWatcher(unconverted_data_dir, baseline_directories_list)
-    exp_tracker = ExperimentTracker(unconverted_data_dir, converted_data_dir, processed_data_dir)
+    overrides = OverrideInventory({
+        "ID-1..": Experiment("ID-1..", True, True, False)
+    })
+    exp_tracker = ExperimentTracker(unconverted_data_dir, converted_data_dir, processed_data_dir, overrides)
 
     @app.get("/inventory")
     def get_inventory():
@@ -58,8 +62,7 @@ def create_app():
             "to_be_processed": exp_tracker.get_all_to_process
         }
         if exp_filter not in get_exp_mapping:
-            return "Invalid experiment filter"
-        logger.info(f"Filtering inventory by {exp_filter}")
+            return "Invalid experiment filter", 400
         return [exp.to_dict() for exp in get_exp_mapping[exp_filter]()]
 
     @app.post("/inventory")
@@ -68,6 +71,10 @@ def create_app():
         # experiments_to_convert = exp_tracker.get_all_to_convert()
 
         return [exp.to_dict() for exp in exp_tracker.get_all_experiments()]
+    
+    @app.get("/overrides")
+    def get_overrides():
+        return [exp.to_dict() for exp in overrides.get_all()]
 
     @app.post("/")
     def rescan_directory():

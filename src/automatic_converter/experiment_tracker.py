@@ -1,14 +1,19 @@
 from automatic_converter.directory_watcher import ExperimentScanner
-from automatic_converter.experiment_inventory import Experiment, ExperimentInventory
+from automatic_converter.experiment_inventory import Experiment, ExperimentInventory, OverrideInventory
 from pathlib import Path
 from loguru import logger
 
+
 class ExperimentTracker:
+    """
+    Tracks inventory of all experiments in QMI data drive
+    """
     def __init__(
         self,
         unconverted_data_dir: str,
         converted_data_dir: str,
         processed_data_dir: str,
+        overrides: OverrideInventory
     ) -> None:
         """Initializes new experiment inventory and establishes directory baseline"""
         self._unconverted_data_dir = unconverted_data_dir
@@ -19,7 +24,7 @@ class ExperimentTracker:
         self._processed_data_scanner = ExperimentScanner(processed_data_dir)
         # self._unconverted_data_watcher = DirectoryWatcher(unconverted_data_dir)
 
-        self.experiments = ExperimentInventory()
+        self.experiments = ExperimentInventory(overrides)
         self.refresh_all()
 
     def refresh_all(self):

@@ -1,46 +1,52 @@
 from abc import ABC
-from typing import Any, Literal
+from typing import Literal
 from loguru import logger
+from pydantic import BaseModel
 import re
 
 
-class Experiment:
+class Experiment(BaseModel):
     """
     Represents an experiment in the QMI data drive.
     By default, experiments are marked as not present in all folders.
     For each folder, experiments are either not present (`False`), present (`True`), or malformed (`"Error"`)
     """
 
-    def __init__(
-        self,
-        id: str,
-        has_unconverted: bool | Literal["Error"] = False,
-        has_converted: bool | Literal["Error"] = False,
-        has_processed: bool | Literal["Error"] = False,
-    ) -> None:
-        self.id = id
-        self.has_unconverted = has_unconverted
-        self.has_converted = has_converted
-        self.has_processed = has_processed
+    id: str
+    has_unconverted: bool | Literal["Error"] = False
+    has_converted: bool | Literal["Error"] = False
+    has_processed: bool | Literal["Error"] = False
 
-    def __repr__(self) -> str:
-        return (
-            "Experiment(id=%r, has_unconverted=%r, has_converted=%r, has_processed=%r)"
-            % (
-                self.id,
-                self.has_unconverted,
-                self.has_converted,
-                self.has_processed,
-            )
-        )
+    # def __init__(
+    #     self,
+    #     id: str,
+    #     has_unconverted: bool | Literal["Error"] = False,
+    #     has_converted: bool | Literal["Error"] = False,
+    #     has_processed: bool | Literal["Error"] = False,
+    # ) -> None:
+    #     self.id = id
+    #     self.has_unconverted = has_unconverted
+    #     self.has_converted = has_converted
+    #     self.has_processed = has_processed
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "id": self.id,
-            "has_unconverted": self.has_unconverted,
-            "has_converted": self.has_converted,
-            "has_processed": self.has_processed,
-        }
+    # def __repr__(self) -> str:
+    #     return (
+    #         "Experiment(id=%r, has_unconverted=%r, has_converted=%r, has_processed=%r)"
+    #         % (
+    #             self.id,
+    #             self.has_unconverted,
+    #             self.has_converted,
+    #             self.has_processed,
+    #         )
+    #     )
+
+    # def to_dict(self) -> dict[str, Any]:
+    #     return {
+    #         "id": self.id,
+    #         "has_unconverted": self.has_unconverted,
+    #         "has_converted": self.has_converted,
+    #         "has_processed": self.has_processed,
+    #     }
 
 
 class ExperimentDict(ABC):
@@ -65,7 +71,12 @@ class ExperimentDict(ABC):
         Returns True if add was successful and False if id is already in dict.
         """
         return self.add_exp(
-            Experiment(id, has_unconverted, has_converted, has_processed)
+            Experiment(
+                id=id,
+                has_unconverted=has_unconverted,
+                has_converted=has_converted,
+                has_processed=has_processed,
+            )
         )
 
     def add_exp(self, exp: Experiment) -> bool:
@@ -117,10 +128,11 @@ class OverrideInventory(ExperimentDict):
 
     def get(self, pattern: str) -> Experiment | None:
         return self.experiments.get(pattern)
-    
+
     def get_all(self) -> list[Experiment]:
         logger.debug(f"All overrides: {self.experiments.values()}")
         return list(self.experiments.values())
+
 
 class ExperimentInventory(ExperimentDict):
     """Main inventory of experiments in QMI data drive"""
@@ -140,11 +152,11 @@ class ExperimentInventory(ExperimentDict):
             match = re.search(pattern, exp.id)
             if match is not None:
                 new_overriden_exp = Experiment(
-                    exp.id,
-                    override_exp.has_unconverted,
-                    override_exp.has_converted,
-                    override_exp.has_processed
+                    id=exp.id,
+                    has_unconverted=override_exp.has_unconverted,
+                    has_converted=override_exp.has_converted,
+                    has_processed=override_exp.has_processed,
                 )
-                logger.info(f"Overriding experiment {exp.id} with {new_overriden_exp}")
+                logger.info(f"Overriding experiment {exp.id} with {new_overriden_exp.__repr__()}")
                 return super().add_exp(new_overriden_exp)
         return super().add_exp(exp)

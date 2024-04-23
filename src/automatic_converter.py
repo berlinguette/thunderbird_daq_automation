@@ -8,9 +8,7 @@ from utilities.utilities.configuration.configuration import (
     ConfigSetup,
 )
 import data_converter.data_converter as data_converter
-from automatic_converter.directory_watcher import DirectoryWatcher
 from pathlib import Path
-import pickle
 from loguru import logger
 from flask import Flask, request
 import sys
@@ -46,14 +44,7 @@ def initialize_default_data_converter() -> tuple[Config, ConfigSetup]:
 def create_app():
     app = Flask(__name__)
     config, config_setup = initialize_default_data_converter()
-    baseline_directories_list: list[str] | None = None
-    try:
-        with open(directories_list_file, "rb") as f:
-            baseline_directories_list = pickle.load(f)
-    except FileNotFoundError:
-        pass
 
-    dir_watcher = DirectoryWatcher(unconverted_data_dir, baseline_directories_list)
     overrides = OverrideInventory(
         {
             "ID-(338|350|FAKE.*)": Experiment(
@@ -86,7 +77,7 @@ def create_app():
         return [exp.dict() for exp in overrides.get_all()]
 
     @app.post("/overrides")
-    def new_override():
+    def add_override():
         if request.is_json:
             body = request.json
             try:
@@ -127,28 +118,6 @@ def create_app():
         experiments_to_process = exp_tracker.get_all_to_process()
         logger.info(f"Experiments to process: {[exp.id for exp in experiments_to_process]}")
         return "", 200
-
-
-
-    @app.post("/")
-    def rescan_directory():
-        logger.info("Rescan triggered")
-        new_directories_list = dir_watcher.find_new_directories()
-        logger.info(f"New directories list: {new_directories_list}")
-        new_exp_ids = [Path(dir).parts[-1] for dir in new_directories_list]
-        print(f"New experiment IDs found: {new_exp_ids}")
-
-        print("Converting Experiments...")
-
-        for new_directory in new_directories_list:
-            data_converter.convert_neutron_data(
-                config,
-                config_setup,
-                sources=[new_directory],
-                destination=converted_data_dir,
-            )
-
-        return {"new_experiments": new_exp_ids}
 
     return app
 

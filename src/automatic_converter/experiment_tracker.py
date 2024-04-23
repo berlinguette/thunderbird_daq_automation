@@ -1,7 +1,7 @@
-from automatic_converter.directory_watcher import ExperimentScanner
 from automatic_converter.experiment_inventory import Experiment, ExperimentInventory, OverrideInventory
 from pathlib import Path
 from loguru import logger
+import os
 
 
 class ExperimentTracker:
@@ -19,10 +19,6 @@ class ExperimentTracker:
         self._unconverted_data_dir = unconverted_data_dir
         self._converted_data_dir = converted_data_dir
         self._processed_data_dir = processed_data_dir
-        self._unconverted_data_scanner = ExperimentScanner(unconverted_data_dir)
-        self._converted_data_scanner = ExperimentScanner(converted_data_dir)
-        self._processed_data_scanner = ExperimentScanner(processed_data_dir)
-        # self._unconverted_data_watcher = DirectoryWatcher(unconverted_data_dir)
 
         self.experiments = ExperimentInventory(overrides)
         self.refresh_all()
@@ -89,7 +85,7 @@ class ExperimentTracker:
         Rescans unconverted data directory and adds all found experiments to inventory,
         or marks presence of unconverted experiment if already exists
         """
-        unconverted_exps = self._unconverted_data_scanner.scan_directory()
+        unconverted_exps = self._scan_directory(self._unconverted_data_dir)
         logger.info(f"Found unconverted experiments: {unconverted_exps}")
         for id in unconverted_exps:
             if not self.experiments.add(id, has_unconverted=True):
@@ -103,7 +99,7 @@ class ExperimentTracker:
         For each found experiment, the `conversion.log` file in the directory is also verified for errors,
         and the experiment is marked as `"Error"` if errors are found.
         """
-        converted_exps = self._converted_data_scanner.scan_directory()
+        converted_exps = self._scan_directory(self._converted_data_dir)
         logger.info(f"Found converted experiments: {converted_exps}")
         for id in converted_exps:
             exp_status = True
@@ -128,9 +124,15 @@ class ExperimentTracker:
         Rescans processed data directory and adds all found experiments to inventory,
         or marks presence of processed experiment if already exists
         """
-        processed_exps = self._processed_data_scanner.scan_directory()
+        processed_exps = self._scan_directory(self._processed_data_dir)
         logger.info(f"Found processed experiments: {processed_exps}")
         for id in processed_exps:
             if not self.experiments.add(id, has_processed=True):
                 # if experiment already in inventory
                 self.experiments.get(id).has_processed = True
+    
+    def _scan_directory(self, target_dir) -> list[str]:
+        """Scans target directory and returns list of experiment IDs found in target"""
+        directories = [Path(f.path).parts[-1] for f in os.scandir(target_dir) if f.is_dir()]
+        logger.debug(f"Scanned directories in {target_dir}: {directories}")
+        return directories

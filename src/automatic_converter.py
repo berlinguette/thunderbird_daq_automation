@@ -1,13 +1,7 @@
 from pydantic import BaseModel, ValidationError
 from automatic_converter.experiment_inventory import Experiment, OverrideInventory
 from automatic_converter.experiment_tracker import ExperimentTracker
-from data_converter.configuration.configuration import load_config_setup
-from utilities.utilities.configuration.configuration import (
-    get_configuration,
-    Config,
-    ConfigSetup,
-)
-import data_converter.data_converter as data_converter
+from automatic_converter.automatic_converter import AutomaticConverter
 from pathlib import Path
 from loguru import logger
 from flask import Flask, request
@@ -15,7 +9,7 @@ import sys
 # import logging
 
 logger.remove()
-logger.add(sys.stderr, level="INFO")
+logger.add(sys.stderr, level="DEBUG")
 # logging.basicConfig(level=logging.DEBUG)
 
 # neutron_data_path = "/mnt/qmi-share/Neutron Data/"
@@ -27,23 +21,17 @@ processed_data_dir = Path(neutron_data_path, "3-Output")
 # watch_folder = "Q:/Neutron Data/1-Unconverted_Data"
 # target_folder = "Q:/Neutron Data/2-Converted_Data"
 
-package_dir = Path(__file__).parent.absolute()
-directories_list_file = Path(package_dir, "../data/directories.pkl")
-
 class ConvertRequest(BaseModel):
     convert_unconverted: bool = True
     process_converted: bool = True
 
 
-def initialize_default_data_converter() -> tuple[Config, ConfigSetup]:
-    config_setup = load_config_setup()
-    config = get_configuration({}, config_setup, None)
-    return config, config_setup
+
 
 
 def create_app():
     app = Flask(__name__)
-    config, config_setup = initialize_default_data_converter()
+    automatic_converter = AutomaticConverter(converted_data_dir)
 
     overrides = OverrideInventory(
         {
@@ -91,6 +79,11 @@ def create_app():
         else:
             return "", 415
     
+    @app.delete("/overrides/<pattern>")
+    def delete_override(pattern: str):
+        overrides.experiments.pop(pattern, None)
+        return "", 200
+    
     @app.post("/convert")
     def convert():
         # if request.is_json:
@@ -107,17 +100,18 @@ def create_app():
         for exp in experiments_to_convert:
             logger.info(f"Converting experiment {exp}")
             exp_path = Path(unconverted_data_dir, exp.id)
-            data_converter.convert_neutron_data(
-                config,
-                config_setup,
-                sources=[exp_path],
-                destination=converted_data_dir,
-            )
+            automatic_converter.convert(exp_path)
         
-        exp_tracker._refresh_converted()
-        experiments_to_process = exp_tracker.get_all_to_process()
-        logger.info(f"Experiments to process: {[exp.id for exp in experiments_to_process]}")
+        # exp_tracker._refresh_converted()
+        # experiments_to_process = exp_tracker.get_all_to_process()
+        # logger.info(f"Experiments to process: has_converted=True{[exp.id for exp in experiments_to_process]}")
         return "", 200
+    
+    @app.get("/status")
+    def get_status():
+        status = automatic_converter.status()
+        print(status)
+        return status
 
     return app
 

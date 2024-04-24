@@ -132,6 +132,15 @@ class OverrideInventory(ExperimentDict):
     def get_all(self) -> list[Experiment]:
         logger.debug(f"All overrides: {self.experiments.values()}")
         return list(self.experiments.values())
+    
+    def should_override_exp(self, id: str) -> bool:
+        """
+        Returns True if given id matches an override pattern in the override inventory, and False otherewise
+        """
+        for override in self.experiments.values():
+                if re.search(override.id, id) is not None:
+                    return True
+        return False
 
 
 class ExperimentInventory(ExperimentDict):
@@ -157,6 +166,8 @@ class ExperimentInventory(ExperimentDict):
                     has_converted=override_exp.has_converted,
                     has_processed=override_exp.has_processed,
                 )
-                logger.info(f"Overriding experiment {exp.id} with {new_overriden_exp.__repr__()}")
+                logger.info(
+                    f"Overriding experiment {exp.id} with {new_overriden_exp.__repr__()}"
+                )
                 return super().add_exp(new_overriden_exp)
         return super().add_exp(exp)

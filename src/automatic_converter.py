@@ -9,7 +9,7 @@ import sys
 # import logging
 
 logger.remove()
-logger.add(sys.stderr, level="DEBUG")
+logger.add(sys.stderr, level="INFO")
 # logging.basicConfig(level=logging.DEBUG)
 
 # neutron_data_path = "/mnt/qmi-share/Neutron Data/"
@@ -25,24 +25,18 @@ class ConvertRequest(BaseModel):
     convert_unconverted: bool = True
     process_converted: bool = True
 
-
-
-
-
 def create_app():
     app = Flask(__name__)
     automatic_converter = AutomaticConverter(converted_data_dir)
 
-    overrides = OverrideInventory(
-        {
-            "ID-(338|350|FAKE.*)": Experiment(
-                id="ID-(338|350|FAKE.*)",
-                has_unconverted=True,
-                has_converted=True,
-                has_processed=True,
-            )
-        }
+    overrides = OverrideInventory()
+    overrides.set(
+        pattern="ID-(338|350|FAKE.*)",
+        has_unconverted=True,
+        has_converted=True,
+        has_processed=True,
     )
+
     exp_tracker = ExperimentTracker(
         unconverted_data_dir, converted_data_dir, processed_data_dir, overrides
     )
@@ -70,10 +64,8 @@ def create_app():
             body = request.json
             try:
                 exp = Experiment.parse_obj(body)
-                if overrides.add_exp(exp):
-                    return "", 201
-                else:
-                    return f"Experiment ID {exp.id} already exists", 409
+                overrides.set_exp(exp)
+                return [exp.dict() for exp in overrides.get_all()], 201
             except ValidationError as err:
                 return err.__str__(), 400
         else:
@@ -82,7 +74,13 @@ def create_app():
     @app.delete("/overrides/<pattern>")
     def delete_override(pattern: str):
         overrides.experiments.pop(pattern, None)
-        return "", 200
+        return [exp.dict() for exp in overrides.get_all()], 200
+    
+    @app.get("/convert")
+    def get_status():
+        status = automatic_converter.status()
+        print(status)
+        return status
     
     @app.post("/convert")
     def convert():
@@ -106,12 +104,6 @@ def create_app():
         # experiments_to_process = exp_tracker.get_all_to_process()
         # logger.info(f"Experiments to process: has_converted=True{[exp.id for exp in experiments_to_process]}")
         return "", 200
-    
-    @app.get("/status")
-    def get_status():
-        status = automatic_converter.status()
-        print(status)
-        return status
 
     return app
 

@@ -59,38 +59,36 @@ class ExperimentDict(ABC):
         if experiments is not None:
             self.experiments = experiments
 
-    def add(
+    def set(
         self,
         id: str,
-        has_unconverted: bool | Literal["Error"] = False,
-        has_converted: bool | Literal["Error"] = False,
-        has_processed: bool | Literal["Error"] = False,
+        has_unconverted: bool | Literal["Error"] | None = None,
+        has_converted: bool | Literal["Error"] | None = None,
+        has_processed: bool | Literal["Error"] | None = None,
     ) -> bool:
         """
-        Add a new `Experiment` to dict with given id.
-        Returns True if add was successful and False if id is already in dict.
+        Add given `Experiment` with given id to dict.
+        If experiment with given id already exists, any specified parameters will be overwritten while
+        the rest will remain unchanged
         """
-        return self.add_exp(
-            Experiment(
-                id=id,
-                has_unconverted=has_unconverted,
-                has_converted=has_converted,
-                has_processed=has_processed,
+        if id not in self.experiments:
+            logger.debug(
+                f"Experiment {id} does not exist, creating new default experiment"
             )
-        )
+            self.experiments[id] = Experiment(id=id)
+        if has_unconverted is not None:
+            self.experiments[id].has_unconverted = has_unconverted
+        if has_converted is not None:
+            self.experiments[id].has_converted = has_converted
+        if has_processed is not None:
+            self.experiments[id].has_processed = has_processed
+        logger.debug(f"Set experiment {id} to {self.experiments[id]}")
 
-    def add_exp(self, exp: Experiment) -> bool:
+    def set_exp(self, exp: Experiment):
         """
-        Add given `Experiment` to dict.
-        Returns True if succeeded or False if experiment already exists
+        Add given `Experiment` to dict, or overwrite if experiment with given id already exists.
         """
-        if exp.id in self.experiments:
-            logger.debug(f"Experiment {exp.id} already exists")
-            return False
-        else:
-            self.experiments[exp.id] = exp
-            logger.debug(f"Added experiment {exp.id}")
-            return True
+        self.set(exp.id, exp.has_unconverted, exp.has_converted, exp.has_processed)
 
     def get(self, id: str) -> Experiment | None:
         return self.experiments.get(id)
@@ -102,10 +100,10 @@ class OverrideInventory(ExperimentDict):
     take precedence over values of actual experiments on disk
     """
 
-    def __init__(self, overrides: dict[str, Experiment]) -> None:
+    def __init__(self, overrides: dict[str, Experiment] | None = None) -> None:
         super().__init__(overrides)
 
-    def add(
+    def set(
         self,
         pattern: str,
         has_unconverted: bool | Literal["Error"] = False,
@@ -117,14 +115,14 @@ class OverrideInventory(ExperimentDict):
         Any experiments matching this pattern will be overriden with the provided experiment parameters.
         Returns True if add was successful and False if pattern is already in dict.
         """
-        return super().add(pattern, has_unconverted, has_converted, has_processed)
+        return super().set(pattern, has_unconverted, has_converted, has_processed)
 
-    def add_exp(self, exp: Experiment) -> bool:
+    def set_exp(self, exp: Experiment) -> bool:
         """
         Add given `Experiment` to override. The ID of the experiment can be any valid Regex pattern.
         Returns True if succeeded or False if experiment already exists
         """
-        return super().add_exp(exp)
+        return super().set_exp(exp)
 
     def get(self, pattern: str) -> Experiment | None:
         return self.experiments.get(pattern)
@@ -132,15 +130,15 @@ class OverrideInventory(ExperimentDict):
     def get_all(self) -> list[Experiment]:
         logger.debug(f"All overrides: {self.experiments.values()}")
         return list(self.experiments.values())
-    
-    def should_override_exp(self, id: str) -> bool:
+
+    def get_override_exp(self, id: str) -> Experiment | None:
         """
-        Returns True if given id matches an override pattern in the override inventory, and False otherewise
+        Returns override experiment whose pattern matches given id, or None otherewise
         """
         for override in self.experiments.values():
-                if re.search(override.id, id) is not None:
-                    return True
-        return False
+            if re.search(override.id, id) is not None:
+                return override
+        return None
 
 
 class ExperimentInventory(ExperimentDict):
@@ -150,24 +148,24 @@ class ExperimentInventory(ExperimentDict):
         super().__init__()
         self._override_inventory = override_inventory
 
-    def add_exp(self, exp: Experiment) -> bool:
+    def set(
+        self,
+        id: str,
+        has_unconverted: bool | None | Literal["Error"] = None,
+        has_converted: bool | None | Literal["Error"] = None,
+        has_processed: bool | None | Literal["Error"] = None,
+    ) -> bool:
         """
         Add given `Experiment` to inventory.
+        If experiment with given id already exists, any specified parameters will be overwritten.
         If the experiment ID matches any override patterns,
-        its parameters will be overwritten with the override experiment.
-        Returns True if succeeded or False if experiment already exists
+        its parameters will instead be overwritten with the override experiment
         """
-        for pattern, override_exp in self._override_inventory.experiments.items():
-            match = re.search(pattern, exp.id)
-            if match is not None:
-                new_overriden_exp = Experiment(
-                    id=exp.id,
-                    has_unconverted=override_exp.has_unconverted,
-                    has_converted=override_exp.has_converted,
-                    has_processed=override_exp.has_processed,
-                )
-                logger.info(
-                    f"Overriding experiment {exp.id} with {new_overriden_exp.__repr__()}"
-                )
-                return super().add_exp(new_overriden_exp)
-        return super().add_exp(exp)
+        override_exp = self._override_inventory.get_override_exp(id)
+        if override_exp is not None:
+            logger.info(f"Overriding experiment {id} with {override_exp.__repr__()}")
+            has_unconverted = override_exp.has_unconverted
+            has_converted = override_exp.has_converted
+            has_processed = override_exp.has_processed
+
+        super().set(id, has_unconverted, has_converted, has_processed)

@@ -1,4 +1,3 @@
-import re
 from automatic_converter.experiment_inventory import Experiment, ExperimentInventory, OverrideInventory
 from pathlib import Path
 from loguru import logger
@@ -90,15 +89,15 @@ class ExperimentTracker:
         """
         # Clear all unconverted statuses at beginning except overridden experiments
         for exp in self.experiments.experiments.values():
-            if not self._overrides.should_override_exp(exp.id):
+            if self._overrides.get_override_exp(exp.id) is None:
                 exp.has_unconverted = False
+            else:
+                logger.debug(f"Skip clearing experiment {exp.id}")
         
         unconverted_exps = self._scan_directory(self._unconverted_data_dir)
         logger.info(f"Found unconverted experiments: {unconverted_exps}")
         for id in unconverted_exps:
-            if not self.experiments.add(id, has_unconverted=True):
-                # if experiment already in inventory
-                self.experiments.get(id).has_unconverted = True
+            self.experiments.set(id, has_unconverted=True)
 
     def _refresh_converted(self):
         """
@@ -109,8 +108,10 @@ class ExperimentTracker:
         """
         # Clear all converted statuses at beginning except overridden experiments
         for exp in self.experiments.experiments.values():
-            if not self._overrides.should_override_exp(exp.id):
+            if self._overrides.get_override_exp(exp.id) is None:
                 exp.has_converted = False
+            else:
+                logger.debug(f"Skip clearing experiment {exp.id}")
         converted_exps = self._scan_directory(self._converted_data_dir)
         logger.info(f"Found converted experiments: {converted_exps}")
         for id in converted_exps:
@@ -127,9 +128,7 @@ class ExperimentTracker:
                 logger.warning(f"No conversion.log found for experiment {id}")
                 exp_status = "Error"
 
-            if not self.experiments.add(id, has_converted=exp_status):
-                # if experiment already in inventory
-                self.experiments.get(id).has_converted = exp_status
+            self.experiments.set(id, has_converted=exp_status)
 
     def _refresh_processed(self):
         """
@@ -138,14 +137,14 @@ class ExperimentTracker:
         """
         # Clear all processed statuses at beginning except overridden experiments
         for exp in self.experiments.experiments.values():
-            if not self._overrides.should_override_exp(exp.id):
+            if self._overrides.get_override_exp(exp.id) is None:
                 exp.has_processed = False
+            else:
+                logger.debug(f"Skip clearing experiment {exp.id}")
         processed_exps = self._scan_directory(self._processed_data_dir)
         logger.info(f"Found processed experiments: {processed_exps}")
         for id in processed_exps:
-            if not self.experiments.add(id, has_processed=True):
-                # if experiment already in inventory
-                self.experiments.get(id).has_processed = True
+            self.experiments.set(id, has_processed=True)
     
     def _scan_directory(self, target_dir) -> list[str]:
         """Scans target directory and returns list of experiment IDs found in target"""

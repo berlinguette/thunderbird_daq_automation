@@ -1,3 +1,4 @@
+import re
 from automatic_converter.experiment_inventory import Experiment, ExperimentInventory, OverrideInventory
 from pathlib import Path
 from loguru import logger
@@ -119,7 +120,8 @@ class ExperimentTracker:
             try:
                 exp_log_path = Path(self._converted_data_dir, id, "conversion.log")
                 with open(exp_log_path, "r") as f:
-                    if "ERROR" in f.read():
+                    contents = f.read()
+                    if "ERROR" in contents or re.search(f"Conversion of .*{id} complete", contents) is None:
                         logger.warning(
                             f"Experiment {id} could be malformed, check conversion.log"
                         )

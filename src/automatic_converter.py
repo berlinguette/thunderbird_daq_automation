@@ -31,7 +31,7 @@ def create_app():
 
     overrides = OverrideInventory()
     overrides.set(
-        pattern="ID-(338|350|FAKE.*)",
+        pattern="ID-(338|350)",
         has_unconverted=True,
         has_converted=True,
         has_processed=True,

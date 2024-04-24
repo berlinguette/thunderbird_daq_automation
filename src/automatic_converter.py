@@ -79,7 +79,7 @@ def create_app():
     @app.get("/convert")
     def get_status():
         status = automatic_converter.status()
-        print(status)
+        logger.info(f"Current conversion status: {status}")
         return status
     
     @app.post("/convert")
@@ -96,14 +96,14 @@ def create_app():
         experiments_to_convert = exp_tracker.get_all_to_convert()
         logger.info(f"Experiments to convert: {[exp.id for exp in experiments_to_convert]}")
         for exp in experiments_to_convert:
-            logger.info(f"Converting experiment {exp}")
+            logger.info(f"Adding experiment {exp} to conversion queue")
             exp_path = Path(unconverted_data_dir, exp.id)
             automatic_converter.convert(exp_path)
         
         # exp_tracker._refresh_converted()
         # experiments_to_process = exp_tracker.get_all_to_process()
         # logger.info(f"Experiments to process: has_converted=True{[exp.id for exp in experiments_to_process]}")
-        return "", 200
+        return automatic_converter.status(), 200
 
     return app
 

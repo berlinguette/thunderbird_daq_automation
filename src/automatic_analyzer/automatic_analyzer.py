@@ -6,7 +6,7 @@ import data_converter.data_converter as data_converter
 from threading import Thread, Lock
 from queue import Queue
 
-class AutomaticConverter:
+class AutomaticAnalyzer:
     in_progress_exp: str = ""
     in_progress_lock = Lock()
 
@@ -16,11 +16,11 @@ class AutomaticConverter:
         self._config = get_configuration({}, self._config_setup, None)
         self._conversion_queue = Queue()
 
-        self._converter_thread = Thread(target=self._converter)
+        self._converter_thread = Thread(target=self._analyzer)
         self._converter_thread.daemon = True
         self._converter_thread.start()
 
-    def convert(self, exp_path: str):
+    def analyze(self, exp_path: str):
         self._conversion_queue.put(exp_path)
     
     def status(self):
@@ -32,7 +32,7 @@ class AutomaticConverter:
             "queued": [str(exp) for exp in list(self._conversion_queue.queue)]
         }
 
-    def _converter(self):
+    def _analyzer(self):
         while True:
             exp_path = self._conversion_queue.get() # blocks until item available
             self.in_progress_lock.acquire()

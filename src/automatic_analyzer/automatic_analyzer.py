@@ -14,7 +14,6 @@ import data_converter.data_converter as data_converter
 from threading import Thread, Lock
 from queue import Queue
 
-
 class AnalysisParams(BaseModel):
     """
     Parameters for analyzing an experiment.
@@ -23,6 +22,7 @@ class AnalysisParams(BaseModel):
 
     convert_unconverted: bool = True
     process_converted: bool = True
+    pattern: str|None = None
     force: bool = False
 
 

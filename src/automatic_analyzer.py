@@ -1,3 +1,4 @@
+import re
 from pydantic import ValidationError
 from automatic_analyzer.experiment_inventory import (
     Experiment,
@@ -17,7 +18,7 @@ import sys
 # import logging
 
 logger.remove()
-logger.add(sys.stderr, level="DEBUG")
+logger.add(sys.stderr, level="INFO")
 # logging.basicConfig(level=logging.DEBUG)
 
 # neutron_data_path = "/mnt/qmi-share/Neutron Data/"
@@ -112,6 +113,14 @@ def create_app():
                 return err.__str__(), 400
         exp_tracker.refresh_all()
         experiments_to_analyze = exp_tracker.get_all_to_analyze()
+        if analysis_params.pattern is not None:
+            patt = analysis_params.pattern
+            logger.info(f"Filtering experiments by pattern '{patt}'")
+            experiments_to_analyze = [
+                exp
+                for exp in experiments_to_analyze
+                if re.search(patt, exp.id) is not None
+            ]
         logger.info(
             f"Experiments to analyze: {[exp.id for exp in experiments_to_analyze]}"
         )

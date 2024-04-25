@@ -1,5 +1,9 @@
 import re
-from automatic_converter.experiment_inventory import Experiment, ExperimentInventory, OverrideInventory
+from automatic_converter.experiment_inventory import (
+    Experiment,
+    ExperimentInventory,
+    OverrideInventory,
+)
 from pathlib import Path
 from loguru import logger
 import os
@@ -9,12 +13,13 @@ class ExperimentTracker:
     """
     Tracks inventory of all experiments in QMI data drive
     """
+
     def __init__(
         self,
-        unconverted_data_dir: str,
-        converted_data_dir: str,
-        processed_data_dir: str,
-        overrides: OverrideInventory
+        unconverted_data_dir: Path,
+        converted_data_dir: Path,
+        processed_data_dir: Path,
+        overrides: OverrideInventory,
     ) -> None:
         """Initializes new experiment inventory and establishes directory baseline"""
         self._unconverted_data_dir = unconverted_data_dir
@@ -45,7 +50,7 @@ class ExperimentTracker:
         """Get all experiments that are in unconverted directory but not converted"""
         to_convert = []
         for exp in self.experiments.experiments.values():
-            if exp.has_unconverted and not exp.has_converted:
+            if exp.unconverted_mtime is not None and exp.converted_mtime is None:
                 to_convert.append(exp)
         logger.debug(f"All to-be-converted experiments: {to_convert}")
         return to_convert
@@ -54,7 +59,7 @@ class ExperimentTracker:
         """Get all experiments that are in converted directory but not processed"""
         to_process = []
         for exp in self.experiments.experiments.values():
-            if exp.has_converted and not exp.has_processed:
+            if exp.converted_mtime is not None and exp.processed_mtime is None:
                 to_process.append(exp)
         logger.debug(f"All to-be-processed experiments: {to_process}")
         return to_process
@@ -91,14 +96,14 @@ class ExperimentTracker:
         # Clear all unconverted statuses at beginning except overridden experiments
         for exp in self.experiments.experiments.values():
             if self._overrides.get_override_exp(exp.id) is None:
-                exp.has_unconverted = False
+                exp.unconverted_mtime = None
             else:
                 logger.debug(f"Skip clearing experiment {exp.id}")
-        
+
         unconverted_exps = self._scan_directory(self._unconverted_data_dir)
         logger.info(f"Found unconverted experiments: {unconverted_exps}")
-        for id in unconverted_exps:
-            self.experiments.set(id, has_unconverted=True)
+        for id, mtime in unconverted_exps:
+            self.experiments.set(id, unconverted_mtime=mtime)
 
     def _refresh_converted(self):
         """
@@ -110,27 +115,30 @@ class ExperimentTracker:
         # Clear all converted statuses at beginning except overridden experiments
         for exp in self.experiments.experiments.values():
             if self._overrides.get_override_exp(exp.id) is None:
-                exp.has_converted = False
+                exp.converted_mtime = None
             else:
                 logger.debug(f"Skip clearing experiment {exp.id}")
         converted_exps = self._scan_directory(self._converted_data_dir)
         logger.info(f"Found converted experiments: {converted_exps}")
-        for id in converted_exps:
-            exp_status = True
+        for id, mtime in converted_exps:
+            exp_mtime = mtime
             try:
                 exp_log_path = Path(self._converted_data_dir, id, "conversion.log")
                 with open(exp_log_path, "r") as f:
                     contents = f.read()
-                    if "ERROR" in contents or re.search(f"Conversion of .*{id} complete", contents) is None:
+                    if (
+                        "ERROR" in contents
+                        or re.search(f"Conversion of .*{id} complete", contents) is None
+                    ):
                         logger.warning(
                             f"Experiment {id} could be malformed, check conversion.log"
                         )
-                        exp_status = "Error"
+                        exp_mtime = "Error"
             except FileNotFoundError:
                 logger.warning(f"No conversion.log found for experiment {id}")
-                exp_status = "Error"
+                exp_mtime = "Error"
 
-            self.experiments.set(id, has_converted=exp_status)
+            self.experiments.set(id, converted_mtime=exp_mtime)
 
     def _refresh_processed(self):
         """
@@ -140,16 +148,20 @@ class ExperimentTracker:
         # Clear all processed statuses at beginning except overridden experiments
         for exp in self.experiments.experiments.values():
             if self._overrides.get_override_exp(exp.id) is None:
-                exp.has_processed = False
+                exp.processed_mtime = None
             else:
                 logger.debug(f"Skip clearing experiment {exp.id}")
         processed_exps = self._scan_directory(self._processed_data_dir)
         logger.info(f"Found processed experiments: {processed_exps}")
-        for id in processed_exps:
-            self.experiments.set(id, has_processed=True)
-    
-    def _scan_directory(self, target_dir) -> list[str]:
-        """Scans target directory and returns list of experiment IDs found in target"""
-        directories = [Path(f.path).parts[-1] for f in os.scandir(target_dir) if f.is_dir()]
+        for id, mtime in processed_exps:
+            self.experiments.set(id, processed_mtime=mtime)
+
+    def _scan_directory(self, target_dir: Path) -> list[tuple[str, float]]:
+        """Scans target directory and returns a list of pairs of experiment IDs found in target and their mtimes"""
+        directories = [
+            (f.parts[-1], f.lstat().st_mtime)
+            for f in target_dir.iterdir()
+            if f.is_dir()
+        ]
         logger.debug(f"Scanned directories in {target_dir}: {directories}")
         return directories

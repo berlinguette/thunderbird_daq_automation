@@ -32,9 +32,9 @@ def create_app():
     overrides = OverrideInventory()
     overrides.set(
         pattern="ID-(338|350)",
-        has_unconverted=True,
-        has_converted=True,
-        has_processed=True,
+        unconverted_mtime=0,
+        converted_mtime=0,
+        processed_mtime=0,
     )
 
     exp_tracker = ExperimentTracker(

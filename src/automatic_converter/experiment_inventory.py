@@ -48,6 +48,7 @@ class ExperimentProperties(BaseModel):
             overridden=False,
         )
 
+
 class Experiment(BaseModel):
     """
     Represents an experiment in the QMI data drive.
@@ -76,18 +77,18 @@ class ExperimentDict(ABC):
     def set(self, id: str, props: ExperimentProperties) -> None:
         """
         Add given `Experiment` with given id to dict.
+        If experiment does not already exist, it will be initialized with default parameters
+        and any non-None given prop fields will be set.
         If experiment with given id already exists, any specified parameters will be overwritten while
         the rest will remain unchanged
         """
         if id not in self.experiments:
-            logger.debug(
-                f"Experiment {id} does not exist, creating new default experiment"
-            )
-            exp_props = ExperimentProperties.make_default()
-            exp_props.replace_props(props)
-            self.experiments[id] = Experiment(id=id, props=exp_props)
+            default_props = ExperimentProperties.make_default()
+            self.experiments[id] = Experiment(id=id, props=default_props)
         else:
-            self.experiments[id].props.replace_props(props)
+            logger.debug(f"Experiment {id} already exists, replacing props")
+        
+        self.experiments[id].props.replace_props(props)
         logger.debug(f"Set experiment {id} to {self.experiments[id]}")
 
     def set_exp(self, exp: Experiment):
@@ -113,15 +114,19 @@ class OverrideInventory(ExperimentDict):
         """
         Add a new override with given Regex pattern.
         Any experiments matching this pattern will be overriden with the provided experiment parameters.
-        Note that any given props with the `None` value will be ignored
+        Note that any `None` prop fields will set the override to default props
+        except the `overridden` field, which will be force set to True
         """
+        props.overridden = True
         super().set(pattern, props)
 
     def set_exp(self, exp: Experiment):
         """
         Add given `Experiment` to override. The ID of the experiment can be any valid Regex pattern.
-        Note that any given props with the `None` value will be ignored
+        Note that any `None` prop fields will set the override to default props
+        except the `overridden` field, which will be force set to True
         """
+        exp.props.overridden = True
         super().set_exp(exp)
 
     def get(self, pattern: str) -> Experiment | None:
@@ -149,12 +154,6 @@ class ExperimentInventory(ExperimentDict):
         self._override_inventory = override_inventory
 
     def set(self, id: str, props: ExperimentProperties) -> None:
-        """
-        Add given `Experiment` to inventory.
-        If experiment with given id already exists, any specified props will be overwritten.
-        If the experiment ID matches any override patterns,
-        its props will instead be overwritten with the override experiment's props
-        """
         override_exp = self._override_inventory.get_override_exp(id)
         if override_exp is not None:
             logger.info(f"Overriding experiment {id} with {override_exp.__repr__()}")

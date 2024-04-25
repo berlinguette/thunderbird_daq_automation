@@ -104,7 +104,7 @@ def create_app():
             f"Experiments to analyze: {[exp.id for exp in experiments_to_convert]}"
         )
         for exp in experiments_to_convert:
-            analysis = Analysis(id=exp.id, params=analysis_params)
+            analysis = Analysis(exp=exp, params=analysis_params)
             automatic_analyzer.analyze(analysis)
 
         # exp_tracker._refresh_converted()

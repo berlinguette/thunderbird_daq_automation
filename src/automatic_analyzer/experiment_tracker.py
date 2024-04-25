@@ -60,10 +60,21 @@ class ExperimentTracker:
         """Get all experiments that are in converted directory but not processed"""
         to_process = []
         for exp in self.experiments.experiments.values():
-            if exp.props.converted_mtime != -1 and exp.props.processed_mtime == 1:
+            if exp.props.converted_mtime != -1 and exp.props.processed_mtime == -1:
                 to_process.append(exp)
         logger.debug(f"All to-be-processed experiments: {to_process}")
         return to_process
+
+    def get_all_to_analyze(self) -> list[Experiment]:
+        """Get all experiments that are in unconverted directory but not converted or processed"""
+        to_analyze = []
+        for exp in self.experiments.experiments.values():
+            if exp.props.unconverted_mtime != -1 and (
+                exp.props.converted_mtime == -1 or exp.props.processed_mtime == -1
+            ):
+                to_analyze.append(exp)
+        logger.debug(f"All to-be-analyzed experiments: {to_analyze}")
+        return to_analyze
 
     # def get_all_unconverted(self) -> list[Experiment]:
     #     """Get all experiments that are present in unconverted directory"""

@@ -1,5 +1,9 @@
 from pydantic import BaseModel, ValidationError
-from automatic_converter.experiment_inventory import Experiment, OverrideInventory
+from automatic_converter.experiment_inventory import (
+    Experiment,
+    ExperimentProperties,
+    OverrideInventory,
+)
 from automatic_converter.experiment_tracker import ExperimentTracker
 from automatic_converter.automatic_converter import AutomaticConverter
 from pathlib import Path
@@ -21,9 +25,11 @@ processed_data_dir = Path(neutron_data_path, "3-Output")
 # watch_folder = "Q:/Neutron Data/1-Unconverted_Data"
 # target_folder = "Q:/Neutron Data/2-Converted_Data"
 
+
 class ConvertRequest(BaseModel):
     convert_unconverted: bool = True
     process_converted: bool = True
+
 
 def create_app():
     app = Flask(__name__)
@@ -32,9 +38,9 @@ def create_app():
     overrides = OverrideInventory()
     overrides.set(
         pattern="ID-(338|350)",
-        unconverted_mtime=0,
-        converted_mtime=0,
-        processed_mtime=0,
+        props=ExperimentProperties(
+            unconverted_mtime=0, converted_mtime=0, processed_mtime=0, overridden=True
+        ),
     )
 
     exp_tracker = ExperimentTracker(
@@ -70,18 +76,18 @@ def create_app():
                 return err.__str__(), 400
         else:
             return "", 415
-    
+
     @app.delete("/overrides/<pattern>")
     def delete_override(pattern: str):
         overrides.experiments.pop(pattern, None)
         return [exp.dict() for exp in overrides.get_all()], 200
-    
+
     @app.get("/convert")
     def get_status():
         status = automatic_converter.status()
         logger.info(f"Current conversion status: {status}")
         return status
-    
+
     @app.post("/convert")
     def convert():
         # if request.is_json:
@@ -94,12 +100,14 @@ def create_app():
         #         return err.__str__(), 400
         exp_tracker.refresh_all()
         experiments_to_convert = exp_tracker.get_all_to_convert()
-        logger.info(f"Experiments to convert: {[exp.id for exp in experiments_to_convert]}")
+        logger.info(
+            f"Experiments to convert: {[exp.id for exp in experiments_to_convert]}"
+        )
         for exp in experiments_to_convert:
             logger.info(f"Adding experiment {exp} to conversion queue")
             exp_path = Path(unconverted_data_dir, exp.id)
             automatic_converter.convert(exp_path)
-        
+
         # exp_tracker._refresh_converted()
         # experiments_to_process = exp_tracker.get_all_to_process()
         # logger.info(f"Experiments to process: has_converted=True{[exp.id for exp in experiments_to_process]}")

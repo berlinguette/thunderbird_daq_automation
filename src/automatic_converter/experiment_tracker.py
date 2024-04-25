@@ -2,6 +2,7 @@ import re
 from automatic_converter.experiment_inventory import (
     Experiment,
     ExperimentInventory,
+    ExperimentProperties,
     OverrideInventory,
 )
 from pathlib import Path
@@ -50,7 +51,7 @@ class ExperimentTracker:
         """Get all experiments that are in unconverted directory but not converted"""
         to_convert = []
         for exp in self.experiments.experiments.values():
-            if exp.unconverted_mtime is not None and exp.converted_mtime is None:
+            if exp.props.unconverted_mtime != -1 and exp.props.converted_mtime == -1:
                 to_convert.append(exp)
         logger.debug(f"All to-be-converted experiments: {to_convert}")
         return to_convert
@@ -59,7 +60,7 @@ class ExperimentTracker:
         """Get all experiments that are in converted directory but not processed"""
         to_process = []
         for exp in self.experiments.experiments.values():
-            if exp.converted_mtime is not None and exp.processed_mtime is None:
+            if exp.props.converted_mtime != -1 and exp.props.processed_mtime == 1:
                 to_process.append(exp)
         logger.debug(f"All to-be-processed experiments: {to_process}")
         return to_process
@@ -95,15 +96,15 @@ class ExperimentTracker:
         """
         # Clear all unconverted statuses at beginning except overridden experiments
         for exp in self.experiments.experiments.values():
-            if self._overrides.get_override_exp(exp.id) is None:
-                exp.unconverted_mtime = None
+            if not exp.props.overridden:
+                exp.props.unconverted_mtime = -1
             else:
-                logger.debug(f"Skip clearing experiment {exp.id}")
+                logger.debug(f"Skip clearing overridden experiment {exp.id}")
 
         unconverted_exps = self._scan_directory(self._unconverted_data_dir)
         logger.info(f"Found unconverted experiments: {unconverted_exps}")
         for id, mtime in unconverted_exps:
-            self.experiments.set(id, unconverted_mtime=mtime)
+            self.experiments.set(id, ExperimentProperties(unconverted_mtime=mtime))
 
     def _refresh_converted(self):
         """
@@ -114,10 +115,10 @@ class ExperimentTracker:
         """
         # Clear all converted statuses at beginning except overridden experiments
         for exp in self.experiments.experiments.values():
-            if self._overrides.get_override_exp(exp.id) is None:
-                exp.converted_mtime = None
+            if not exp.props.overridden:
+                exp.props.converted_mtime = -1
             else:
-                logger.debug(f"Skip clearing experiment {exp.id}")
+                logger.debug(f"Skip clearing overridden experiment {exp.id}")
         converted_exps = self._scan_directory(self._converted_data_dir)
         logger.info(f"Found converted experiments: {converted_exps}")
         for id, mtime in converted_exps:
@@ -138,7 +139,7 @@ class ExperimentTracker:
                 logger.warning(f"No conversion.log found for experiment {id}")
                 exp_mtime = "Error"
 
-            self.experiments.set(id, converted_mtime=exp_mtime)
+            self.experiments.set(id, ExperimentProperties(converted_mtime=exp_mtime))
 
     def _refresh_processed(self):
         """
@@ -147,14 +148,14 @@ class ExperimentTracker:
         """
         # Clear all processed statuses at beginning except overridden experiments
         for exp in self.experiments.experiments.values():
-            if self._overrides.get_override_exp(exp.id) is None:
-                exp.processed_mtime = None
+            if not exp.props.overridden:
+                exp.props.processed_mtime = -1
             else:
-                logger.debug(f"Skip clearing experiment {exp.id}")
+                logger.debug(f"Skip clearing overridden experiment {exp.id}")
         processed_exps = self._scan_directory(self._processed_data_dir)
         logger.info(f"Found processed experiments: {processed_exps}")
         for id, mtime in processed_exps:
-            self.experiments.set(id, processed_mtime=mtime)
+            self.experiments.set(id, ExperimentProperties(processed_mtime=mtime))
 
     def _scan_directory(self, target_dir: Path) -> list[tuple[str, float]]:
         """Scans target directory and returns a list of pairs of experiment IDs found in target and their mtimes"""

@@ -1,5 +1,5 @@
 import re
-from automatic_converter.experiment_inventory import (
+from automatic_analyzer.experiment_inventory import (
     Experiment,
     ExperimentInventory,
     ExperimentProperties,

@@ -1,11 +1,15 @@
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 from automatic_analyzer.experiment_inventory import (
     Experiment,
     ExperimentProperties,
     OverrideInventory,
 )
 from automatic_analyzer.experiment_tracker import ExperimentTracker
-from automatic_analyzer.automatic_analyzer import AutomaticAnalyzer
+from automatic_analyzer.automatic_analyzer import (
+    Analysis,
+    AnalysisParams,
+    AutomaticAnalyzer,
+)
 from pathlib import Path
 from loguru import logger
 from flask import Flask, request
@@ -26,14 +30,11 @@ processed_data_dir = Path(neutron_data_path, "3-Output")
 # target_folder = "Q:/Neutron Data/2-Converted_Data"
 
 
-class ConvertRequest(BaseModel):
-    convert_unconverted: bool = True
-    process_converted: bool = True
-
-
 def create_app():
     app = Flask(__name__)
-    automatic_analyzer = AutomaticAnalyzer(converted_data_dir)
+    automatic_analyzer = AutomaticAnalyzer(
+        unconverted_data_dir, converted_data_dir, processed_data_dir
+    )
 
     overrides = OverrideInventory()
     overrides.set(
@@ -90,28 +91,30 @@ def create_app():
 
     @app.post("/analyze")
     def start_analyze():
-        # if request.is_json:
-        #     body = request.json
-        #     try:
-        #         convert_request = ConvertRequest.parse_obj(body)
-        #         convert_unconverted = convert_request.convert_unconverted
-        #         process_converted = convert_request.process_converted
-        #     except ValidationError as err:
-        #         return err.__str__(), 400
+        analysis_params = AnalysisParams()
+        if request.is_json:
+            body = request.json
+            try:
+                analysis_params = AnalysisParams.parse_obj(body)
+            except ValidationError as err:
+                return err.__str__(), 400
         exp_tracker.refresh_all()
         experiments_to_convert = exp_tracker.get_all_to_convert()
         logger.info(
             f"Experiments to analyze: {[exp.id for exp in experiments_to_convert]}"
         )
         for exp in experiments_to_convert:
-            logger.info(f"Adding experiment {exp} to conversion queue")
-            exp_path = Path(unconverted_data_dir, exp.id)
-            automatic_analyzer.analyze(exp_path)
+            analysis = Analysis(id=exp.id, params=analysis_params)
+            automatic_analyzer.analyze(analysis)
 
         # exp_tracker._refresh_converted()
         # experiments_to_process = exp_tracker.get_all_to_process()
         # logger.info(f"Experiments to process: has_converted=True{[exp.id for exp in experiments_to_process]}")
-        return automatic_analyzer.status(), 200
+
+        # Queue might be empty because analysis hasn't been put in queue yet
+        status = automatic_analyzer.status()
+        logger.info(f"Current analysis status: {status}")
+        return status, 200
 
     return app
 

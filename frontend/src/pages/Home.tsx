@@ -1,5 +1,6 @@
-import { Box, Flex, Spacer, Tab, TabList, TabPanel, TabPanels, Tabs } from "@chakra-ui/react";
+import { Flex, Tab, TabList, TabPanel, TabPanels, Tabs } from "@chakra-ui/react";
 import NavBar from "../components/NavBar";
+import InventoryTable from "../components/InventoryTable";
 
 function Home() {
 
@@ -7,7 +8,7 @@ function Home() {
     <Flex flexDirection="column" gap={10} padding={6}>
       <NavBar />
       <Flex>
-      <Tabs>
+        <Tabs>
           <TabList>
             <Tab>All</Tab>
             <Tab>To be converted</Tab>
@@ -16,7 +17,7 @@ function Home() {
 
           <TabPanels>
             <TabPanel>
-              <p>One</p>
+              <InventoryTable />
             </TabPanel>
             <TabPanel>
               <p>Two</p>

@@ -20,7 +20,7 @@ const NavBar = () => {
       <Box fontSize="xx-large" fontWeight={600} marginY="auto">Thunderbird Data Analyzer</Box>
       <Flex alignItems="center" fontSize="medium" fontWeight={400} gap={4}>
         {nav.map((link) => (
-          <Link to={link.href}>
+          <Link to={link.href} key={link.href}>
             <Box
               paddingY={4}
               paddingX={5}

@@ -1,15 +1,26 @@
-import { RepeatIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronUpIcon, RepeatIcon } from '@chakra-ui/icons';
 import { Box, Button, Card, CardBody, Checkbox, Flex, Table, TableContainer, Tbody, Td, Th, Thead, Tr } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-const testData = [
+type Experiment = {
+  selected: boolean,
+  id: string,
+  props: {
+    unconverted_mtime: Date | -1,
+    converted_mtime: Date | -1,
+    processed_mtime: Date | -1,
+    overridden: boolean
+  }
+};
+
+const testData: Experiment[] = [
   {
     selected: false,
     id: "ID-420",
     props: {
-      unconverted_mtime: "Apr 23, 2024 12:02 PM",
-      converted_mtime: "Apr 23, 2024 12:02 PM",
-      processed_mtime: "Apr 23, 2024 12:02 PM",
+      unconverted_mtime: new Date("Apr 23, 2024 12:02 PM"),
+      converted_mtime: new Date("Apr 23, 2024 12:03 PM"),
+      processed_mtime: new Date("Apr 23, 2024 12:04 PM"),
       overridden: false
     }
   },
@@ -17,9 +28,9 @@ const testData = [
     selected: false,
     id: "ID-419",
     props: {
-      unconverted_mtime: "Apr 23, 2024 12:02 PM",
-      converted_mtime: "Apr 23, 2024 12:02 PM",
-      processed_mtime: "Apr 23, 2024 12:02 PM",
+      unconverted_mtime: new Date("Jan 01, 1970 12:00 AM"),
+      converted_mtime: new Date("Jan 01, 1970 12:00 AM"),
+      processed_mtime: new Date("Jan 01, 1970 12:00 AM"),
       overridden: true
     }
   },
@@ -27,19 +38,28 @@ const testData = [
     selected: false,
     id: "ID-418",
     props: {
-      unconverted_mtime: "Apr 23, 2024 12:02 PM",
-      converted_mtime: "-1",
-      processed_mtime: "-1",
+      unconverted_mtime: new Date("Apr 23, 2024 12:02 PM"),
+      converted_mtime: -1,
+      processed_mtime: -1,
       overridden: false
     }
   }
 ];
 
-const InventoryTable = () => {
-  const [experiments, setExperiments] = useState(testData);
+type Conversions = "unconverted" | "converted" | "processed";
 
-  const allChecked = experiments.every(({selected}) => selected);
-  const isIndeterminate = experiments.some(({selected}) => selected) && !allChecked;
+/** Possible sort states of the table.
+ * The non `-rev` versions will sort in order of newest to oldest
+ * while the `-rev` versions will sort from oldest to newest. */
+type Sort = "id" | Conversions;  
+
+const InventoryTable = () => {
+  const [experiments, setExperiments] = useState<Experiment[]>(testData);
+  const [sort, setSort] = useState<Sort>("id");
+  const [reverseSort, setReverseSort] = useState(false);
+
+  const allChecked = experiments.every(({ selected }) => selected);
+  const isIndeterminate = experiments.some(({ selected }) => selected) && !allChecked;
   const handleCheckAll = () => {
     const newChecked = isIndeterminate || !allChecked;
     setExperiments((prev) => prev.map((exp) => {
@@ -57,6 +77,61 @@ const InventoryTable = () => {
       return newExperiments;
     });
   };
+
+  const makeColumnClickHandler = (columnName: "id" | "unconverted" | "converted" | "processed") => () => {
+    if (sort === columnName) {
+      setReverseSort((prev) => !prev);
+    } else {
+      setSort(columnName);
+      setReverseSort(false);
+    }
+  }
+
+  /** Sorts experiment IDs in the format `ID-xxx` in descending order (most recent first).
+   * Experiments with non-numeric IDs will be sorted to the end. */
+  const experimentSorter = (a: Experiment, b: Experiment) => {
+    const aId = a.id.split("-")[1];
+    const bId = b.id.split("-")[1];
+    if (!aId || isNaN(parseInt(aId))) return 1;
+    if (!bId || isNaN(parseInt(bId))) return -1;
+
+    return Number(bId) - Number(aId);
+  }
+
+  /** Makes an experiment sorter based on the desired type to sort by.
+   * Non `-rev` versions will sort in descending order (most recent first).
+   */
+  const makeMtimeSorter = (type: Conversions) => (a: Experiment, b: Experiment) => {
+    let aMtime = a.props.unconverted_mtime;
+    let bMtime = b.props.unconverted_mtime;
+    if (type === "converted") {
+      aMtime = a.props.converted_mtime;
+      bMtime = b.props.converted_mtime;
+    }
+    if (type === "processed") {
+      aMtime = a.props.processed_mtime;
+      bMtime = b.props.processed_mtime;
+    }
+    
+    if (aMtime == -1) return 1;
+    if (bMtime == -1) return -1;
+    return bMtime.valueOf() - aMtime.valueOf();
+  }
+
+  useEffect(() => {
+    setExperiments((prev) => {
+      let sortedExperiment = prev;
+      switch (sort) {
+        case "id":
+          sortedExperiment = prev.toSorted(experimentSorter);
+          break;
+        default:
+          sortedExperiment = prev.toSorted(makeMtimeSorter(sort));
+      }
+      if (reverseSort) sortedExperiment.reverse();
+      return sortedExperiment;
+    });
+  }, [sort, reverseSort]);
 
   return (
     <Flex flexDir="column" gap={4}>
@@ -81,10 +156,34 @@ const InventoryTable = () => {
                       onChange={handleCheckAll}
                     />
                   </Th>
-                  <Th>ID</Th>
-                  <Th>Unconverted Data</Th>
-                  <Th>Converted Data</Th>
-                  <Th>Processed Data</Th>
+                  <Th>
+                    <Box cursor="pointer" onClick={makeColumnClickHandler("id")}>
+                      ID
+                      {sort === "id" && <ChevronDownIcon boxSize={5} />}
+                      {sort === "id" && reverseSort && <ChevronUpIcon boxSize={5} />}
+                    </Box>
+                  </Th>
+                  <Th>
+                    <Box cursor="pointer" onClick={makeColumnClickHandler("unconverted")}>
+                      Unconverted Data
+                      {sort === "unconverted" && <ChevronDownIcon boxSize={5} />}
+                      {sort === "unconverted" && reverseSort && <ChevronUpIcon boxSize={5} />}
+                    </Box>
+                  </Th>
+                  <Th>
+                    <Box cursor="pointer" onClick={makeColumnClickHandler("converted")}>
+                      Converted Data
+                      {sort === "converted" && <ChevronDownIcon boxSize={5} />}
+                      {sort === "converted" && reverseSort && <ChevronUpIcon boxSize={5} />}
+                    </Box>
+                  </Th>
+                  <Th>
+                    <Box cursor="pointer" onClick={makeColumnClickHandler("processed")}>
+                      Processed Data
+                      {sort === "processed" && <ChevronDownIcon boxSize={5} />}
+                      {sort === "processed" && reverseSort && <ChevronUpIcon boxSize={5} />}
+                    </Box>
+                  </Th>
                 </Tr>
               </Thead>
               <Tbody>
@@ -115,11 +214,11 @@ const InventoryTable = () => {
   );
 };
 
-const MTimeDisplay = ({mtime, overridden}: {mtime: string, overridden: boolean}) => {
-  const found = Number(mtime) !== -1;
+const MTimeDisplay = ({ mtime, overridden }: { mtime: Date | -1, overridden: boolean }) => {
+  const found = mtime != -1;
   return (
     <Box color={found ? "green.600" : "red.600"}>
-      {found ? mtime : "Not found"}
+      {found ? mtime.toLocaleString() : "Not found"}
       {overridden && <Box color="orange.600">(Overridden)</Box>}
     </Box>
   )

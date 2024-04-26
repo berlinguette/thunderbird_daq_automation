@@ -1,41 +1,45 @@
 import { RepeatIcon } from '@chakra-ui/icons';
-import { Button, Card, CardBody, Checkbox, Flex, Table, TableContainer, Tbody, Td, Th, Thead, Tr } from '@chakra-ui/react';
+import { Box, Button, Card, CardBody, Checkbox, Flex, Table, TableContainer, Tbody, Td, Th, Thead, Tr } from '@chakra-ui/react';
 import { useState } from 'react';
 
-const InventoryTable = () => {
-
-  const [experiments, setExperiments] = useState([
-    {
-      selected: false,
-      id: "ID-420",
-      props: {
-        unconverted_mtime: "Apr 23, 2024 12:02 PM",
-        converted_mtime: "Apr 23, 2024 12:02 PM",
-        processed_mtime: "Apr 23, 2024 12:02 PM"
-      }
-    },
-    {
-      selected: false,
-      id: "ID-419",
-      props: {
-        unconverted_mtime: "Apr 23, 2024 12:02 PM",
-        converted_mtime: "Apr 23, 2024 12:02 PM",
-        processed_mtime: "Apr 23, 2024 12:02 PM"
-      }
+const testData = [
+  {
+    selected: false,
+    id: "ID-420",
+    props: {
+      unconverted_mtime: "Apr 23, 2024 12:02 PM",
+      converted_mtime: "Apr 23, 2024 12:02 PM",
+      processed_mtime: "Apr 23, 2024 12:02 PM",
+      overridden: false
     }
-  ]);
+  },
+  {
+    selected: false,
+    id: "ID-419",
+    props: {
+      unconverted_mtime: "Apr 23, 2024 12:02 PM",
+      converted_mtime: "Apr 23, 2024 12:02 PM",
+      processed_mtime: "Apr 23, 2024 12:02 PM",
+      overridden: true
+    }
+  },
+  {
+    selected: false,
+    id: "ID-418",
+    props: {
+      unconverted_mtime: "Apr 23, 2024 12:02 PM",
+      converted_mtime: "-1",
+      processed_mtime: "-1",
+      overridden: false
+    }
+  }
+];
+
+const InventoryTable = () => {
+  const [experiments, setExperiments] = useState(testData);
 
   const allChecked = experiments.every(({selected}) => selected);
   const isIndeterminate = experiments.some(({selected}) => selected) && !allChecked;
-
-  const makeCheckedHandler = (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setExperiments((prev) => {
-      const newExperiments = [...prev];
-      newExperiments[index].selected = event.target.checked;
-      return newExperiments;
-    });
-  };
-
   const handleCheckAll = () => {
     const newChecked = isIndeterminate || !allChecked;
     setExperiments((prev) => prev.map((exp) => {
@@ -44,7 +48,15 @@ const InventoryTable = () => {
         selected: newChecked
       };
     }));
-  }
+  };
+
+  const makeCheckedHandler = (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setExperiments((prev) => {
+      const newExperiments = [...prev];
+      newExperiments[index].selected = event.target.checked;
+      return newExperiments;
+    });
+  };
 
   return (
     <Flex flexDir="column" gap={4}>
@@ -83,9 +95,15 @@ const InventoryTable = () => {
                   >
                     <Td><Checkbox isChecked={exp.selected} onChange={makeCheckedHandler(i)} /></Td>
                     <Td>{exp.id}</Td>
-                    <Td>{exp.props.unconverted_mtime}</Td>
-                    <Td>{exp.props.converted_mtime}</Td>
-                    <Td>{exp.props.processed_mtime}</Td>
+                    <Td>
+                      <MTimeDisplay mtime={exp.props.unconverted_mtime} overridden={exp.props.overridden} />
+                    </Td>
+                    <Td>
+                      <MTimeDisplay mtime={exp.props.converted_mtime} overridden={exp.props.overridden} />
+                    </Td>
+                    <Td>
+                      <MTimeDisplay mtime={exp.props.processed_mtime} overridden={exp.props.overridden} />
+                    </Td>
                   </Tr>
                 ))}
               </Tbody>
@@ -96,5 +114,15 @@ const InventoryTable = () => {
     </Flex>
   );
 };
+
+const MTimeDisplay = ({mtime, overridden}: {mtime: string, overridden: boolean}) => {
+  const found = Number(mtime) !== -1;
+  return (
+    <Box color={found ? "green.600" : "red.600"}>
+      {found ? mtime : "Not found"}
+      {overridden && <Box color="orange.600">(Overridden)</Box>}
+    </Box>
+  )
+}
 
 export default InventoryTable;

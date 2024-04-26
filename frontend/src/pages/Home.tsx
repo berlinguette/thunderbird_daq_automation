@@ -8,8 +8,8 @@ function Home() {
     <Flex flexDirection="column" gap={10} padding={6}>
       <NavBar />
       <Flex>
-        <Tabs>
-          <TabList>
+        <Tabs w="100%">
+          <TabList w="fit-content">
             <Tab>All</Tab>
             <Tab>To be converted</Tab>
             <Tab>To be processed</Tab>

@@ -1,6 +1,6 @@
 import { Flex, Tab, TabList, TabPanel, TabPanels, Tabs } from "@chakra-ui/react";
 import NavBar from "../components/NavBar";
-import InventoryTable from "../components/InventoryTable";
+import Inventory from "../components/Inventory";
 
 function Home() {
 
@@ -17,7 +17,7 @@ function Home() {
 
           <TabPanels>
             <TabPanel>
-              <InventoryTable />
+              <Inventory />
             </TabPanel>
             <TabPanel>
               <p>Two</p>

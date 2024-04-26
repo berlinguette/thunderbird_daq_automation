@@ -43,6 +43,16 @@ const testData: Experiment[] = [
       processed_mtime: -1,
       overridden: false
     }
+  },
+  {
+    selected: false,
+    id: "ID-TEST",
+    props: {
+      unconverted_mtime: new Date("Apr 23, 2024 12:02 PM"),
+      converted_mtime: -1,
+      processed_mtime: -1,
+      overridden: false
+    }
   }
 ];
 
@@ -113,24 +123,24 @@ const InventoryTable = () => {
       bMtime = b.props.processed_mtime;
     }
     
+    if (aMtime == -1 && bMtime == -1) return 0;
     if (aMtime == -1) return 1;
     if (bMtime == -1) return -1;
     return bMtime.valueOf() - aMtime.valueOf();
   }
 
   useEffect(() => {
-    setExperiments((prev) => {
-      let sortedExperiment = prev;
-      switch (sort) {
-        case "id":
-          sortedExperiment = prev.toSorted(experimentSorter);
-          break;
-        default:
-          sortedExperiment = prev.toSorted(makeMtimeSorter(sort));
-      }
-      if (reverseSort) sortedExperiment.reverse();
-      return sortedExperiment;
-    });
+    // In-place sorting/reverse functions cause weird behavior :/
+    let sortedExperiment = testData;
+    switch (sort) {
+      case "id":
+        sortedExperiment = sortedExperiment.toSorted(experimentSorter);
+        break;
+      default:
+        sortedExperiment = sortedExperiment.toSorted(makeMtimeSorter(sort));
+    }
+    if (reverseSort) sortedExperiment = sortedExperiment.toReversed();
+    setExperiments(sortedExperiment);
   }, [sort, reverseSort]);
 
   return (
@@ -159,28 +169,28 @@ const InventoryTable = () => {
                   <Th>
                     <Box cursor="pointer" onClick={makeColumnClickHandler("id")}>
                       ID
-                      {sort === "id" && <ChevronDownIcon boxSize={5} />}
+                      {sort === "id" && !reverseSort && <ChevronDownIcon boxSize={5} />}
                       {sort === "id" && reverseSort && <ChevronUpIcon boxSize={5} />}
                     </Box>
                   </Th>
                   <Th>
                     <Box cursor="pointer" onClick={makeColumnClickHandler("unconverted")}>
                       Unconverted Data
-                      {sort === "unconverted" && <ChevronDownIcon boxSize={5} />}
+                      {sort === "unconverted" && !reverseSort && <ChevronDownIcon boxSize={5} />}
                       {sort === "unconverted" && reverseSort && <ChevronUpIcon boxSize={5} />}
                     </Box>
                   </Th>
                   <Th>
                     <Box cursor="pointer" onClick={makeColumnClickHandler("converted")}>
                       Converted Data
-                      {sort === "converted" && <ChevronDownIcon boxSize={5} />}
+                      {sort === "converted" && !reverseSort && <ChevronDownIcon boxSize={5} />}
                       {sort === "converted" && reverseSort && <ChevronUpIcon boxSize={5} />}
                     </Box>
                   </Th>
                   <Th>
                     <Box cursor="pointer" onClick={makeColumnClickHandler("processed")}>
                       Processed Data
-                      {sort === "processed" && <ChevronDownIcon boxSize={5} />}
+                      {sort === "processed" && !reverseSort && <ChevronDownIcon boxSize={5} />}
                       {sort === "processed" && reverseSort && <ChevronUpIcon boxSize={5} />}
                     </Box>
                   </Th>

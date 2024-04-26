@@ -1,32 +1,33 @@
 import { RepeatIcon } from "@chakra-ui/icons";
-import { Button, Flex } from "@chakra-ui/react";
+import { Button, Flex, Spacer } from "@chakra-ui/react";
 import InventoryTable from "./InventoryTable";
 import { Experiment } from "../types/Experiment";
 import { useEffect, useState } from "react";
+import OverridesPanel from "./OverridesPanel";
 
 const testData: Experiment[] = [
   {
     id: "ID-420",
     props: {
-      unconverted_mtime: new Date("Apr 23, 2024 12:02 PM"),
-      converted_mtime: new Date("Apr 23, 2024 12:03 PM"),
-      processed_mtime: new Date("Apr 23, 2024 12:04 PM"),
+      unconverted_mtime: 1714171417,
+      converted_mtime: 1714171417,
+      processed_mtime: 1714171417,
       overridden: false
     }
   },
   {
     id: "ID-419",
     props: {
-      unconverted_mtime: new Date("Jan 01, 1970 12:00 AM"),
-      converted_mtime: new Date("Jan 01, 1970 12:00 AM"),
-      processed_mtime: new Date("Jan 01, 1970 12:00 AM"),
+      unconverted_mtime: 0,
+      converted_mtime: 0,
+      processed_mtime: 0,
       overridden: true
     }
   },
   {
     id: "ID-418",
     props: {
-      unconverted_mtime: new Date("Apr 23, 2024 12:02 PM"),
+      unconverted_mtime: 1714171417,
       converted_mtime: -1,
       processed_mtime: -1,
       overridden: false
@@ -35,7 +36,7 @@ const testData: Experiment[] = [
   {
     id: "ID-TEST",
     props: {
-      unconverted_mtime: new Date("Apr 23, 2024 12:02 PM"),
+      unconverted_mtime: 1714171417,
       converted_mtime: -1,
       processed_mtime: -1,
       overridden: false
@@ -68,6 +69,8 @@ const Inventory = () => {
           Refresh Inventory
           <RepeatIcon boxSize={5} />
         </Button>
+        <Spacer />
+        <OverridesPanel />
       </Flex>
       <InventoryTable
         experimentsList={testData}

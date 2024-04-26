@@ -67,21 +67,18 @@ const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperim
    * Non `-rev` versions will sort in descending order (most recent first).
    */
   const makeMtimeSorter = (type: Conversions) => (a: Experiment, b: Experiment) => {
-    let aMtime = a.props.unconverted_mtime;
-    let bMtime = b.props.unconverted_mtime;
+    let aMTime = a.props.unconverted_mtime;
+    let bMTime = b.props.unconverted_mtime;
     if (type === "converted") {
-      aMtime = a.props.converted_mtime;
-      bMtime = b.props.converted_mtime;
+      aMTime = a.props.converted_mtime;
+      bMTime = b.props.converted_mtime;
     }
     if (type === "processed") {
-      aMtime = a.props.processed_mtime;
-      bMtime = b.props.processed_mtime;
+      aMTime = a.props.processed_mtime;
+      bMTime = b.props.processed_mtime;
     }
 
-    if (aMtime == -1 && bMtime == -1) return 0;
-    if (aMtime == -1) return 1;
-    if (bMtime == -1) return -1;
-    return bMtime.valueOf() - aMtime.valueOf();
+    return bMTime - aMTime;
   }
 
   useEffect(() => {
@@ -169,11 +166,11 @@ const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperim
   );
 };
 
-const MTimeDisplay = ({ mtime, overridden }: { mtime: Date | -1, overridden: boolean }) => {
+const MTimeDisplay = ({ mtime, overridden }: { mtime: number, overridden: boolean }) => {
   const found = mtime != -1;
   return (
     <Box color={found ? "green.600" : "red.600"}>
-      {found ? mtime.toLocaleString() : "Not found"}
+      {found ? new Date(mtime).toLocaleString() : "Not found"}
       {overridden && <Box color="orange.600">(Overridden)</Box>}
     </Box>
   )

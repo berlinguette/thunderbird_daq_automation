@@ -35,17 +35,23 @@ psd_program_path = Path(
     "/home/work/Projects/thunderbird_psd/active_notebooks/Reactor Data Time Binning Notebook.py"
 )
 
+data_file_path = Path(Path(__file__).parent, "../data", "overrides.pkl")
+
 
 def create_app():
     app = Flask(__name__)
-
-    overrides = OverrideInventory()
-    overrides.set(
-        pattern="ID-(338|350|430)",
-        props=ExperimentProperties(
-            unconverted_mtime=0, converted_mtime=0, processed_mtime=0, overridden=True
-        ),
-    )
+    try:
+        overrides = OverrideInventory.load_from_file(data_file_path)
+        logger.info(f"Loading overrides from {data_file_path}")
+    except (NotADirectoryError, FileNotFoundError, EOFError):
+        overrides = OverrideInventory(data_file_path)
+        logger.info("Existing overrides not found")
+    # overrides.set(
+    #     pattern="ID-(338|350|430)",
+    #     props=ExperimentProperties(
+    #         unconverted_mtime=0, converted_mtime=0, processed_mtime=0, overridden=True
+    #     ),
+    # )
 
     exp_tracker = ExperimentTracker(
         unconverted_data_dir, converted_data_dir, processed_data_dir, overrides
@@ -94,6 +100,7 @@ def create_app():
     @app.delete("/overrides/<pattern>")
     def delete_override(pattern: str):
         overrides.experiments.pop(pattern, None)
+        overrides._save_to_file()
         return [exp.dict() for exp in overrides.get_all()], 200
 
     @app.get("/analyses")

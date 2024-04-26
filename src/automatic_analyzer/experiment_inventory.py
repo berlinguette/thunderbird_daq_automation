@@ -1,5 +1,7 @@
 from __future__ import annotations
 from abc import ABC
+from pathlib import Path
+import pickle
 from typing import Literal
 from loguru import logger
 from pydantic import BaseModel
@@ -87,7 +89,7 @@ class ExperimentDict(ABC):
             self.experiments[id] = Experiment(id=id, props=default_props)
         else:
             logger.debug(f"Experiment {id} already exists, replacing props")
-        
+
         self.experiments[id].props.replace_props(props)
         logger.debug(f"Set experiment {id} to {self.experiments[id]}")
 
@@ -107,27 +109,33 @@ class OverrideInventory(ExperimentDict):
     take precedence over values of actual experiments on disk
     """
 
-    def __init__(self, overrides: dict[str, Experiment] | None = None) -> None:
+    def __init__(
+        self, data_file_path: Path, overrides: dict[str, Experiment] | None = None
+    ) -> None:
         super().__init__(overrides)
+        self.data_file_path = data_file_path
 
     def set(self, pattern: str, props: ExperimentProperties) -> None:
         """
-        Add a new override with given Regex pattern.
+        Add a new override with given Regex pattern and automatically saves to data file.
         Any experiments matching this pattern will be overriden with the provided experiment parameters.
         Note that any `None` prop fields will set the override to default props
         except the `overridden` field, which will be force set to True
         """
         props.overridden = True
         super().set(pattern, props)
+        self._save_to_file()
 
     def set_exp(self, exp: Experiment):
         """
-        Add given `Experiment` to override. The ID of the experiment can be any valid Regex pattern.
+        Add given `Experiment` to override and automatically saves to data file.
+        The ID of the experiment can be any valid Regex pattern.
         Note that any `None` prop fields will set the override to default props
         except the `overridden` field, which will be force set to True
         """
         exp.props.overridden = True
         super().set_exp(exp)
+        # don't save here because set_exp calls set already
 
     def get(self, pattern: str) -> Experiment | None:
         return self.experiments.get(pattern)
@@ -144,6 +152,25 @@ class OverrideInventory(ExperimentDict):
             if re.search(override.id, id) is not None:
                 return override
         return None
+
+    def _save_to_file(self):
+        """
+        Saves the current override inventory to the a pickle file at the provided path.
+        Note - this will overwrite any existing file at the path!
+        """
+        with open(self.data_file_path, "wb") as f:
+            pickle.dump(self.experiments, f)
+            logger.info("Saved override inventory to file")
+            logger.debug(f"Saved {self.experiments} to {self.data_file_path}")
+
+    @classmethod
+    def load_from_file(cls, data_file_path: Path):
+        """
+        Loads an existing OverrideInventory from the pickle file at the provided path.
+        Returns an OverrideInventory object
+        """
+        with open(data_file_path, "rb") as f:
+            return cls(data_file_path, pickle.load(f))
 
 
 class ExperimentInventory(ExperimentDict):

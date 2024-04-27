@@ -4,6 +4,9 @@ import InventoryTable from "./InventoryTable";
 import { Experiment } from "../types/Experiment";
 import { useEffect, useState } from "react";
 import OverridesPanel from "./OverridesPanel";
+import { useQuery } from "@tanstack/react-query";
+import { getInventory } from "../api/inventory";
+import { InventoryFilter } from "../types/Inventory";
 
 const testData: Experiment[] = [
   {
@@ -46,7 +49,11 @@ const testData: Experiment[] = [
 
 export type CheckedExperiments = { [id: string]: boolean }
 
-const Inventory = () => {
+const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
+  const { isPending, isError, data, error } = useQuery({
+    queryKey: ["inventory"],
+    queryFn: () => getInventory(filter)
+  })
   const [checkedExperiments, setCheckedExperiments] = useState<CheckedExperiments>({});
 
   /** Keeps checkedExperiments' number of entries up to date with latest list of experiments */
@@ -60,6 +67,14 @@ const Inventory = () => {
     }, initialValue));
   }, []);
 
+  if (isPending) {
+    return <p>Loading experiments...</p>;
+  }
+
+  if (isError) {
+    return <p>Error while loading experiments: {error.message}</p>
+  }
+
   return (
     <Flex flexDir="column" gap={4}>
       <Flex gap={6} padding={4}>
@@ -70,10 +85,10 @@ const Inventory = () => {
           <RepeatIcon boxSize={5} />
         </Button>
         <Spacer />
-        <OverridesPanel />
+        {/* <OverridesPanel /> */}
       </Flex>
       <InventoryTable
-        experimentsList={testData}
+        experimentsList={data}
         checkedExperiments={checkedExperiments}
         setCheckedExperiments={setCheckedExperiments}
       />

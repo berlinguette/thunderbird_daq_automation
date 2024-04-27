@@ -1,0 +1,1 @@
+export type InventoryFilter = "to_be_converted" | "to_be_processed" | "to_be_analyzed" | undefined;

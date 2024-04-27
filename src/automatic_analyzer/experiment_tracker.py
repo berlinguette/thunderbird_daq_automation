@@ -171,7 +171,7 @@ class ExperimentTracker:
     def _scan_directory(self, target_dir: Path) -> list[tuple[str, float]]:
         """Scans target directory and returns a list of pairs of experiment IDs found in target and their mtimes"""
         directories = [
-            (f.parts[-1], f.lstat().st_mtime)
+            (f.parts[-1], f.lstat().st_mtime*1000)
             for f in target_dir.iterdir()
             if f.is_dir()
         ]

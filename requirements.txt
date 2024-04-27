@@ -19,3 +19,4 @@ python-dotenv~=1.0.0
 # automatic_converter
 loguru
 Flask
+flask-cors

@@ -14,6 +14,7 @@ from automatic_analyzer.automatic_analyzer import (
 from pathlib import Path
 from loguru import logger
 from flask import Flask, request
+from flask_cors import CORS
 import sys
 # import logging
 
@@ -40,6 +41,7 @@ data_file_path = Path(Path(__file__).parent, "../data", "overrides.pkl")
 
 def create_app():
     app = Flask(__name__)
+    CORS(app, origins=["*"])
     try:
         overrides = OverrideInventory.load_from_file(data_file_path)
         logger.info(f"Loading overrides from {data_file_path}")

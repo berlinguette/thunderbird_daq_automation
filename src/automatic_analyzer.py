@@ -118,6 +118,7 @@ def create_app():
             body = request.json
             try:
                 analysis_params = AnalysisParams.parse_obj(body)
+                logger.info(f"Analysis params: {analysis_params}")
             except ValidationError as err:
                 return err.__str__(), 400
         exp_tracker.refresh_all()

@@ -183,7 +183,7 @@ class ExperimentInventory(ExperimentDict):
     def set(self, id: str, props: ExperimentProperties) -> None:
         override_exp = self._override_inventory.get_override_exp(id)
         if override_exp is not None:
-            logger.info(f"Overriding experiment {id} with {override_exp.__repr__()}")
+            logger.debug(f"Overriding experiment {id} with {override_exp.__repr__()}")
             props = override_exp.props
 
         super().set(id, props)

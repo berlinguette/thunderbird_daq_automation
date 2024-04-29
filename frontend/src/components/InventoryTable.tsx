@@ -18,7 +18,7 @@ type InventoryTableProps = {
 };
 
 const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperiments }: InventoryTableProps) => {
-  const [experiments, setExperiments] = useState<Experiment[]>(experimentsList);
+  const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [sort, setSort] = useState<Sort>("id");
   const [reverseSort, setReverseSort] = useState(false);
 
@@ -142,20 +142,15 @@ const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperim
             <Tbody>
               {experiments.map((exp) => (
                 <Tr
-                  bg={checkedExperiments[exp.id] ? "blue.50" : "transparent"}
+                  bg="white"
+                  filter={checkedExperiments[exp.id] ? "brightness(90%)" : "none"}
                   key={exp.id}
                 >
                   <Td><Checkbox isChecked={checkedExperiments[exp.id]} onChange={makeCheckedHandler(exp.id)} /></Td>
                   <Td>{exp.id}</Td>
-                  <Td>
-                    <MTimeDisplay mtime={exp.props.unconverted_mtime} overridden={exp.props.overridden} />
-                  </Td>
-                  <Td>
-                    <MTimeDisplay mtime={exp.props.converted_mtime} overridden={exp.props.overridden} />
-                  </Td>
-                  <Td>
-                    <MTimeDisplay mtime={exp.props.processed_mtime} overridden={exp.props.overridden} />
-                  </Td>
+                  <MTimeDisplay mtime={exp.props.unconverted_mtime} overridden={exp.props.overridden} />
+                  <MTimeDisplay mtime={exp.props.converted_mtime} overridden={exp.props.overridden} />
+                  <MTimeDisplay mtime={exp.props.processed_mtime} overridden={exp.props.overridden} />
                 </Tr>
               ))}
             </Tbody>
@@ -169,10 +164,16 @@ const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperim
 const MTimeDisplay = ({ mtime, overridden }: { mtime: number, overridden: boolean }) => {
   const found = mtime != -1;
   return (
-    <Box color={found ? "green.600" : "red.600"}>
-      {found ? new Date(mtime).toLocaleString() : "Not found"}
-      {overridden && <Box color="orange.600">(Overridden)</Box>}
-    </Box>
+    <Td
+      fontWeight={600}
+      bg={overridden ? "yellow.200" : found ? "green.200" : "red.200"}
+      color={overridden ? "yellow.800" : found ? "green.800" : "red.800"}
+    >
+      <Box>
+        {found ? new Date(mtime).toLocaleString() : "Not found"}
+        {overridden && <Box>(Overridden)</Box>}
+      </Box>
+    </Td>
   )
 }
 

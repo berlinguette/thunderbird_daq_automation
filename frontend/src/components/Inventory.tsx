@@ -1,12 +1,13 @@
-import { RepeatIcon } from "@chakra-ui/icons";
-import { Button, Flex, Spacer } from "@chakra-ui/react";
+import { ChevronDownIcon, RepeatIcon } from "@chakra-ui/icons";
+import { Button, Flex, Menu, MenuButton, MenuItem, MenuList, Spacer } from "@chakra-ui/react";
 import InventoryTable from "./InventoryTable";
 import { Experiment } from "../types/Experiment";
 import { useEffect, useState } from "react";
-import OverridesPanel from "./OverridesPanel";
-import { useQuery } from "@tanstack/react-query";
+// import OverridesPanel from "./OverridesPanel";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getInventory } from "../api/inventory";
-import { InventoryFilter } from "../types/Inventory";
+import { InventoryFilter } from "../api/inventory";
+import AnalyzeMenu from "./AnalyzeMenu";
 
 const testData: Experiment[] = [
   {
@@ -50,6 +51,7 @@ const testData: Experiment[] = [
 export type CheckedExperiments = { [id: string]: boolean }
 
 const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
+  const queryClient = useQueryClient();
   const { isPending, isError, data, error } = useQuery({
     queryKey: ["inventory"],
     queryFn: () => getInventory(filter)
@@ -67,6 +69,10 @@ const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
     }, initialValue));
   }, []);
 
+  const handleRefreshInventory = () => {
+    queryClient.invalidateQueries({ queryKey: ["inventory"] });
+  }
+
   if (isPending) {
     return <p>Loading experiments...</p>;
   }
@@ -78,9 +84,9 @@ const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
   return (
     <Flex flexDir="column" gap={4}>
       <Flex gap={6} padding={4}>
-        <Button colorScheme="blue">Analyze All</Button>
+        <AnalyzeMenu analyzeFilter="all" checkedExperiments={checkedExperiments} />
         <Button colorScheme="blue" variant="outline">Analyze Selected</Button>
-        <Button variant="ghost" gap={2} color="grey">
+        <Button variant="ghost" gap={2} color="grey" onClick={handleRefreshInventory}>
           Refresh Inventory
           <RepeatIcon boxSize={5} />
         </Button>

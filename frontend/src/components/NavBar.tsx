@@ -11,7 +11,7 @@ const NavBar = () => {
     },
     {
       "name": "Queue",
-      "href": "/#"
+      "href": "/queue"
     }
   ];
 

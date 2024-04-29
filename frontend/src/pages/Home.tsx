@@ -1,42 +1,39 @@
 import { Flex, Tab, TabList, TabPanel, TabPanels, Tabs } from "@chakra-ui/react";
 import NavBar from "../components/NavBar";
 import Inventory from "../components/Inventory";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 function Home() {
-  const queryClient = new QueryClient();
+
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Flex flexDirection="column" gap={10} padding={6}>
-        <NavBar />
-        <Flex>
-          <Tabs w="100%" isLazy>
-            <TabList w="fit-content">
-              <Tab>All</Tab>
-              <Tab>To be analyzed</Tab>
-              <Tab>To be converted</Tab>
-              <Tab>To be processed</Tab>
-            </TabList>
+    <Flex flexDirection="column" gap={10} padding={6}>
+      <NavBar />
+      <Flex>
+        <Tabs w="100%" isLazy>
+          <TabList w="fit-content">
+            <Tab>All</Tab>
+            <Tab>To be analyzed</Tab>
+            <Tab>To be converted</Tab>
+            <Tab>To be processed</Tab>
+          </TabList>
 
-            <TabPanels>
-              <TabPanel>
-                <Inventory />
-              </TabPanel>
-              <TabPanel>
+          <TabPanels>
+            <TabPanel>
+              <Inventory />
+            </TabPanel>
+            <TabPanel>
               <Inventory filter="to_be_analyzed" />
-              </TabPanel>
-              <TabPanel>
+            </TabPanel>
+            <TabPanel>
               <Inventory filter="to_be_converted" />
-              </TabPanel>
-              <TabPanel>
+            </TabPanel>
+            <TabPanel>
               <Inventory filter="to_be_processed" />
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </Flex>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </Flex>
-    </QueryClientProvider>
+    </Flex>
   )
 }
 

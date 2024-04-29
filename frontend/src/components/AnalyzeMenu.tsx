@@ -1,8 +1,9 @@
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { Button, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
 import { CheckedExperiments } from "./Inventory";
-import { AnalysisFilter, startAnalysis } from "../api/analyses";
+import { startAnalysis } from "../api/analyses";
 import { useMutation } from "@tanstack/react-query";
+import { AnalysisParams } from "../types/Analysis";
 
 type AnalyzeMenuProps = {
   analyzeFilter: "all" | "selected",
@@ -17,7 +18,7 @@ const AnalyzeMenu = ({ analyzeFilter, checkedExperiments, disabled = false, outl
   });
 
   const makeAnalyzeHandler = (type: "all" | "convert" | "process") => async () => {
-    const body: AnalysisFilter = {
+    const body: AnalysisParams = {
       convert_unconverted: type === "convert" || type === "all",
       process_converted: type === "process" || type === "all"
     };

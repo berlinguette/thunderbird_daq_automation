@@ -4,7 +4,7 @@ import InventoryTable from "./InventoryTable";
 import { Experiment } from "../types/Experiment";
 import { useEffect, useState } from "react";
 import OverridesPanel from "./OverridesPanel";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getInventory } from "../api/inventory";
 import { InventoryFilter } from "../api/inventory";
 import AnalyzeMenu from "./AnalyzeMenu";
@@ -51,8 +51,7 @@ import AnalyzeMenu from "./AnalyzeMenu";
 export type CheckedExperiments = { [id: string]: boolean }
 
 const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
-  const queryClient = useQueryClient();
-  const { isPending, isError, data, error } = useQuery({
+  const { isPending, isError, data, error, refetch } = useQuery({
     queryKey: ["inventory"],
     queryFn: () => getInventory(filter)
   });
@@ -71,7 +70,7 @@ const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
   }, [data]);
 
   const handleRefreshInventory = () => {
-    queryClient.invalidateQueries({ queryKey: ["inventory"] });
+    refetch();
   }
 
   if (isPending) {
@@ -97,7 +96,7 @@ const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
           <RepeatIcon boxSize={5} />
         </Button>
         <Spacer />
-        <OverridesPanel />
+        <OverridesPanel refetchInventory={refetch} />
       </Flex>
       <InventoryTable
         experimentsList={data}

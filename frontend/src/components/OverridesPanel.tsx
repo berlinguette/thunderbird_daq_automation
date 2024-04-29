@@ -1,9 +1,9 @@
 import { QuestionIcon, SettingsIcon } from "@chakra-ui/icons";
-import { Button, Grid, GridItem, Input, InputGroup, InputLeftAddon, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, PopoverBody, PopoverContent, PopoverTrigger, useDisclosure } from "@chakra-ui/react";
+import { Button, Grid, GridItem, Input, InputGroup, InputLeftAddon, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, PopoverBody, PopoverContent, PopoverTrigger, Text, useDisclosure } from "@chakra-ui/react";
 import { Experiment } from "../types/Experiment";
 import { useCallback, useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getOverrides } from "../api/overrides";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { addOverride, deleteOverride, getOverrides } from "../api/overrides";
 
 type Overrides = {
   pattern: string,
@@ -12,15 +12,22 @@ type Overrides = {
   processed_mtime: string
 }
 
-const OverridesPanel = () => {
+const OverridesPanel = ({ refetchInventory }: { refetchInventory: () => void }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [overrides, setOverrides] = useState<Overrides[]>([]);
 
-  const queryClient = useQueryClient();
-  const { isPending, isError, data, error } = useQuery<Experiment[]>({
+  const { isPending, isError, data, error, refetch } = useQuery<Experiment[]>({
     queryKey: ["overrides"],
     queryFn: getOverrides,
     staleTime: Infinity
+  });
+  const deleteOvrMutation = useMutation({
+    mutationKey: ["overrides"],
+    mutationFn: deleteOverride
+  });
+  const addOvrMutation = useMutation({
+    mutationKey: ["overrides"],
+    mutationFn: addOverride
   });
 
   const makePropChangeHandler = useCallback((index: number, key: keyof Overrides) => {
@@ -33,26 +40,74 @@ const OverridesPanel = () => {
     };
   }, []);
 
-  useEffect(() => {
+  const reloadData = useCallback(() => {
+    refetch();
     if (data) {
       setOverrides(data.map((ovr) => {
+        const unc = new Date(ovr.props.unconverted_mtime);
+        const conv = new Date(ovr.props.converted_mtime);
+        const proc = new Date(ovr.props.processed_mtime);
         return {
           pattern: ovr.id,
-          unconverted_mtime: new Date(ovr.props.unconverted_mtime).toLocaleString(),
-          converted_mtime: new Date(ovr.props.converted_mtime).toLocaleString(),
-          processed_mtime: new Date(ovr.props.processed_mtime).toLocaleString()
+          unconverted_mtime: unc.valueOf() == 0 ? "0" : new Date(unc).toLocaleString(),
+          converted_mtime: conv.valueOf() == 0 ? "0" : new Date(conv).toLocaleString(),
+          processed_mtime: proc.valueOf() == 0 ? "0" : new Date(proc).toLocaleString()
         };
       }));
     }
-  }, [data]);
+  }, [data, refetch]);
+
+  useEffect(() => {
+    reloadData();
+  }, [reloadData]);
 
   const handleOpenModal = () => {
-    queryClient.invalidateQueries({ queryKey: ["overrides"] });
+    reloadData();
     onOpen();
-  }
+  };
 
-  const handleSaveOverride = () => {
+  const handleDeleteOverride = (i: number) => {
+    setOverrides((prev) => [
+      ...prev.slice(0, i),
+      ...prev.slice(i + 1)
+    ]);
+  };
 
+  const handleAddOverride = () => {
+    setOverrides((prev) => [
+      ...prev,
+      {
+        pattern: "",
+        unconverted_mtime: "",
+        converted_mtime: "",
+        processed_mtime: ""
+      }
+    ]);
+  };
+
+  const handleSaveOverride = async () => {
+    if (data) {
+      const ovrToDelete = data.filter((exp) => !overrides.find((ovrExp) => exp.id === ovrExp.pattern));
+      for (const ovr of ovrToDelete) {
+        await deleteOvrMutation.mutateAsync(ovr.id);
+      }
+      for (const ovr of overrides) {
+        const newOvr: Experiment = {
+          id: ovr.pattern,
+          props: {
+            unconverted_mtime: ovr.unconverted_mtime === "0" ? 0 : Date.parse(ovr.unconverted_mtime),
+            converted_mtime: ovr.unconverted_mtime === "0" ? 0 : Date.parse(ovr.converted_mtime),
+            processed_mtime: ovr.unconverted_mtime === "0" ? 0 : Date.parse(ovr.processed_mtime),
+            overridden: true
+          }
+        };
+        await addOvrMutation.mutateAsync(newOvr);
+      }
+    }
+    if (!deleteOvrMutation.isError && !addOvrMutation.isError) {
+      onClose();
+      refetchInventory();
+    }
   };
 
   return (
@@ -78,7 +133,9 @@ const OverridesPanel = () => {
                 {overrides.map((override, i) => (
                   <div style={{ display: "contents" }} key={i}>
                     <GridItem>
-                      <Button colorScheme="red" variant="outline">–</Button>
+                      <Button colorScheme="red" variant="outline" onClick={() => handleDeleteOverride(i)}>
+                        –
+                      </Button>
                     </GridItem>
                     <GridItem w="100%">
                       <Input
@@ -112,11 +169,20 @@ const OverridesPanel = () => {
                 ))}
               </Grid>
             }
+            <Button marginTop={4} colorScheme="green" onClick={handleAddOverride}>+ Add Override</Button>
           </ModalBody>
 
           <ModalFooter>
+            {deleteOvrMutation.isError && <Text mr={3}>{deleteOvrMutation.error.message}</Text>}
+            {addOvrMutation.isError && <Text mr={3}>{addOvrMutation.error.message}</Text>}
             <Button onClick={onClose} mr={3}>Close</Button>
-            <Button onClick={handleSaveOverride} colorScheme="blue">Save</Button>
+            <Button
+              onClick={handleSaveOverride}
+              colorScheme="blue"
+              isLoading={deleteOvrMutation.isPending || addOvrMutation.isPending}
+            >
+              Save
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

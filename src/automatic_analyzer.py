@@ -2,7 +2,6 @@ import re
 from pydantic import ValidationError
 from automatic_analyzer.experiment_inventory import (
     Experiment,
-    ExperimentProperties,
     OverrideInventory,
 )
 from automatic_analyzer.experiment_tracker import ExperimentTracker
@@ -102,6 +101,9 @@ def create_app():
     @app.delete("/overrides/<pattern>")
     def delete_override(pattern: str):
         overrides.experiments.pop(pattern, None)
+        for id in exp_tracker.experiments.experiments.keys():
+            if overrides.get_override_exp(id) is not None:
+                exp_tracker.experiments.experiments[id].props.overridden = False
         overrides._save_to_file()
         return [exp.dict() for exp in overrides.get_all()], 200
 

@@ -3,7 +3,7 @@ import { Button, Flex, Spacer } from "@chakra-ui/react";
 import InventoryTable from "./InventoryTable";
 import { Experiment } from "../types/Experiment";
 import { useEffect, useState } from "react";
-// import OverridesPanel from "./OverridesPanel";
+import OverridesPanel from "./OverridesPanel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getInventory } from "../api/inventory";
 import { InventoryFilter } from "../api/inventory";
@@ -97,7 +97,7 @@ const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
           <RepeatIcon boxSize={5} />
         </Button>
         <Spacer />
-        {/* <OverridesPanel /> */}
+        <OverridesPanel />
       </Flex>
       <InventoryTable
         experimentsList={data}

@@ -4,6 +4,8 @@ import { CheckedExperiments } from "./Inventory";
 import { startAnalysis } from "../api/analyses";
 import { useMutation } from "@tanstack/react-query";
 import { AnalysisParams } from "../types/Analysis";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 type AnalyzeMenuProps = {
   analyzeFilter: "all" | "selected",
@@ -13,6 +15,8 @@ type AnalyzeMenuProps = {
 };
 
 const AnalyzeMenu = ({ analyzeFilter, checkedExperiments, disabled = false, outline = false }: AnalyzeMenuProps) => {
+  const navigate = useNavigate();
+  
   const mutation = useMutation({
     mutationFn: startAnalysis
   });
@@ -29,6 +33,10 @@ const AnalyzeMenu = ({ analyzeFilter, checkedExperiments, disabled = false, outl
     }
     mutation.mutate(body);
   }
+
+  useEffect(() => {
+    if (mutation.isSuccess) navigate("/queue")
+  }, [mutation.isSuccess, navigate]);
 
   return (
     <>

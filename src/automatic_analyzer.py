@@ -21,8 +21,8 @@ logger.remove()
 logger.add(sys.stderr, level="INFO")
 # logging.basicConfig(level=logging.DEBUG)
 
-# neutron_data_path = "/mnt/qmi-share/Neutron Data/"
-neutron_data_path = "/mnt/qmi-share/daniel_test_data"
+neutron_data_path = "/mnt/qmi-share/Neutron Data/"
+# neutron_data_path = "/mnt/qmi-share/daniel_test_data"
 
 unconverted_data_dir = Path(neutron_data_path, "1-Unconverted_Data")
 converted_data_dir = Path(neutron_data_path, "2-Converted_Data")

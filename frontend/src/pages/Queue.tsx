@@ -1,4 +1,4 @@
-import { Button, Flex, Heading, Text } from "@chakra-ui/react";
+import { Box, Button, Card, CardBody, Flex, Heading, Text, VStack } from "@chakra-ui/react";
 import NavBar from "../components/NavBar";
 import { RepeatIcon } from "@chakra-ui/icons";
 import QueueCard from "../components/QueueCard";
@@ -19,10 +19,10 @@ const Queue = () => {
   })
 
   return (
-    <Flex flexDirection="column" gap={12} padding={6}>
+    <Flex flexDirection="column" gap={12} padding={6} h="100%">
       <NavBar />
-      <Flex gap={8}>
-        <Flex flexDir="column" basis="50%" gap={14}>
+      <Flex gap={8} h="100%">
+        <Flex flexDir="column" basis="40%" gap={14} flexShrink={0}>
           {isPending && <Text>Loading...</Text>}
           {isError && <Text>{error.message}</Text>}
           {!isPending && !isError && data &&
@@ -55,7 +55,21 @@ const Queue = () => {
             </>
           }
         </Flex>
-        <Flex></Flex>
+        <Flex flexDirection="column" gap={4} w="100%">
+          <Heading>Logs</Heading>
+          <Card variant="filled" w="100%" h="100%">
+            <CardBody p={4}>
+              <VStack spacing={3} align="stretch">
+                <Box p={2} bg="white" borderRadius="var(--card-radius)">
+                  a;sfkja;ldskfjaslkfdjalkhfaklhfsa lkdflksajfdlksadjfsaf
+                </Box>
+                <Box p={2} bg="white" borderRadius="var(--card-radius)">
+                  a;sfkja;ldskfjaslkfdjalkhfaklhfsa lkdflksajfdlksadjfsaf
+                </Box>
+              </VStack>
+            </CardBody>
+          </Card>
+        </Flex>
       </Flex>
     </Flex>
   )

@@ -82,7 +82,7 @@ const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
   }
 
   return (
-    <Flex flexDir="column" gap={4}>
+    <Flex flexDir="column" gap={4} height="100%">
       <Flex gap={6} padding={4}>
         <AnalyzeMenu analyzeFilter="all" checkedExperiments={checkedExperiments} />
         <AnalyzeMenu

@@ -96,7 +96,7 @@ const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperim
   }, [sort, reverseSort, experimentsList]);
 
   return (
-    <Card variant="outline">
+    <Card variant="outline" overflowY="scroll" maxHeight="66dvh">
       <CardBody>
         <TableContainer>
           <Table variant="simple">

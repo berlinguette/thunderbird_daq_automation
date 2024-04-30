@@ -57,9 +57,9 @@ const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperim
   const experimentSorter = (a: Experiment, b: Experiment) => {
     const aId = a.id.split("-")[1];
     const bId = b.id.split("-")[1];
-    if (!aId || isNaN(parseInt(aId))) return 1;
-    if (!bId || isNaN(parseInt(bId))) return -1;
-
+    if (!aId || isNaN(Number(aId))) return 1;
+    if (!bId || isNaN(Number(bId))) return -1;
+    
     return Number(bId) - Number(aId);
   }
 

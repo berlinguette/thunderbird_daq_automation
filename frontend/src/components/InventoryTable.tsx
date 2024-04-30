@@ -77,6 +77,8 @@ const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperim
       aMTime = a.props.processed_mtime;
       bMTime = b.props.processed_mtime;
     }
+    if (aMTime === "Error") return 1;
+    if (bMTime === "Error") return -1;
 
     return bMTime - aMTime;
   }
@@ -161,16 +163,17 @@ const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperim
   );
 };
 
-const MTimeDisplay = ({ mtime, overridden }: { mtime: number, overridden: boolean }) => {
+const MTimeDisplay = ({ mtime, overridden }: { mtime: number|string, overridden: boolean }) => {
   const found = mtime != -1;
+  const error = mtime === "Error";
   return (
     <Td
       fontWeight={600}
-      bg={overridden ? "yellow.200" : found ? "green.200" : "red.200"}
-      color={overridden ? "yellow.800" : found ? "green.800" : "red.800"}
+      bg={overridden ? "yellow.200" : found && !error ? "green.200" : "red.200"}
+      color={overridden ? "yellow.800" : found && !error ? "green.800" : "red.800"}
     >
       <Box>
-        {found ? new Date(mtime).toLocaleString() : "Not found"}
+        {found ? error ? "Error" : new Date(mtime).toLocaleString() : "Not found"}
         {overridden && <Box>(Overridden)</Box>}
       </Box>
     </Td>

@@ -59,7 +59,7 @@ const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperim
     const bId = b.id.split("-")[1];
     if (!aId || isNaN(Number(aId))) return 1;
     if (!bId || isNaN(Number(bId))) return -1;
-    
+
     return Number(bId) - Number(aId);
   }
 
@@ -169,11 +169,11 @@ const MTimeDisplay = ({ mtime, overridden }: { mtime: number|string, overridden:
   return (
     <Td
       fontWeight={600}
-      bg={overridden ? "yellow.200" : found && !error ? "green.200" : "red.200"}
-      color={overridden ? "yellow.800" : found && !error ? "green.800" : "red.800"}
+      bg={overridden ? "yellow.200" : error ? "orange.200" : found ? "green.200" : "red.200"}
+      color={overridden ? "yellow.800" : error ? "orange.800" : found ? "green.800" : "red.800"}
     >
       <Box>
-        {found ? error ? "Error" : new Date(mtime).toLocaleString() : "Not found"}
+        {found ? error ? "Malformed - check conversion.log" : new Date(mtime).toLocaleString() : "Not found"}
         {overridden && <Box>(Overridden)</Box>}
       </Box>
     </Td>

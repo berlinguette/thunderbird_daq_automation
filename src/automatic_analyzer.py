@@ -1,5 +1,6 @@
 import re
 from pydantic import ValidationError
+import automatic_analyzer.env_keys as env_keys
 from automatic_analyzer.experiment_inventory import (
     Experiment,
     OverrideInventory,
@@ -10,62 +11,46 @@ from automatic_analyzer.automatic_analyzer import (
     AnalysisParams,
     AutomaticAnalyzer,
 )
-from pathlib import Path
 from loguru import logger
 from flask import Flask, request
 from flask_cors import CORS
 import sys
 # import logging
 
-logger.remove()
-logger.add(sys.stderr, level="INFO")
-# logging.basicConfig(level=logging.DEBUG)
+def analyzer_setup() -> tuple[OverrideInventory, ExperimentTracker, AutomaticAnalyzer]:
+    logger.remove()
+    logger.add(sys.stderr, level="INFO")
+    # logging.basicConfig(level=logging.DEBUG)
 
-neutron_data_path = "/mnt/qmi-share/Neutron Data/"
-# neutron_data_path = "/mnt/qmi-share/daniel_test_data"
+    config = env_keys.load_env_config()
 
-unconverted_data_dir = Path(neutron_data_path, "1-Unconverted_Data")
-converted_data_dir = Path(neutron_data_path, "2-Converted_Data")
-processed_data_dir = Path(neutron_data_path, "3-Output")
-# watch_folder = "Q:/Neutron Data/1-Unconverted_Data"
-# target_folder = "Q:/Neutron Data/2-Converted_Data"
-
-psd_python_binary_path = Path("/home/work/Projects/thunderbird_psd/.venv/bin/python")
-psd_program_path = Path(
-    "/home/work/Projects/thunderbird_psd/active_notebooks/Reactor Data Time Binning Notebook.py"
-)
-
-data_file_path = Path(Path(__file__).parent, "../data", "overrides.pkl")
-
-
-def create_app():
-    app = Flask(__name__)
-    CORS(app, origins=["*"])
     try:
-        overrides = OverrideInventory.load_from_file(data_file_path)
-        logger.info(f"Loading overrides from {data_file_path}")
+        overrides = OverrideInventory.load_from_file(config.overrides_file_path)
+        logger.info(f"Loading overrides from {config.overrides_file_path}")
     except (NotADirectoryError, FileNotFoundError, EOFError):
-        overrides = OverrideInventory(data_file_path)
+        overrides = OverrideInventory(config.overrides_file_path)
         logger.info("Existing overrides not found")
-    # overrides.set(
-    #     pattern="ID-(338|350|430)",
-    #     props=ExperimentProperties(
-    #         unconverted_mtime=0, converted_mtime=0, processed_mtime=0, overridden=True
-    #     ),
-    # )
 
     exp_tracker = ExperimentTracker(
-        unconverted_data_dir, converted_data_dir, processed_data_dir, overrides
+        config.unconverted_data_dir, config.converted_data_dir, config.processed_data_dir, overrides
     )
 
     automatic_analyzer = AutomaticAnalyzer(
         exp_tracker,
-        unconverted_data_dir,
-        converted_data_dir,
-        processed_data_dir,
-        psd_python_binary_path,
-        psd_program_path,
+        config.unconverted_data_dir,
+        config.converted_data_dir,
+        config.processed_data_dir,
+        config.psd_python_binary_path,
+        config.psd_program_path,
     )
+
+    return (overrides, exp_tracker, automatic_analyzer)
+
+def create_app():
+    overrides, exp_tracker, automatic_analyzer = analyzer_setup()
+
+    app = Flask(__name__)
+    CORS(app, origins=["*"])
 
     @app.get("/inventory")
     def get_inventory():

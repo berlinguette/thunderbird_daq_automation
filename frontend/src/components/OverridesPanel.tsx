@@ -175,7 +175,7 @@ const OverridesPanel = ({ refetchInventory }: { refetchInventory: () => void }) 
           <ModalFooter>
             {deleteOvrMutation.isError && <Text mr={3}>{deleteOvrMutation.error.message}</Text>}
             {addOvrMutation.isError && <Text mr={3}>{addOvrMutation.error.message}</Text>}
-            <Button onClick={onClose} mr={3}>Close</Button>
+            <Button onClick={onClose} mr={3}>Cancel</Button>
             <Button
               onClick={handleSaveOverride}
               colorScheme="blue"

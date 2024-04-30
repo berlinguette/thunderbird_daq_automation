@@ -1,5 +1,4 @@
-import { RepeatIcon } from "@chakra-ui/icons";
-import { Button, Flex, Spacer } from "@chakra-ui/react";
+import { Button, Flex, Spacer, Spinner } from "@chakra-ui/react";
 import InventoryTable from "./InventoryTable";
 import { Experiment } from "../types/Experiment";
 import { useEffect, useState } from "react";
@@ -51,8 +50,8 @@ import AnalyzeMenu from "./AnalyzeMenu";
 export type CheckedExperiments = { [id: string]: boolean }
 
 const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
-  const { isPending, isError, data, error, refetch } = useQuery({
-    queryKey: ["inventory"],
+  const { isPending, isFetching, isError, data, error, refetch } = useQuery({
+    queryKey: ["inventory", filter],
     queryFn: () => getInventory(filter)
   });
   const [checkedExperiments, setCheckedExperiments] = useState<CheckedExperiments>({});
@@ -93,7 +92,8 @@ const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
         />
         <Button variant="ghost" gap={2} color="grey" onClick={handleRefreshInventory}>
           Refresh Inventory
-          <RepeatIcon boxSize={5} />
+          {isFetching && <Spinner size="sm" speed="0.6s" />}
+          {/* <RepeatIcon boxSize={5} /> */}
         </Button>
         <Spacer />
         <OverridesPanel refetchInventory={refetch} />

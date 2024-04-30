@@ -1,6 +1,5 @@
-import { Box, Button, Card, CardBody, Flex, Heading, Text, VStack } from "@chakra-ui/react";
+import { Box, Button, Card, CardBody, Flex, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
 import NavBar from "../components/NavBar";
-import { RepeatIcon } from "@chakra-ui/icons";
 import QueueCard from "../components/QueueCard";
 import { Analysis } from "../types/Analysis";
 import { getAnalyses } from "../api/analyses";
@@ -13,7 +12,7 @@ type Analyses = {
 
 const Queue = () => {
   const queryClient = useQueryClient();
-  const { isPending, isError, data, error } = useQuery<Analyses>({
+  const { isPending, isFetching, isError, data, error } = useQuery<Analyses>({
     queryKey: ["queue"],
     queryFn: getAnalyses
   })
@@ -38,7 +37,7 @@ const Queue = () => {
                       onClick={() => queryClient.invalidateQueries({queryKey: ["queue"]})}
                     >
                       Refresh
-                      <RepeatIcon boxSize={5} />
+                      {isFetching && <Spinner size="sm" speed="0.6s" />}
                     </Button>
                   </Flex>
                 </Flex>

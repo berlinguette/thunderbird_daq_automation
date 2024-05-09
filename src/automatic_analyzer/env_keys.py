@@ -9,6 +9,7 @@ class Config(BaseModel):
   psd_python_binary_path: Path
   psd_program_path: Path
   overrides_file_path: Path
+  log_file_folder: Path
 
   @validator('*', pre=True)
   def make_path(cls, v, field: fields.ModelField):

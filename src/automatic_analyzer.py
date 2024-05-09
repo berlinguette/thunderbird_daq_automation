@@ -1,3 +1,5 @@
+import logging
+from pathlib import Path
 import re
 from pydantic import ValidationError
 import automatic_analyzer.env_keys as env_keys
@@ -15,14 +17,17 @@ from loguru import logger
 from flask import Flask, request
 from flask_cors import CORS
 import sys
-# import logging
+from datetime import datetime
 
 def analyzer_setup() -> tuple[OverrideInventory, ExperimentTracker, AutomaticAnalyzer]:
+    config = env_keys.load_env_config()
+
+    today_date = datetime.today().strftime("%Y-%m-%d")
+    log_file_path = Path(config.log_file_folder, f"{today_date}.log")
+
     logger.remove()
     logger.add(sys.stderr, level="INFO")
-    # logging.basicConfig(level=logging.DEBUG)
-
-    config = env_keys.load_env_config()
+    logger.add(log_file_path, level=logging.NOTSET)
 
     try:
         overrides = OverrideInventory.load_from_file(config.overrides_file_path)

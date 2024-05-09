@@ -40,6 +40,13 @@ class Analysis(BaseModel):
 
 
 class AutomaticAnalyzer:
+    """
+    Handles analysis of experiments. The main class instance maintains a queue of Analyses that is shared
+    with the analyzer thread. Any new analyses are added onto the queue, and the analyzer thread will
+    run them in order
+    """
+
+    # These could probably be instance fields instead of class fields?
     in_progress_analysis: Analysis | None = None
     in_progress_lock = Lock()
 
@@ -89,24 +96,33 @@ class AutomaticAnalyzer:
     #############################
 
     def _analyzer(self):
+        """
+        Main analyzer function. This should be run as a separate thread that is started when 
+        the AutomaticAnalyzer class is instantiated.
+        The function blocks until an analysis is available in the shared queue, at which point it will
+        try to convert/process the given experiments.
+        """
         while True:
             current_analysis = self._analysis_queue.get()  # blocks until item available
             logger.info(f"Starting analysis of experiment {current_analysis.exp}")
             logger.debug(f"Analyzing {current_analysis}")
-            self.in_progress_lock.acquire()
-            self.in_progress_analysis = copy.deepcopy(current_analysis)
-            self.in_progress_lock.release()
+            with self.in_progress_lock:
+                self.in_progress_analysis = copy.deepcopy(current_analysis)
 
             self._try_convert(current_analysis)
             self.exp_tracker.refresh_all()
             self._try_process(current_analysis)
 
             logger.info(f"Analysis of {current_analysis.exp} done")
-            self.in_progress_lock.acquire()
-            self.in_progress_analysis = None
-            self.in_progress_lock.release()
+            with self.in_progress_lock:
+                self.in_progress_analysis = None
 
     def _try_convert(self, current_analysis: Analysis):
+        """
+        Tries to convert the experiment pattern specified in the current anlysis.
+        By default, conversion will not be run if the unconverted files do not exist or if converted files already exist.
+        However, if the force param is True then the conversion will be run regardless.
+        """
         if not current_analysis.params.convert_unconverted:
             logger.info(
                 f"'convert_unconverted' is False for current analysis of {current_analysis.exp.id}, skipping conversion"
@@ -128,9 +144,9 @@ class AutomaticAnalyzer:
 
         if run_conversion:
             logger.info(f"Converting experiment {exp}")
-            self.in_progress_lock.acquire()
-            self.in_progress_analysis.stage = "convert"
-            self.in_progress_lock.release()
+            with self.in_progress_lock:
+                if self.in_progress_analysis:
+                    self.in_progress_analysis.stage = "convert"
 
             data_converter.convert_neutron_data(
                 self._config,
@@ -141,6 +157,11 @@ class AutomaticAnalyzer:
             logger.info(f"Finished converting experiment {exp}")
 
     def _try_process(self, current_analysis: Analysis):
+        """
+        Tries to process the experiment pattern specified in the current anlysis.
+        By default, processing will not be run if the converted files do not exist or if processed files already exist.
+        However, if the force param is True then the processing will be run regardless.
+        """
         if not current_analysis.params.process_converted:
             logger.info(
                 f"'process_converted' is False for current analysis of {current_analysis.exp.id}, skipping processing"
@@ -161,9 +182,9 @@ class AutomaticAnalyzer:
 
         if run_processing:
             logger.info(f"Processing experiment {exp}")
-            self.in_progress_lock.acquire()
-            self.in_progress_analysis.stage = "process"
-            self.in_progress_lock.release()
+            with self.in_progress_lock:
+                if self.in_progress_analysis:
+                    self.in_progress_analysis.stage = "process"
 
             program_input = f"{exp.id.split('-')[1]}\n\n\n\n\n\n\n"
             logger.debug(f"Running {self.psd_python_path} {self.psd_program_path} with input {program_input}")

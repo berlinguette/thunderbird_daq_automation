@@ -20,6 +20,11 @@ import sys
 from datetime import datetime
 
 def analyzer_setup() -> tuple[OverrideInventory, ExperimentTracker, AutomaticAnalyzer]:
+    """
+    Loads config from environment and initializes inventory tracker objects.
+    The function sets up logging and loads overrides if the file exists.
+    Returns override inventory, experiment tracker, and automatic analyzer
+    """
     config = env_keys.load_env_config()
 
     today_date = datetime.today().strftime("%Y-%m-%d")
@@ -90,10 +95,11 @@ def create_app():
 
     @app.delete("/overrides/<pattern>")
     def delete_override(pattern: str):
+        # does nothing if override with given pattern is not found
         overrides.experiments.pop(pattern, None)
-        for id in exp_tracker.experiments.experiments.keys():
+        for id in exp_tracker.exp_inventory.experiments.keys():
             if overrides.get_override_exp(id) is not None:
-                exp_tracker.experiments.experiments[id].props.overridden = False
+                exp_tracker.exp_inventory.experiments[id].props.overridden = False
         overrides._save_to_file()
         return [exp.dict() for exp in overrides.get_all()], 200
 

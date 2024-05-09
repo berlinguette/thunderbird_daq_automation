@@ -7,7 +7,6 @@ from automatic_analyzer.experiment_inventory import (
 )
 from pathlib import Path
 from loguru import logger
-import os
 
 
 class ExperimentTracker:
@@ -28,7 +27,7 @@ class ExperimentTracker:
         self._processed_data_dir = processed_data_dir
         self._overrides = overrides
 
-        self.experiments = ExperimentInventory(overrides)
+        self.exp_inventory = ExperimentInventory(overrides)
         self.refresh_all()
 
     def refresh_all(self):
@@ -40,17 +39,17 @@ class ExperimentTracker:
         self._refresh_converted()
         self._refresh_processed()
         logger.info("Refreshed inventory for all directories")
-        logger.debug(f"New inventory: {self.experiments.experiments}")
+        logger.debug(f"New inventory: {self.exp_inventory.experiments}")
 
     def get_all_experiments(self) -> list[Experiment]:
         """Get all experiments in internal inventory"""
-        logger.debug(f"All experiments: {self.experiments.experiments.values()}")
-        return list(self.experiments.experiments.values())
+        logger.debug(f"All experiments: {self.exp_inventory.experiments.values()}")
+        return list(self.exp_inventory.experiments.values())
 
     def get_all_to_convert(self) -> list[Experiment]:
         """Get all experiments that are in unconverted directory but not converted"""
         to_convert = []
-        for exp in self.experiments.experiments.values():
+        for exp in self.exp_inventory.experiments.values():
             if exp.props.unconverted_mtime != -1 and exp.props.converted_mtime == -1:
                 to_convert.append(exp)
         logger.debug(f"All to-be-converted experiments: {to_convert}")
@@ -59,7 +58,7 @@ class ExperimentTracker:
     def get_all_to_process(self) -> list[Experiment]:
         """Get all experiments that are in converted directory but not processed"""
         to_process = []
-        for exp in self.experiments.experiments.values():
+        for exp in self.exp_inventory.experiments.values():
             if exp.props.converted_mtime != -1 and exp.props.processed_mtime == -1:
                 to_process.append(exp)
         logger.debug(f"All to-be-processed experiments: {to_process}")
@@ -68,7 +67,7 @@ class ExperimentTracker:
     def get_all_to_analyze(self) -> list[Experiment]:
         """Get all experiments that are in unconverted directory but not converted or processed"""
         to_analyze = []
-        for exp in self.experiments.experiments.values():
+        for exp in self.exp_inventory.experiments.values():
             if exp.props.unconverted_mtime != -1 and (
                 exp.props.converted_mtime == -1 or exp.props.processed_mtime == -1
             ):
@@ -106,7 +105,7 @@ class ExperimentTracker:
         or marks presence of unconverted experiment if already exists
         """
         # Clear all unconverted statuses at beginning except overridden experiments
-        for exp in self.experiments.experiments.values():
+        for exp in self.exp_inventory.experiments.values():
             if not exp.props.overridden:
                 exp.props.unconverted_mtime = -1
             else:
@@ -115,7 +114,7 @@ class ExperimentTracker:
         unconverted_exps = self._scan_directory(self._unconverted_data_dir)
         logger.info(f"Found unconverted experiments: {unconverted_exps}")
         for id, mtime in unconverted_exps:
-            self.experiments.set(id, ExperimentProperties(unconverted_mtime=mtime, overridden=False))
+            self.exp_inventory.set(id, ExperimentProperties(unconverted_mtime=mtime, overridden=False))
 
     def _refresh_converted(self):
         """
@@ -125,7 +124,7 @@ class ExperimentTracker:
         and the experiment is marked as `"Error"` if errors are found.
         """
         # Clear all converted statuses at beginning except overridden experiments
-        for exp in self.experiments.experiments.values():
+        for exp in self.exp_inventory.experiments.values():
             if not exp.props.overridden:
                 exp.props.converted_mtime = -1
             else:
@@ -150,7 +149,7 @@ class ExperimentTracker:
                 logger.warning(f"No conversion.log found for experiment {id}")
                 exp_mtime = "Error"
 
-            self.experiments.set(id, ExperimentProperties(converted_mtime=exp_mtime, overridden=False))
+            self.exp_inventory.set(id, ExperimentProperties(converted_mtime=exp_mtime, overridden=False))
 
     def _refresh_processed(self):
         """
@@ -158,7 +157,7 @@ class ExperimentTracker:
         or marks presence of processed experiment if already exists
         """
         # Clear all processed statuses at beginning except overridden experiments
-        for exp in self.experiments.experiments.values():
+        for exp in self.exp_inventory.experiments.values():
             if not exp.props.overridden:
                 exp.props.processed_mtime = -1
             else:
@@ -166,7 +165,7 @@ class ExperimentTracker:
         processed_exps = self._scan_directory(self._processed_data_dir)
         logger.info(f"Found processed experiments: {processed_exps}")
         for id, mtime in processed_exps:
-            self.experiments.set(id, ExperimentProperties(processed_mtime=mtime, overridden=False))
+            self.exp_inventory.set(id, ExperimentProperties(processed_mtime=mtime, overridden=False))
 
     def _scan_directory(self, target_dir: Path) -> list[tuple[str, float]]:
         """Scans target directory and returns a list of pairs of experiment IDs found in target and their mtimes"""

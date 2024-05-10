@@ -1,5 +1,5 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
-import { Box, Card, CardBody, Checkbox, Table, TableContainer, Tbody, Td, Th, Thead, Tr } from '@chakra-ui/react';
+import { Box, Card, CardBody, Checkbox, Table, TableContainer, Tbody, Td, Th, Thead, Tooltip, Tr } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { Experiment } from '../types/Experiment';
 import { CheckedExperiments } from './Inventory';
@@ -28,7 +28,7 @@ const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperim
   const handleCheckAll = () => {
     const newChecked = isIndeterminate || !allChecked;
     setCheckedExperiments((prev) => {
-      const newCheckedExperiments = {...prev};
+      const newCheckedExperiments = { ...prev };
       Object.keys(newCheckedExperiments).forEach((key) => newCheckedExperiments[key] = newChecked);
       return newCheckedExperiments;
     });
@@ -163,20 +163,29 @@ const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperim
   );
 };
 
-const MTimeDisplay = ({ mtime, overridden }: { mtime: number|string, overridden: boolean }) => {
+const MTimeDisplay = ({ mtime, overridden }: { mtime: number | string, overridden: boolean }) => {
   const found = mtime != -1;
   const error = mtime === "Error";
   return (
-    <Td
-      fontWeight={600}
-      bg={overridden ? "yellow.200" : error ? "orange.200" : found ? "green.200" : "red.200"}
-      color={overridden ? "yellow.800" : error ? "orange.800" : found ? "green.800" : "red.800"}
+    <Tooltip
+      openDelay={200}
+      label={found ? error ?
+        "May be malformed - check conversion.log in directory" :
+        `Directory last modified on ${new Date(mtime).toLocaleString()}` :
+        "Directory not found in QMI storage"
+      }
     >
-      <Box>
-        {found ? error ? "Malformed - check conversion.log" : new Date(mtime).toLocaleString() : "Not found"}
-        {overridden && <Box>(Overridden)</Box>}
-      </Box>
-    </Td>
+      <Td
+        fontWeight={600}
+        bg={overridden ? "yellow.200" : error ? "orange.200" : found ? "green.200" : "red.200"}
+        color={overridden ? "yellow.800" : error ? "orange.800" : found ? "green.800" : "red.800"}
+      >
+        <Box>
+          {found ? error ? "Malformed" : new Date(mtime).toLocaleString() : "Not found"}
+          {overridden && <Box>(Overridden)</Box>}
+        </Box>
+      </Td>
+    </Tooltip>
   )
 }
 

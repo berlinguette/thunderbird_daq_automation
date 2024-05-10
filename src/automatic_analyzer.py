@@ -98,7 +98,8 @@ def create_app():
         # does nothing if override with given pattern is not found
         overrides.experiments.pop(pattern, None)
         for id in exp_tracker.exp_inventory.experiments.keys():
-            if overrides.get_override_exp(id) is not None:
+            # clear old experiments that used to be overridden so exp tracker won't skip it when refreshing
+            if overrides.get_override_exp(id) is None:
                 exp_tracker.exp_inventory.experiments[id].props.overridden = False
         overrides._save_to_file()
         return [exp.dict() for exp in overrides.get_all()], 200

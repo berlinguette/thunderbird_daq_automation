@@ -13,7 +13,7 @@ from automatic_analyzer.automatic_analyzer import (
     AnalysisParams,
     AutomaticAnalyzer,
 )
-from automatic_analyzer.logging_sse import InterceptHandler
+from automatic_analyzer.logging_intercept import InterceptHandler
 from loguru import logger
 from flask import Flask, Response, request
 from flask_cors import CORS
@@ -156,9 +156,15 @@ def create_app():
 
     @app.get("/logs")
     def listen_logs():
+        def format_sse(data: str, event: str | None = None) -> str:
+            msg = f"data: {data}\n\n"
+            if event is not None:
+                msg = f"event: {event}\n{msg}"
+            return msg
+    
         def log_reader():
             for line in tail("-f", log_file_path, _iter=True):
-                yield line
+                yield format_sse(line)
 
         return Response(log_reader(), mimetype="text/event-stream")
 

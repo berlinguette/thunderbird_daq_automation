@@ -79,9 +79,8 @@ class AutomaticAnalyzer:
         logger.info(f"Added experiment {analysis} to analysis queue")
 
     def status(self):
-        self.in_progress_lock.acquire()
-        in_progress_analysis = self.in_progress_analysis
-        self.in_progress_lock.release()
+        with self.in_progress_lock:
+            in_progress_analysis = self.in_progress_analysis
         return {
             "current": in_progress_analysis.dict()
             if in_progress_analysis is not None

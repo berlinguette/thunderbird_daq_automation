@@ -4,7 +4,7 @@ import QueueCard from "../components/QueueCard";
 import { Analysis } from "../types/Analysis";
 import { getAnalyses } from "../api/analyses";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import LogsCard from "../components/LogsCard";
+import LogsDisplay from "../components/LogsDisplay";
 
 type Analyses = {
   current: Analysis,
@@ -57,7 +57,7 @@ const Queue = () => {
         </Flex>
         <Flex flexDirection="column" gap={4} flexGrow={1}>
           <Heading>Logs</Heading>
-          <LogsCard />
+          <LogsDisplay />
         </Flex>
       </Flex>
     </Flex>

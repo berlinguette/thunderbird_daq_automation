@@ -37,7 +37,7 @@ def analyzer_setup() -> (
 
     logger.remove()
     logger.add(sys.stderr, level=logging.INFO)
-    logger.add(log_file_path, level=logging.NOTSET)
+    logger.add(log_file_path, level=logging.NOTSET, serialize=True)
     logging.basicConfig(handlers=[InterceptHandler()], level=logging.NOTSET, force=True)
     # don't log unnecessary debug info from sh module
     logging.getLogger("sh").setLevel(logging.INFO)

@@ -1,32 +1,22 @@
 import { Box, Card, CardBody, VStack } from "@chakra-ui/react";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { LogsContext } from "../layout/LogListener";
 
 const LogsCard = () => {
   const logs = useContext(LogsContext);
   const logWindowRef = useRef<HTMLDivElement>(null);
-  const [scrolledToBottom, setScrolledToBottom] = useState(true);
-
-  const handleScroll = () => {
-    if (logWindowRef.current) {
-      // https://stackoverflow.com/questions/876115/how-can-i-determine-if-a-div-is-scrolled-to-the-bottom
-      const scrolledToBottom = logWindowRef.current.scrollHeight -
-        logWindowRef.current.scrollTop - logWindowRef.current.clientHeight < 1;
-      setScrolledToBottom(scrolledToBottom);
-    }
-  };
 
   useEffect(() => {
-    if (logWindowRef.current && scrolledToBottom) {
+    if (logWindowRef.current) {
       logWindowRef.current.scroll({
         behavior: "smooth",
         top: logWindowRef.current.scrollHeight
       });
     }
-  }, [logs, scrolledToBottom]);
+  }, [logs]);
 
   return (
-    <Card variant="filled" overflowY="scroll" flexGrow={1} ref={logWindowRef} onScroll={handleScroll}>
+    <Card variant="filled" overflowY="scroll" flexGrow={1} ref={logWindowRef}>
       <CardBody p={4}>
         <VStack spacing={3} align="stretch">
           {logs.map((msg) => (

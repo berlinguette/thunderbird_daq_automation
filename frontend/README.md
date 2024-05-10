@@ -4,7 +4,6 @@ This is the frontend interface for the Thunderbird automatic data analyzer.
 It gives users visibility into the conversion/processing status of all experiments stored on the QMI data drive,
 as well as allowing them to easily run conversion/processing scripts.
 
-
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:

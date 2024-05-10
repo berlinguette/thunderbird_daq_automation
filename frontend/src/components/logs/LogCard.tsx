@@ -9,7 +9,7 @@ const LogCard = ({ msg }: { msg: Log }) => {
         {new Date(msg.timestamp).toLocaleString()}
         <Badge colorScheme={logColors[msg.level].colorScheme}>{msg.level} {msg.icon}</Badge>
       </Flex>
-      <Box>
+      <Box whiteSpace="pre-line">
         {msg.message}
       </Box>
     </Flex>

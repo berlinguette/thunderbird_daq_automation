@@ -17,7 +17,7 @@ const LogListener = ({ children }: { children: React.ReactNode | React.ReactNode
       const level = data.level.name;
       const icon = data.level.icon;
       const logLevelNum = data.level.no;
-      const message = `${data.name}:${data.module}:${data.line} - ${data.message}`;
+      const message = data.message;
 
       const log: Log = {
         timestamp,

@@ -1,9 +1,9 @@
 import { Card, CardBody, VStack } from "@chakra-ui/react";
 import { useContext, useEffect, useMemo, useRef } from "react";
-import { LogsContext } from "../layout/LogListener";
+import { LogsContext } from "../../layout/LogListener";
 import LogCard from "./LogCard";
-import { LogLevels } from "../types/Log";
-import { logLevelNumbers } from "../helpers/logging";
+import { LogLevels } from "../../types/Log";
+import { logLevelNumbers } from "../../helpers/logging";
 
 const LogsDisplay = ({ lowestLogLevel }: { lowestLogLevel: LogLevels }) => {
   const logs = useContext(LogsContext);

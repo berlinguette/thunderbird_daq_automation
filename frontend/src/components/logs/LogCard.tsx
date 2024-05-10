@@ -1,6 +1,6 @@
 import { Badge, Box, Flex } from "@chakra-ui/react";
-import { Log } from "../types/Log";
-import { logColors } from "../helpers/logging";
+import { Log } from "../../types/Log";
+import { logColors } from "../../helpers/logging";
 
 const LogCard = ({ msg }: { msg: Log }) => {
   return (

@@ -1,6 +1,6 @@
 import { Flex, Tab, TabList, TabPanel, TabPanels, Tabs } from "@chakra-ui/react";
 import NavBar from "../layout/NavBar";
-import Inventory from "../components/Inventory";
+import Inventory from "../components/inventory/Inventory";
 
 function Home() {
 

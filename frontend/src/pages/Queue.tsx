@@ -4,7 +4,7 @@ import QueueCard from "../components/QueueCard";
 import { Analysis } from "../types/Analysis";
 import { getAnalyses } from "../api/analyses";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import LogsDisplay from "../components/LogsDisplay";
+import LogsDisplay from "../components/logs/LogsDisplay";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { useState } from "react";
 import { logColors, orderedLogLevels } from "../helpers/logging";

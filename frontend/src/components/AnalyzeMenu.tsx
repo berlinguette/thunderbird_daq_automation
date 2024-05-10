@@ -1,6 +1,6 @@
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { Button, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
-import { CheckedExperiments } from "./Inventory";
+import { CheckedExperiments } from "./inventory/Inventory";
 import { startAnalysis } from "../api/analyses";
 import { useMutation } from "@tanstack/react-query";
 import { AnalysisParams } from "../types/Analysis";

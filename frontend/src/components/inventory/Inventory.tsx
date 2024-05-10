@@ -1,12 +1,12 @@
 import { Button, Flex, Spacer, Spinner } from "@chakra-ui/react";
 import InventoryTable from "./InventoryTable";
-import { Experiment } from "../types/Experiment";
+import { Experiment } from "../../types/Experiment";
 import { useEffect, useState } from "react";
-import OverridesPanel from "./OverridesPanel";
+import OverridesPanel from "../OverridesPanel";
 import { useQuery } from "@tanstack/react-query";
-import { getInventory } from "../api/inventory";
-import { InventoryFilter } from "../api/inventory";
-import AnalyzeMenu from "./AnalyzeMenu";
+import { getInventory } from "../../api/inventory";
+import { InventoryFilter } from "../../api/inventory";
+import AnalyzeMenu from "../AnalyzeMenu";
 
 // const testData: Experiment[] = [
 //   {

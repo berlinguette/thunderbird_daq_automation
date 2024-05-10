@@ -1,7 +1,7 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import { Box, Card, CardBody, Checkbox, Table, TableContainer, Tbody, Td, Th, Thead, Tooltip, Tr } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { Experiment } from '../types/Experiment';
+import { Experiment } from '../../types/Experiment';
 import { CheckedExperiments } from './Inventory';
 
 type Conversions = "unconverted" | "converted" | "processed";

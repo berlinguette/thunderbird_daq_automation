@@ -167,25 +167,25 @@ const MTimeDisplay = ({ mtime, overridden }: { mtime: number | string, overridde
   const found = mtime != -1;
   const error = mtime === "Error";
   return (
-    <Tooltip
-      openDelay={200}
-      label={found ? error ?
-        "May be malformed - check conversion.log in directory" :
-        `Directory last modified on ${new Date(mtime).toLocaleString()}` :
-        "Directory not found in QMI storage"
-      }
+    <Td
+      fontWeight={600}
+      bg={overridden ? "yellow.200" : error ? "orange.200" : found ? "green.200" : "red.200"}
+      color={overridden ? "yellow.800" : error ? "orange.800" : found ? "green.800" : "red.800"}
     >
-      <Td
-        fontWeight={600}
-        bg={overridden ? "yellow.200" : error ? "orange.200" : found ? "green.200" : "red.200"}
-        color={overridden ? "yellow.800" : error ? "orange.800" : found ? "green.800" : "red.800"}
+      <Tooltip
+        openDelay={150}
+        label={found ? error ?
+          "May be malformed - check conversion.log in directory" :
+          `Directory last modified on ${new Date(mtime).toLocaleString()}` :
+          "Directory not found in QMI storage"
+        }
       >
         <Box>
           {found ? error ? "Malformed" : new Date(mtime).toLocaleString() : "Not found"}
           {overridden && <Box>(Overridden)</Box>}
         </Box>
-      </Td>
-    </Tooltip>
+      </Tooltip>
+    </Td>
   )
 }
 

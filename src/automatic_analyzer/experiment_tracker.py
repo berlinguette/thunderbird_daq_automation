@@ -112,7 +112,7 @@ class ExperimentTracker:
                 logger.debug(f"Skip clearing overridden experiment {exp.id}")
 
         unconverted_exps = self._scan_directory(self._unconverted_data_dir)
-        logger.info(f"Found unconverted experiments: {unconverted_exps}")
+        logger.debug(f"Found unconverted experiments: {unconverted_exps}")
         for id, mtime in unconverted_exps:
             self.exp_inventory.set(id, ExperimentProperties(unconverted_mtime=mtime, overridden=False))
 
@@ -130,7 +130,7 @@ class ExperimentTracker:
             else:
                 logger.debug(f"Skip clearing overridden experiment {exp.id}")
         converted_exps = self._scan_directory(self._converted_data_dir)
-        logger.info(f"Found converted experiments: {converted_exps}")
+        logger.debug(f"Found converted experiments: {converted_exps}")
         for id, mtime in converted_exps:
             exp_mtime = mtime
             try:
@@ -163,7 +163,7 @@ class ExperimentTracker:
             else:
                 logger.debug(f"Skip clearing overridden experiment {exp.id}")
         processed_exps = self._scan_directory(self._processed_data_dir)
-        logger.info(f"Found processed experiments: {processed_exps}")
+        logger.debug(f"Found processed experiments: {processed_exps}")
         for id, mtime in processed_exps:
             self.exp_inventory.set(id, ExperimentProperties(processed_mtime=mtime, overridden=False))
 

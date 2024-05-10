@@ -119,7 +119,7 @@ def create_app():
     @app.get("/analyses")
     def get_analyses_status():
         status = automatic_analyzer.status()
-        logger.debug(f"Current analysis queue: {status}")
+        # logger.debug(f"Current analysis queue: {status}")
         return status
 
     @app.post("/analyses")

@@ -194,6 +194,6 @@ class AutomaticAnalyzer:
                 text=True,
                 input=program_input
             )
-            logger.debug(f"Program output: {output.stdout}")
+            logger.info(f"Program output: {output.stdout}")
             logger.info(f"Finished processing experiment {exp}")
 

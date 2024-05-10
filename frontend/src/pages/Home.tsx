@@ -2,9 +2,7 @@ import { Flex, Tab, TabList, TabPanel, TabPanels, Tabs } from "@chakra-ui/react"
 import NavBar from "../layout/NavBar";
 import Inventory from "../components/inventory/Inventory";
 
-function Home() {
-
-
+const Home = () => {
   return (
     <Flex flexDirection="column" gap={10} padding={6} w="100%">
       <NavBar />
@@ -33,6 +31,6 @@ function Home() {
       </Tabs>
     </Flex>
   )
-}
+};
 
-export default Home
+export default Home;

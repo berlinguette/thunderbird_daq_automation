@@ -187,8 +187,8 @@ const OverridesPanel = ({ refetchInventory }: { refetchInventory: () => void }) 
         </ModalContent>
       </Modal>
     </>
-  )
-}
+  );
+};
 
 type MTimeInputProps = {
   placeholder: string,
@@ -224,7 +224,7 @@ const MTimeInput = ({ placeholder, value, onChange }: MTimeInputProps) => {
         onChange={onChange}
       />
     </InputGroup>
-  )
-}
+  );
+};
 
 export default OverridesPanel;

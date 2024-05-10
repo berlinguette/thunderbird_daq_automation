@@ -32,7 +32,7 @@ const LogsDisplay = ({ lowestLogLevel }: { lowestLogLevel: LogLevels }) => {
         </VStack>
       </CardBody>
     </Card>
-  )
+  );
 };
 
 export default LogsDisplay;

@@ -186,7 +186,7 @@ const MTimeDisplay = ({ mtime, overridden }: { mtime: number | string, overridde
         </Box>
       </Tooltip>
     </Td>
-  )
-}
+  );
+};
 
 export default InventoryTable;

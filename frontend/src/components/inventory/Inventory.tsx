@@ -8,45 +8,6 @@ import { getInventory } from "../../api/inventory";
 import { InventoryFilter } from "../../api/inventory";
 import AnalyzeMenu from "../AnalyzeMenu";
 
-// const testData: Experiment[] = [
-//   {
-//     id: "ID-420",
-//     props: {
-//       unconverted_mtime: 1714171417,
-//       converted_mtime: 1714171417,
-//       processed_mtime: 1714171417,
-//       overridden: false
-//     }
-//   },
-//   {
-//     id: "ID-419",
-//     props: {
-//       unconverted_mtime: 0,
-//       converted_mtime: 0,
-//       processed_mtime: 0,
-//       overridden: true
-//     }
-//   },
-//   {
-//     id: "ID-418",
-//     props: {
-//       unconverted_mtime: 1714171417,
-//       converted_mtime: -1,
-//       processed_mtime: -1,
-//       overridden: false
-//     }
-//   },
-//   {
-//     id: "ID-TEST",
-//     props: {
-//       unconverted_mtime: 1714171417,
-//       converted_mtime: -1,
-//       processed_mtime: -1,
-//       overridden: false
-//     }
-//   }
-// ];
-
 export type CheckedExperiments = { [id: string]: boolean }
 
 const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
@@ -99,7 +60,7 @@ const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
         />
       }
     </Flex>
-  )
+  );
 };
 
 export default Inventory;

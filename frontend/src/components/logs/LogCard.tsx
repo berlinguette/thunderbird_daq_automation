@@ -13,7 +13,7 @@ const LogCard = ({ msg }: { msg: Log }) => {
         {msg.message}
       </Box>
     </Flex>
-  )
+  );
 };
 
 export default LogCard;

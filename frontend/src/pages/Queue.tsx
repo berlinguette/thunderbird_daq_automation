@@ -86,6 +86,6 @@ const Queue = () => {
       </Flex>
     </Flex>
   )
-}
+};
 
 export default Queue;

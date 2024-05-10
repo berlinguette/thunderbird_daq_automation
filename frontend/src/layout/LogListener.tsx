@@ -36,7 +36,7 @@ const LogListener = ({ children }: { children: React.ReactNode | React.ReactNode
     <LogsContext.Provider value={logs}>
       {children}
     </LogsContext.Provider>
-  )
-}
+  );
+};
 
 export default LogListener;

@@ -2,7 +2,18 @@
 
 This is the frontend interface for the Thunderbird automatic data analyzer.
 It gives users visibility into the conversion/processing status of all experiments stored on the QMI data drive,
-as well as allowing them to easily run conversion/processing scripts.
+as well as allowing them to easily run conversion/processing scripts. The frontend is meant to interface with the backend API server which manages the inventory of experiments.
+
+
+## Installation
+
+To install dependencies, run `npm install`. The program needs a `.env` file in the root directory - use the provided `.env_example` as a template.
+
+## Usage
+
+To start the dev server, run `npm run dev`.
+
+To build for production, run `npm run build` and use `npm run preview` to preview the production build.
 
 ## Expanding the ESLint configuration
 

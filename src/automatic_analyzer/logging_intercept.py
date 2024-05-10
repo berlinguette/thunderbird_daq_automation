@@ -1,3 +1,4 @@
+from __future__ import annotations
 import inspect
 import logging
 from loguru import logger
@@ -24,3 +25,11 @@ class InterceptHandler(logging.Handler):
         logger.opt(depth=depth, exception=record.exc_info).log(
             level, record.getMessage()
         )
+
+def log_stream_filter(record) -> bool:
+    """
+    Filters out unnecessary log messages to streamline logs sent to frontend interface
+    """
+    if "werkzeug" in record["name"] or record["module"] == "sh":
+        return False
+    return True

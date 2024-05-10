@@ -13,7 +13,7 @@ from automatic_analyzer.automatic_analyzer import (
     AnalysisParams,
     AutomaticAnalyzer,
 )
-from automatic_analyzer.logging_intercept import InterceptHandler
+from automatic_analyzer.logging_intercept import InterceptHandler, log_stream_filter
 from loguru import logger
 from flask import Flask, Response, request
 from flask_cors import CORS
@@ -37,7 +37,7 @@ def analyzer_setup() -> (
 
     logger.remove()
     logger.add(sys.stderr, level=logging.INFO)
-    logger.add(log_file_path, level=logging.NOTSET, serialize=True)
+    logger.add(log_file_path, level=logging.NOTSET, serialize=True, filter=log_stream_filter)
     logging.basicConfig(handlers=[InterceptHandler()], level=logging.NOTSET, force=True)
     # don't log unnecessary debug info from sh module
     logging.getLogger("sh").setLevel(logging.INFO)
@@ -119,7 +119,7 @@ def create_app():
     @app.get("/analyses")
     def get_analyses_status():
         status = automatic_analyzer.status()
-        logger.info(f"Current analysis queue: {status}")
+        logger.debug(f"Current analysis queue: {status}")
         return status
 
     @app.post("/analyses")

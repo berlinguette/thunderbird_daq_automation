@@ -19,9 +19,10 @@ const Queue = () => {
   const queryClient = useQueryClient();
   const { isPending, isFetching, isError, data, error } = useQuery<Analyses>({
     queryKey: ["queue"],
-    queryFn: getAnalyses
+    queryFn: getAnalyses,
+    refetchInterval: 2000
   });
-  const [lowestLogLevel, setLowestLogLevel] = useState<LogLevels>("DEBUG");
+  const [lowestLogLevel, setLowestLogLevel] = useState<LogLevels>("INFO");
 
   return (
     <Flex flexDirection="column" gap={12} padding={6} h="100%">

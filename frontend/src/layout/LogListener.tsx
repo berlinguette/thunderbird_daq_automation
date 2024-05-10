@@ -13,13 +13,15 @@ const LogListener = ({children}: {children: React.ReactNode | React.ReactNode[]}
     const evtSource = new EventSource(`${serverUrl}/logs`);
     evtSource.onmessage = (ev) => {
       const data = JSON.parse(ev.data).record;
-      const timestamp = new Date(data.time.repr).toLocaleString();
+      const timestamp = data.time.repr;
       const level = data.level.name;
+      const icon = data.level.icon;
       const message = `${data.name}:${data.module}:${data.line} - ${data.message}`;
 
       const log: Log = {
         timestamp,
         level,
+        icon,
         message
       }
       setLogs((prev) => [...prev, log]);

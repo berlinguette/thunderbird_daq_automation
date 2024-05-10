@@ -3,29 +3,35 @@ import { Log } from "../types/Log";
 
 const LogCard = ({ msg }: { msg: Log }) => {
   let colorScheme = "gray";
+  let background = "white";
   switch (msg.level) {
     case "CRITICAL":
       colorScheme = "red";
+      background = "red.50"
       break;
     case "ERROR":
       colorScheme = "orange";
+      background = "orange.50";
       break;
     case "WARNING":
       colorScheme = "yellow";
+      background = "yellow.50";
       break;
     case "INFO":
-      colorScheme = "gray";
+      colorScheme = "white";
+      background = "white";
       break;
     case "DEBUG":
-      colorScheme = "white";
+      colorScheme = "gray";
+      background = "gray.200";
       break;
   }
 
   return (
-    <Flex flexDirection="column" p={2} bg="white" borderRadius="var(--card-radius)" key={msg.timestamp}>
+    <Flex flexDirection="column" p={2} bg={background} borderRadius="var(--card-radius)" key={msg.timestamp}>
       <Flex gap={2} fontSize="small" color="gray" alignItems="center">
-        {msg.timestamp}
-        <Badge colorScheme={colorScheme}>{msg.level}</Badge>
+        {new Date(msg.timestamp).toLocaleString()}
+        <Badge colorScheme={colorScheme}>{msg.level} {msg.icon}</Badge>
       </Flex>
       <Box>
         {msg.message}

@@ -1,10 +1,14 @@
-import { Button, Flex, Heading, Spinner, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, Menu, MenuButton, MenuItem, MenuList, Spinner, Text } from "@chakra-ui/react";
 import NavBar from "../layout/NavBar";
 import QueueCard from "../components/QueueCard";
 import { Analysis } from "../types/Analysis";
 import { getAnalyses } from "../api/analyses";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import LogsDisplay from "../components/LogsDisplay";
+import { ChevronDownIcon } from "@chakra-ui/icons";
+import { useState } from "react";
+import { logColors, orderedLogLevels } from "../helpers/logging";
+import { LogLevels } from "../types/Log";
 
 type Analyses = {
   current: Analysis,
@@ -17,6 +21,7 @@ const Queue = () => {
     queryKey: ["queue"],
     queryFn: getAnalyses
   });
+  const [lowestLogLevel, setLowestLogLevel] = useState<LogLevels>("DEBUG");
 
   return (
     <Flex flexDirection="column" gap={12} padding={6} h="100%">
@@ -56,8 +61,26 @@ const Queue = () => {
           }
         </Flex>
         <Flex flexDirection="column" gap={4} flexGrow={1}>
-          <Heading>Logs</Heading>
-          <LogsDisplay />
+          <Flex gap={4}>
+            <Heading>Logs</Heading>
+            <Menu>
+              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} variant="ghost">
+                Log level: <Box color={logColors[lowestLogLevel].textColor}>{lowestLogLevel}</Box>
+              </MenuButton>
+              <MenuList>
+                {orderedLogLevels.map((logLevel) => (
+                  <MenuItem
+                    color={logColors[logLevel].textColor}
+                    onClick={() => setLowestLogLevel(logLevel)}
+                    key={logLevel}
+                  >
+                    {logLevel}
+                  </MenuItem>
+                ))}
+              </MenuList>
+            </Menu>
+          </Flex>
+          <LogsDisplay lowestLogLevel={lowestLogLevel} />
         </Flex>
       </Flex>
     </Flex>

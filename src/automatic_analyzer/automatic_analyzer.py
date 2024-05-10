@@ -185,7 +185,7 @@ class AutomaticAnalyzer:
                 if self.in_progress_analysis:
                     self.in_progress_analysis.stage = "process"
 
-            program_input = f"{exp.id.split('-')[1]}\n\n\n\n\n\n\n"
+            program_input = f"{exp.id.split('-')[1]}\n\n\n\n\n\n\n\n"
             logger.debug(f"Running {self.psd_python_path} {self.psd_program_path} with input {program_input}")
             output = subprocess.run(
                 [self.psd_python_path, self.psd_program_path],

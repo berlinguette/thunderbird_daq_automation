@@ -13,17 +13,22 @@ from automatic_analyzer.automatic_analyzer import (
     AnalysisParams,
     AutomaticAnalyzer,
 )
+from automatic_analyzer.logging_sse import InterceptHandler
 from loguru import logger
-from flask import Flask, request
+from flask import Flask, Response, request
 from flask_cors import CORS
+from sh import tail
 import sys
 from datetime import datetime
 
-def analyzer_setup() -> tuple[OverrideInventory, ExperimentTracker, AutomaticAnalyzer]:
+
+def analyzer_setup() -> (
+    tuple[OverrideInventory, ExperimentTracker, AutomaticAnalyzer, Path]
+):
     """
     Loads config from environment and initializes inventory tracker objects.
     The function sets up logging and loads overrides if the file exists.
-    Returns override inventory, experiment tracker, and automatic analyzer
+    Returns override inventory, experiment tracker, automatic analyzer, and log file path
     """
     config = env_keys.load_env_config()
 
@@ -31,8 +36,11 @@ def analyzer_setup() -> tuple[OverrideInventory, ExperimentTracker, AutomaticAna
     log_file_path = Path(config.log_file_folder, f"{today_date}.log")
 
     logger.remove()
-    logger.add(sys.stderr, level="INFO")
+    logger.add(sys.stderr, level=logging.INFO)
     logger.add(log_file_path, level=logging.NOTSET)
+    logging.basicConfig(handlers=[InterceptHandler()], level=logging.NOTSET, force=True)
+    # don't log unnecessary debug info from sh module
+    logging.getLogger("sh").setLevel(logging.INFO)
 
     try:
         overrides = OverrideInventory.load_from_file(config.overrides_file_path)
@@ -42,7 +50,10 @@ def analyzer_setup() -> tuple[OverrideInventory, ExperimentTracker, AutomaticAna
         logger.info("Existing overrides not found")
 
     exp_tracker = ExperimentTracker(
-        config.unconverted_data_dir, config.converted_data_dir, config.processed_data_dir, overrides
+        config.unconverted_data_dir,
+        config.converted_data_dir,
+        config.processed_data_dir,
+        overrides,
     )
 
     automatic_analyzer = AutomaticAnalyzer(
@@ -54,10 +65,11 @@ def analyzer_setup() -> tuple[OverrideInventory, ExperimentTracker, AutomaticAna
         config.psd_program_path,
     )
 
-    return (overrides, exp_tracker, automatic_analyzer)
+    return (overrides, exp_tracker, automatic_analyzer, log_file_path)
+
 
 def create_app():
-    overrides, exp_tracker, automatic_analyzer = analyzer_setup()
+    overrides, exp_tracker, automatic_analyzer, log_file_path = analyzer_setup()
 
     app = Flask(__name__)
     CORS(app, origins=["*"])
@@ -141,6 +153,14 @@ def create_app():
         status = automatic_analyzer.status()
         logger.info(f"Current analysis status: {status}")
         return status, 200
+
+    @app.get("/logs")
+    def listen_logs():
+        def log_reader():
+            for line in tail("-f", log_file_path, _iter=True):
+                yield line
+
+        return Response(log_reader(), mimetype="text/event-stream")
 
     return app
 

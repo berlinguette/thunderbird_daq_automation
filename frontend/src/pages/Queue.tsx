@@ -1,9 +1,10 @@
-import { Box, Button, Card, CardBody, Flex, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
-import NavBar from "../components/NavBar";
+import { Button, Flex, Heading, Spinner, Text } from "@chakra-ui/react";
+import NavBar from "../layout/NavBar";
 import QueueCard from "../components/QueueCard";
 import { Analysis } from "../types/Analysis";
 import { getAnalyses } from "../api/analyses";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import LogsCard from "../components/LogsCard";
 
 type Analyses = {
   current: Analysis,
@@ -15,12 +16,12 @@ const Queue = () => {
   const { isPending, isFetching, isError, data, error } = useQuery<Analyses>({
     queryKey: ["queue"],
     queryFn: getAnalyses
-  })
+  });
 
   return (
     <Flex flexDirection="column" gap={12} padding={6} h="100%">
       <NavBar />
-      <Flex gap={8} h="100%">
+      <Flex gap={8} minHeight={0} flexGrow={1}>
         <Flex flexDir="column" basis="40%" gap={14} flexShrink={0}>
           {isPending && <Text>Loading...</Text>}
           {isError && <Text>{error.message}</Text>}
@@ -34,7 +35,7 @@ const Queue = () => {
                       color="gray"
                       variant="ghost"
                       gap={2}
-                      onClick={() => queryClient.invalidateQueries({queryKey: ["queue"]})}
+                      onClick={() => queryClient.invalidateQueries({ queryKey: ["queue"] })}
                     >
                       Refresh
                       {isFetching && <Spinner size="sm" speed="0.6s" />}
@@ -42,7 +43,7 @@ const Queue = () => {
                   </Flex>
                 </Flex>
                 {!data.current && <Text>No analyses in progress.</Text>}
-                {data.current && 
+                {data.current &&
                   <QueueCard analysis={data.current} inProgress />
                 }
               </Flex>
@@ -54,20 +55,9 @@ const Queue = () => {
             </>
           }
         </Flex>
-        <Flex flexDirection="column" gap={4} w="100%">
+        <Flex flexDirection="column" gap={4} flexGrow={1}>
           <Heading>Logs</Heading>
-          <Card variant="filled" w="100%" h="100%">
-            <CardBody p={4}>
-              <VStack spacing={3} align="stretch">
-                <Box p={2} bg="white" borderRadius="var(--card-radius)">
-                  a;sfkja;ldskfjaslkfdjalkhfaklhfsa lkdflksajfdlksadjfsaf
-                </Box>
-                <Box p={2} bg="white" borderRadius="var(--card-radius)">
-                  a;sfkja;ldskfjaslkfdjalkhfaklhfsa lkdflksajfdlksadjfsaf
-                </Box>
-              </VStack>
-            </CardBody>
-          </Card>
+          <LogsCard />
         </Flex>
       </Flex>
     </Flex>

@@ -51,6 +51,18 @@ const fakeExperiments: Experiment[] = [
   }
 ];
 
+const fakeOverrides: Experiment[] = [
+  {
+    id: "ID-OVR",
+    props: {
+      unconverted_mtime: 0,
+      converted_mtime: 0,
+      processed_mtime: 0,
+      overridden: true
+    }
+  }
+];
+
 const serverUrl = getServerUrl();
 
 export const selectiveAnalysisHandler = (desiredParams: AnalysisParams) => {
@@ -68,3 +80,17 @@ export const selectiveAnalysisHandler = (desiredParams: AnalysisParams) => {
     }
   });
 };
+
+export const overrideHandlers = [
+  http.get(`${serverUrl}/overrides`, () => {
+    return HttpResponse.json(fakeOverrides);
+  }),
+  http.post(`${serverUrl}/overrides`, async ({ request }) => {
+    const body = await request.json() as Experiment;
+    return HttpResponse.json(fakeOverrides.concat(body));
+  }),
+  http.delete(`${serverUrl}/overrides/:id`, ({ params }) => {
+    const { id } = params;
+    return HttpResponse.json(fakeOverrides.filter((ovr) => ovr.id !== id));
+  })
+];

@@ -4,11 +4,11 @@ import AnalyzeMenu from "../src/components/AnalyzeMenu";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { fireEvent, render, screen, waitFor } from "./testUtils";
 import { setupServer } from "msw/node";
-import { analysisHandler } from "./fakeData";
+import { selectiveAnalysisHandler } from "./fakeData";
 import { HttpResponse, http } from "msw";
 import { getServerUrl } from "../src/api/getServerUrl";
 
-const server = setupServer(analysisHandler);
+const server = setupServer();
 
 beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());
@@ -58,15 +58,32 @@ describe("AnalyzeMenu", () => {
     expect(true).toBe(true);
   });
   it("performs conversions + processing when 'All' option is clicked", async () => {
+    server.use(selectiveAnalysisHandler({
+      convert_unconverted: true,
+      process_converted: true
+    }));
     await testSelectAnalysis("All", "all");
   });
   it("performs conversions only when 'Convert Only' option is clicked", async () => {
+    server.use(selectiveAnalysisHandler({
+      convert_unconverted: true,
+      process_converted: false
+    }));
     await testSelectAnalysis("Convert Only", "all");
   });
   it("performs processing only when 'Process Only' option is clicked", async () => {
+    server.use(selectiveAnalysisHandler({
+      convert_unconverted: false,
+      process_converted: true
+    }));
     await testSelectAnalysis("Process Only", "all");
   });
   it("can request analysis for only some selected experiments", async () => {
+    server.use(selectiveAnalysisHandler({
+      convert_unconverted: true,
+      process_converted: true,
+      pattern: "(ID-NONE|ID-UNC-CON)"
+    }));
     const checkedExperiments = {
       "ID-NONE": true,
       "ID-UNC-CON": true

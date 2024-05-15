@@ -53,19 +53,18 @@ const fakeExperiments: Experiment[] = [
 
 const serverUrl = getServerUrl();
 
-export const analysisHandler = http.post(`${serverUrl}/analyses`, async ({ request }) => {
-  const body = await request.json() as AnalysisParams;
-  const filteredExperiments = fakeExperiments.filter((exp) => {
-    if (body.convert_unconverted && exp.props.unconverted_mtime !== -1) {
-      return true;
+export const selectiveAnalysisHandler = (desiredParams: AnalysisParams) => {
+  return http.post(`${serverUrl}/analyses`, async ({ request }) => {
+    const body = await request.json() as AnalysisParams;
+    if (
+      body.convert_unconverted === desiredParams.convert_unconverted &&
+      body.process_converted === desiredParams.process_converted &&
+      body.pattern === desiredParams.pattern &&
+      body.force === desiredParams.force
+    ) {
+      return HttpResponse.json({});
+    } else {
+      return HttpResponse.text("Invalid", { status: 400 });
     }
-    if (body.process_converted && exp.props.converted_mtime !== -1) {
-      return true;
-    }
-    return false;
   });
-  return HttpResponse.json({
-    current: filteredExperiments[0],
-    queued: filteredExperiments.slice(1)
-  });
-});
+};

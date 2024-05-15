@@ -15,6 +15,7 @@ type Overrides = {
 const OverridesPanel = ({ refetchInventory }: { refetchInventory: () => void }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [overrides, setOverrides] = useState<Overrides[]>([]);
+  const [formErr, setFormErr] = useState<string|null>(null);
 
   const { isPending, isError, data, error, refetch } = useQuery<Experiment[]>({
     queryKey: ["overrides"],
@@ -59,6 +60,7 @@ const OverridesPanel = ({ refetchInventory }: { refetchInventory: () => void }) 
 
   useEffect(() => {
     reloadData();
+    setFormErr(null);
   }, [reloadData]);
 
   const handleOpenModal = () => {
@@ -92,6 +94,10 @@ const OverridesPanel = ({ refetchInventory }: { refetchInventory: () => void }) 
         await deleteOvrMutation.mutateAsync(ovr.id);
       }
       for (const ovr of overrides) {
+        if (ovr.pattern === "") {
+          setFormErr("Pattern cannot be blank");
+          return;
+        }
         const newOvr: Experiment = {
           id: ovr.pattern,
           props: {
@@ -173,6 +179,7 @@ const OverridesPanel = ({ refetchInventory }: { refetchInventory: () => void }) 
           </ModalBody>
 
           <ModalFooter>
+            {formErr && <Text mr={3}>{formErr}</Text>}
             {deleteOvrMutation.isError && <Text mr={3}>{deleteOvrMutation.error.message}</Text>}
             {addOvrMutation.isError && <Text mr={3}>{addOvrMutation.error.message}</Text>}
             <Button onClick={onClose} mr={3}>Cancel</Button>

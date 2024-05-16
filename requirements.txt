@@ -17,6 +17,7 @@ pydantic~=1.10.7
 python-dotenv~=1.0.0
 
 # automatic_converter
-loguru
-Flask
-flask-cors
+loguru~=0.7.2
+Flask~=3.0.3
+flask-cors~=4.0.0
+pytest~=8.2.0

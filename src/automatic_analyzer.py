@@ -37,7 +37,9 @@ def analyzer_setup() -> (
 
     logger.remove()
     logger.add(sys.stderr, level=logging.INFO)
-    logger.add(log_file_path, level=logging.NOTSET, serialize=True, filter=log_stream_filter)
+    logger.add(
+        log_file_path, level=logging.NOTSET, serialize=True, filter=log_stream_filter
+    )
     logging.basicConfig(handlers=[InterceptHandler()], level=logging.NOTSET, force=True)
     # don't log unnecessary debug info from sh module
     logging.getLogger("sh").setLevel(logging.INFO)
@@ -58,9 +60,6 @@ def analyzer_setup() -> (
 
     automatic_analyzer = AutomaticAnalyzer(
         exp_tracker,
-        config.unconverted_data_dir,
-        config.converted_data_dir,
-        config.processed_data_dir,
         config.psd_python_binary_path,
         config.psd_program_path,
     )
@@ -161,7 +160,7 @@ def create_app():
             if event is not None:
                 msg = f"event: {event}\n{msg}"
             return msg
-    
+
         def log_reader():
             for line in tail("-f", log_file_path, _iter=True):
                 yield format_sse(line)

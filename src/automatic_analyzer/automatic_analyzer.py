@@ -53,16 +53,10 @@ class AutomaticAnalyzer:
     def __init__(
         self,
         exp_tracker: ExperimentTracker,
-        unconverted_data_dir: Path,
-        converted_data_dir: Path,
-        processed_data_dir: Path,
         psd_python_binary_path: Path,
         psd_program_path: Path,
     ) -> None:
         self.exp_tracker = exp_tracker
-        self.unconverted_data_dir = unconverted_data_dir
-        self.converted_data_dir = converted_data_dir
-        self.processed_data_dir = processed_data_dir
         self.psd_python_path = psd_python_binary_path
         self.psd_program_path = psd_program_path
 
@@ -128,7 +122,7 @@ class AutomaticAnalyzer:
             )
             return
 
-        exp_path = Path(self.unconverted_data_dir, current_analysis.exp.id)
+        exp_path = Path(self.exp_tracker._unconverted_data_dir, current_analysis.exp.id)
         exp = current_analysis.exp
         run_conversion = True
         if exp.props.unconverted_mtime == -1:
@@ -151,7 +145,7 @@ class AutomaticAnalyzer:
                 self._config,
                 self._config_setup,
                 sources=[exp_path],
-                destination=self.converted_data_dir,
+                destination=self.exp_tracker._converted_data_dir,
             )
             logger.info(f"Finished converting experiment {exp}")
 

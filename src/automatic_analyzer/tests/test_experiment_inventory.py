@@ -9,12 +9,7 @@ from automatic_analyzer.experiment_inventory import (
     ExperimentProperties,
     OverrideInventory,
 )
-
-
-def make_experiment_props():
-    return ExperimentProperties(
-        unconverted_mtime=0, converted_mtime=0, processed_mtime=0, overridden=False
-    )
+from automatic_analyzer.tests.helpers import make_experiment_props
 
 
 @pytest.fixture
@@ -63,8 +58,27 @@ class TestExperimentDict:
             overridden=True,
         )
         experiment_dict.set("ID-TEST", new_experiment_props)
-        exp_test = experiment_dict.get("ID-TEST")
-        check_exp_props(exp_test, new_experiment_props)
+        check_exp_props(experiment_dict.get("ID-TEST"), new_experiment_props)
+    
+    def test_set_overwrite_some(self, experiment_dict: ExperimentDict, experiment_props):
+        """Test overwriting only some props of an existing experiment with ExperimentDict.set()"""
+        experiment_dict.set("ID-TEST", experiment_props)
+
+        new_experiment_props = ExperimentProperties(
+            unconverted_mtime=100,
+            converted_mtime=None,
+            processed_mtime=300,
+            overridden=True
+        )
+        experiment_dict.set("ID-TEST", new_experiment_props)
+
+        check_experiment_props = ExperimentProperties(
+            unconverted_mtime=100,
+            converted_mtime=0,
+            processed_mtime=300,
+            overridden=True
+        )
+        check_exp_props(experiment_dict.get("ID-TEST"), check_experiment_props)
 
 
 class TestOverrideInventory:
@@ -136,13 +150,12 @@ class TestExperimentInventory:
 
     def test_set_non_overridden(self, exp_inventory: ExperimentInventory, new_exp_props):
         exp_inventory.set("ID-200", new_exp_props)
-        id_200 = exp_inventory.get("ID-200")
-        check_exp_props(id_200, new_exp_props)
+        check_exp_props(exp_inventory.get("ID-200"), new_exp_props)
 
     def test_set_overridden(self, exp_inventory: ExperimentInventory, new_exp_props):
         exp_inventory.set("ID-342", new_exp_props)
-        id_342 = exp_inventory.get("ID-342")
+        
         id_3_dot_dot = exp_inventory._override_inventory.get("ID-3..")
-        assert id_342 is not None
-        if id_342 is not None:
-            check_exp_props(id_3_dot_dot, id_342.props)
+        assert id_3_dot_dot is not None
+        if id_3_dot_dot is not None:
+            check_exp_props(exp_inventory.get("ID-342"), id_3_dot_dot.props)

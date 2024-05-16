@@ -65,7 +65,7 @@ class ExperimentTracker:
         return to_process
 
     def get_all_to_analyze(self) -> list[Experiment]:
-        """Get all experiments that are in unconverted directory but not converted or processed"""
+        """Get all experiments that are in unconverted directory but not converted or not processed"""
         to_analyze = []
         for exp in self.exp_inventory.experiments.values():
             if exp.props.unconverted_mtime != -1 and (

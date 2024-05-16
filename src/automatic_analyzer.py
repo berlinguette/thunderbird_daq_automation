@@ -21,6 +21,9 @@ from sh import tail
 import sys
 from datetime import datetime
 
+from data_converter.configuration.configuration import load_config_setup
+from utilities.utilities.configuration.configuration import get_configuration
+
 
 def analyzer_setup() -> (
     tuple[OverrideInventory, ExperimentTracker, AutomaticAnalyzer, Path]
@@ -58,7 +61,10 @@ def analyzer_setup() -> (
         overrides,
     )
 
+    config_setup = load_config_setup()
     automatic_analyzer = AutomaticAnalyzer(
+        config_setup,
+        get_configuration({}, config_setup, None),
         exp_tracker,
         config.psd_python_binary_path,
         config.psd_program_path,

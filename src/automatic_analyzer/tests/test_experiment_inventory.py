@@ -9,22 +9,7 @@ from automatic_analyzer.experiment_inventory import (
     ExperimentProperties,
     OverrideInventory,
 )
-from automatic_analyzer.tests.helpers import make_experiment_props
-
-
-@pytest.fixture
-def experiment_props():
-    return make_experiment_props()
-
-
-@pytest.fixture
-def override_inventory():
-    return OverrideInventory(Path("/foo"))
-
-
-@pytest.fixture
-def experiment():
-    return Experiment(id="ID-TEST", props=make_experiment_props())
+from automatic_analyzer.tests.conftest import make_experiment_props
 
 
 def check_exp_props(exp: Experiment | None, props_to_check: ExperimentProperties):
@@ -59,8 +44,10 @@ class TestExperimentDict:
         )
         experiment_dict.set("ID-TEST", new_experiment_props)
         check_exp_props(experiment_dict.get("ID-TEST"), new_experiment_props)
-    
-    def test_set_overwrite_some(self, experiment_dict: ExperimentDict, experiment_props):
+
+    def test_set_overwrite_some(
+        self, experiment_dict: ExperimentDict, experiment_props
+    ):
         """Test overwriting only some props of an existing experiment with ExperimentDict.set()"""
         experiment_dict.set("ID-TEST", experiment_props)
 
@@ -68,7 +55,7 @@ class TestExperimentDict:
             unconverted_mtime=100,
             converted_mtime=None,
             processed_mtime=300,
-            overridden=True
+            overridden=True,
         )
         experiment_dict.set("ID-TEST", new_experiment_props)
 
@@ -76,12 +63,16 @@ class TestExperimentDict:
             unconverted_mtime=100,
             converted_mtime=0,
             processed_mtime=300,
-            overridden=True
+            overridden=True,
         )
         check_exp_props(experiment_dict.get("ID-TEST"), check_experiment_props)
 
 
 class TestOverrideInventory:
+    @pytest.fixture
+    def experiment(self):
+        return Experiment(id="ID-TEST", props=make_experiment_props())
+
     def test_load_from_file(self, override_inventory: OverrideInventory, experiment):
         """Test loading existing override inventory from pickle file with OverrideInventory.load_from_file()"""
         override_inventory.experiments["ID-TEST"] = experiment
@@ -148,13 +139,15 @@ class TestExperimentInventory:
             override_inventory.set("ID-3..", experiment_props)
             return ExperimentInventory(override_inventory)
 
-    def test_set_non_overridden(self, exp_inventory: ExperimentInventory, new_exp_props):
+    def test_set_non_overridden(
+        self, exp_inventory: ExperimentInventory, new_exp_props
+    ):
         exp_inventory.set("ID-200", new_exp_props)
         check_exp_props(exp_inventory.get("ID-200"), new_exp_props)
 
     def test_set_overridden(self, exp_inventory: ExperimentInventory, new_exp_props):
         exp_inventory.set("ID-342", new_exp_props)
-        
+
         id_3_dot_dot = exp_inventory._override_inventory.get("ID-3..")
         assert id_3_dot_dot is not None
         if id_3_dot_dot is not None:

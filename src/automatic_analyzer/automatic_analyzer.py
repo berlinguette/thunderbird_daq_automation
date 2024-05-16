@@ -6,9 +6,9 @@ from loguru import logger
 from pydantic import BaseModel
 from automatic_analyzer.experiment_inventory import Experiment
 from automatic_analyzer.experiment_tracker import ExperimentTracker
-from data_converter.configuration.configuration import load_config_setup
 from utilities.utilities.configuration.configuration import (
-    get_configuration,
+    Config,
+    ConfigSetup,
 )
 import data_converter.data_converter as data_converter
 from threading import Thread, Lock
@@ -16,7 +16,8 @@ from queue import Queue
 
 class AnalysisParams(BaseModel):
     """
-    Parameters for analyzing an experiment.
+    Parameters for analyzing an experiment. Also used to parse analysis requests from the endpoint -
+    the `pattern` attribute is only used upon initial request, not by the AutomaticAnalyzer.
     Set `force` to `True` to to run analyses regardless of whether there are already existing files
     """
 
@@ -52,6 +53,8 @@ class AutomaticAnalyzer:
 
     def __init__(
         self,
+        config_setup: ConfigSetup,
+        config: Config,
         exp_tracker: ExperimentTracker,
         psd_python_binary_path: Path,
         psd_program_path: Path,
@@ -60,8 +63,8 @@ class AutomaticAnalyzer:
         self.psd_python_path = psd_python_binary_path
         self.psd_program_path = psd_program_path
 
-        self._config_setup = load_config_setup()
-        self._config = get_configuration({}, self._config_setup, None)
+        self._config_setup = config_setup
+        self._config = config
 
         self._analysis_queue: "Queue[Analysis]" = Queue()
         self._converter_thread = Thread(target=self._analyzer)

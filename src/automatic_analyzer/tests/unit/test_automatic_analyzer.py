@@ -27,6 +27,8 @@ class TestAutomaticAnalyzerConvert:
         automatic_analyzer: AutomaticAnalyzer,
         exp: Experiment,
         params: AnalysisParams,
+        source_path: Path | None,
+        dest_path: Path | None,
     ):
         """
         Utility function that mocks the convert neutron data function and runs the automatic_analyzer's
@@ -35,6 +37,9 @@ class TestAutomaticAnalyzerConvert:
         with patch("data_converter.data_converter.convert_neutron_data") as mock:
             analysis = Analysis(exp=exp, params=params)
             automatic_analyzer._try_convert(analysis)
+            if source_path is not None and dest_path is not None:
+                assert mock.call_args.kwargs["sources"] == [source_path]
+                assert mock.call_args.kwargs["destination"] == dest_path
             return mock
 
     def test_try_convert(
@@ -45,7 +50,11 @@ class TestAutomaticAnalyzerConvert:
     ):
         """Test trying to convert using AutomaticAnalyzer._try_convert()"""
         mock = self.run_mock_try_convert(
-            automatic_analyzer, experiment, analysis_params
+            automatic_analyzer,
+            experiment,
+            analysis_params,
+            Path(automatic_analyzer.exp_tracker._unconverted_data_dir, experiment.id),
+            Path(automatic_analyzer.exp_tracker._converted_data_dir),
         )
         mock.assert_called_once()
 
@@ -58,7 +67,7 @@ class TestAutomaticAnalyzerConvert:
         """Test trying to convert when converted data is already present"""
         experiment.props.converted_mtime = 0
         mock = self.run_mock_try_convert(
-            automatic_analyzer, experiment, analysis_params
+            automatic_analyzer, experiment, analysis_params, None, None
         )
         mock.assert_not_called()
 
@@ -71,7 +80,7 @@ class TestAutomaticAnalyzerConvert:
         """Test trying to convert when unconverted data is not present"""
         experiment.props.unconverted_mtime = -1
         mock = self.run_mock_try_convert(
-            automatic_analyzer, experiment, analysis_params
+            automatic_analyzer, experiment, analysis_params, None, None
         )
         mock.assert_not_called()
 
@@ -86,7 +95,11 @@ class TestAutomaticAnalyzerConvert:
         experiment.props.converted_mtime = 0
         analysis_params.force = True
         mock = self.run_mock_try_convert(
-            automatic_analyzer, experiment, analysis_params
+            automatic_analyzer,
+            experiment,
+            analysis_params,
+            Path(automatic_analyzer.exp_tracker._unconverted_data_dir, experiment.id),
+            Path(automatic_analyzer.exp_tracker._converted_data_dir),
         )
         mock.assert_called_once()
 
@@ -99,7 +112,7 @@ class TestAutomaticAnalyzerConvert:
         """Test trying to convert when analysis_params.convert_unconverted is false"""
         analysis_params.convert_unconverted = False
         mock = self.run_mock_try_convert(
-            automatic_analyzer, experiment, analysis_params
+            automatic_analyzer, experiment, analysis_params, None, None
         )
         mock.assert_not_called()
 

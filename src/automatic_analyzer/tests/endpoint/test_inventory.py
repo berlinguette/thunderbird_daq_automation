@@ -4,28 +4,8 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 import pytest
 
 from automatic_analyzer.experiment_inventory import Experiment
+from automatic_analyzer.tests.endpoint.conftest import check_experiment_valid, request_get_experiments
 # from automatic_analyzer.tests.endpoint.conftest import AppTuple
-
-
-def check_experiment_valid(
-    experiments: list[Experiment],
-    valid_id: str,
-    unconverted_present: bool,
-    converted_present: bool,
-    processed_present: bool,
-):
-    def valid_experiment_pred(exp: Experiment):
-        if exp.id != valid_id:
-            return False
-        if unconverted_present and exp.props.unconverted_mtime == -1:
-            return False
-        if converted_present and exp.props.converted_mtime == -1:
-            return False
-        if processed_present and exp.props.processed_mtime == -1:
-            return False
-        return True
-
-    assert next(filter(valid_experiment_pred, experiments), None) is not None
 
 
 class TestInventoryEndpoint:
@@ -61,12 +41,7 @@ class TestInventoryEndpoint:
         if filter is not None:
             request_address += f"?filter={filter}"
         
-        response = client.get(request_address)
-        experiments_raw = response.json
-        assert experiments_raw is not None
-
-        experiments = [Experiment.parse_obj(exp) for exp in experiments_raw]
-        return experiments
+        return request_get_experiments(client, request_address)
 
     def test_get_all_empty(self, client: FlaskClient):
         assert len(self.get_experiments(client)) == 0

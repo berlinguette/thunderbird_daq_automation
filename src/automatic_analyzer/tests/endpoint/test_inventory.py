@@ -50,6 +50,7 @@ class TestInventoryEndpoint:
         assert response.status_code == 400
 
     def test_get_all(self, experiments_setup_fs, client):
+        """Test GET /inventory and GET /inventory?filter=all"""
         experiments = self.get_experiments(client)
         assert len(experiments) == 5
 
@@ -63,6 +64,7 @@ class TestInventoryEndpoint:
         assert check_experiment_valid(experiments, "ID-ALL", True, True, True)
 
     def test_get_to_be_converted(self, experiments_setup_fs, client):
+        """Test GET /inventory?filter=to_be_converted"""
         experiments = self.get_experiments(client, "to_be_converted")
         assert len(experiments) == 2
 
@@ -70,12 +72,14 @@ class TestInventoryEndpoint:
         assert check_experiment_valid(experiments, "ID-UNC-PRO", True, False, True)
     
     def test_get_to_be_processed(self, experiments_setup_fs, client):
+        """Test GET /inventory?filter=to_be_processed"""
         experiments = self.get_experiments(client, "to_be_processed")
         assert len(experiments) == 1
 
         assert check_experiment_valid(experiments, "ID-UNC-CON", True, True, False)
     
     def test_get_to_be_analyzed(self, experiments_setup_fs, client):
+        """Test GET /inventory?filter=to_be_analyzed"""
         experiments = self.get_experiments(client, "to_be_analyzed")
         assert len(experiments) == 3
 

@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 import re
+from typing import Callable
 from pydantic import ValidationError
 import automatic_analyzer.env_keys as env_keys
 from automatic_analyzer.experiment_inventory import (
@@ -73,8 +74,13 @@ def analyzer_setup() -> (
     return (overrides, exp_tracker, automatic_analyzer, log_file_path)
 
 
-def create_app():
-    overrides, exp_tracker, automatic_analyzer, log_file_path = analyzer_setup()
+def create_app(
+    analyzer_setup_fn: Callable[
+        [], tuple[OverrideInventory, ExperimentTracker, AutomaticAnalyzer, Path]
+    ] = analyzer_setup,
+):
+    # Calls analyzer_setup() by default but can be changed for running tests
+    overrides, exp_tracker, automatic_analyzer, log_file_path = analyzer_setup_fn()
 
     app = Flask(__name__)
     CORS(app, origins=["*"])

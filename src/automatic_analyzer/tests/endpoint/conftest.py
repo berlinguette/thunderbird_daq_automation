@@ -7,7 +7,7 @@ from automatic_analyzer.experiment_inventory import OverrideInventory
 from automatic_analyzer.experiment_tracker import ExperimentTracker
 from automatic_analyzer_main import create_app
 
-TestAppTuple = tuple[Flask, OverrideInventory, ExperimentTracker, AutomaticAnalyzer]
+AppTuple = tuple[Flask, OverrideInventory, ExperimentTracker, AutomaticAnalyzer]
 
 
 @pytest.fixture()
@@ -33,10 +33,12 @@ def test_app(
 
 
 @pytest.fixture()
-def client(test_app: TestAppTuple):
-    return test_app[0].test_client()
+def client(test_app: AppTuple, monkeypatch: pytest.MonkeyPatch):
+    # disgusting workaround for importlib.metadata.version("werkzeug") being unable to find the package
+    monkeypatch.setattr("importlib.metadata.version", lambda x: "3.0.2")
+    yield test_app[0].test_client()
 
 
 @pytest.fixture()
-def runner(test_app: TestAppTuple):
+def runner(test_app: AppTuple):
     return test_app[0].test_cli_runner()

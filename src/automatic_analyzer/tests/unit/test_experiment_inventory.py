@@ -14,8 +14,7 @@ from automatic_analyzer.tests.conftest import make_experiment_props
 
 def check_exp_props(exp: Experiment | None, props_to_check: ExperimentProperties):
     assert exp is not None
-    if exp is not None:
-        assert exp.props == props_to_check
+    assert exp.props == props_to_check
 
 
 class TestExperimentDict:

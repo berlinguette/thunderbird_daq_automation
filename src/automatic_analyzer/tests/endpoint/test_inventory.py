@@ -3,7 +3,6 @@ from flask.testing import FlaskClient
 from pyfakefs.fake_filesystem import FakeFilesystem
 import pytest
 
-from automatic_analyzer.experiment_inventory import Experiment
 from automatic_analyzer.tests.endpoint.conftest import check_experiment_valid, request_get_experiments
 # from automatic_analyzer.tests.endpoint.conftest import AppTuple
 
@@ -57,29 +56,29 @@ class TestInventoryEndpoint:
         # Check default behavior is "all" filter
         assert experiments == self.get_experiments(client, "all")
 
-        check_experiment_valid(experiments, "ID-UNC", True, False, False)
-        check_experiment_valid(experiments, "ID-UNC-CON", True, True, False)
-        check_experiment_valid(experiments, "ID-UNC-PRO", True, False, True)
-        check_experiment_valid(experiments, "ID-CON-PRO", False, True, True)
-        check_experiment_valid(experiments, "ID-ALL", True, True, True)
+        assert check_experiment_valid(experiments, "ID-UNC", True, False, False)
+        assert check_experiment_valid(experiments, "ID-UNC-CON", True, True, False)
+        assert check_experiment_valid(experiments, "ID-UNC-PRO", True, False, True)
+        assert check_experiment_valid(experiments, "ID-CON-PRO", False, True, True)
+        assert check_experiment_valid(experiments, "ID-ALL", True, True, True)
 
     def test_get_to_be_converted(self, experiments_setup_fs, client):
         experiments = self.get_experiments(client, "to_be_converted")
         assert len(experiments) == 2
 
-        check_experiment_valid(experiments, "ID-UNC", True, False, False)
-        check_experiment_valid(experiments, "ID-UNC-PRO", True, False, True)
+        assert check_experiment_valid(experiments, "ID-UNC", True, False, False)
+        assert check_experiment_valid(experiments, "ID-UNC-PRO", True, False, True)
     
     def test_get_to_be_processed(self, experiments_setup_fs, client):
         experiments = self.get_experiments(client, "to_be_processed")
         assert len(experiments) == 1
 
-        check_experiment_valid(experiments, "ID-UNC-CON", True, True, False)
+        assert check_experiment_valid(experiments, "ID-UNC-CON", True, True, False)
     
     def test_get_to_be_analyzed(self, experiments_setup_fs, client):
         experiments = self.get_experiments(client, "to_be_analyzed")
         assert len(experiments) == 3
 
-        check_experiment_valid(experiments, "ID-UNC", True, False, False)
-        check_experiment_valid(experiments, "ID-UNC-CON", True, True, False)
-        check_experiment_valid(experiments, "ID-UNC-PRO", True, False, True)
+        assert check_experiment_valid(experiments, "ID-UNC", True, False, False)
+        assert check_experiment_valid(experiments, "ID-UNC-CON", True, True, False)
+        assert check_experiment_valid(experiments, "ID-UNC-PRO", True, False, True)

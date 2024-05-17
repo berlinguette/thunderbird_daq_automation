@@ -32,7 +32,7 @@ def check_experiment_valid(
             return False
         return True
 
-    assert next(filter(valid_experiment_pred, experiments), None) is not None
+    return next(filter(valid_experiment_pred, experiments), None) is not None
 
 def request_get_experiments(client: FlaskClient, request_address: str):
     response = client.get(request_address)

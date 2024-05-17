@@ -8,15 +8,7 @@ from automatic_analyzer.automatic_analyzer import (
     AutomaticAnalyzer,
 )
 from automatic_analyzer.experiment_inventory import Experiment
-from automatic_analyzer.experiment_tracker import ExperimentTracker
 from automatic_analyzer.tests.conftest import make_experiment_props
-
-
-@pytest.fixture
-def automatic_analyzer(exp_tracker: ExperimentTracker):
-    return AutomaticAnalyzer(
-        {}, {}, exp_tracker, Path("/psd_python"), Path("/psd_program")
-    )
 
 
 @pytest.fixture

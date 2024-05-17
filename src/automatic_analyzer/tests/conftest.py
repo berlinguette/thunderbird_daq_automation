@@ -34,7 +34,7 @@ def exp_tracker(override_inventory, initialized_fs):
     """
     Initializes a test ExperimentTracker with unconverted, converted, and processed
     data directory paths set to "/unc", "/con", and "/pro" respectively.
-    A default override for experiments matching pattern /ID-1../ has also been set
+    A default override for experiments matching pattern `ID-1..` has also been set
     """
     override_inventory.set("ID-1..", make_experiment_props())
     return ExperimentTracker(

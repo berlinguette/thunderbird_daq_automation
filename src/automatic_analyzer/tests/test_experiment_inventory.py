@@ -142,10 +142,12 @@ class TestExperimentInventory:
     def test_set_non_overridden(
         self, exp_inventory: ExperimentInventory, new_exp_props
     ):
+        """Test setting an experiment whose ID does not match any override using ExperimentInventory.set()"""
         exp_inventory.set("ID-200", new_exp_props)
         check_exp_props(exp_inventory.get("ID-200"), new_exp_props)
 
     def test_set_overridden(self, exp_inventory: ExperimentInventory, new_exp_props):
+        """Test setting an experiment whose ID matches an override using ExperimentInventory.set()"""
         exp_inventory.set("ID-342", new_exp_props)
 
         id_3_dot_dot = exp_inventory._override_inventory.get("ID-3..")

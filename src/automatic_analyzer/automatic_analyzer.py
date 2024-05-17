@@ -59,6 +59,13 @@ class AutomaticAnalyzer:
         psd_python_binary_path: Path,
         psd_program_path: Path,
     ) -> None:
+        """
+        Sets up a new AutomaticAnalyzer.
+        `psd_python_binary_path` is the path to the python binary that can run the PSD analysis script - 
+        it is likely located inside a `venv/Scripts` or `venv/bin` folder.
+        `psd_program_path` is the path to the actual PSD analysis script.
+        `config_setup` and `config` are passed on to the data_analyzer module
+        """
         self.exp_tracker = exp_tracker
         self.psd_python_path = psd_python_binary_path
         self.psd_program_path = psd_program_path
@@ -72,10 +79,15 @@ class AutomaticAnalyzer:
         self._converter_thread.start()
 
     def analyze(self, analysis: Analysis):
+        """Adds given analysis to the queue, where it will be popped off and processed by the analyzer thread"""
         self._analysis_queue.put(analysis)
         logger.info(f"Added experiment {analysis} to analysis queue")
 
     def status(self):
+        """
+        Gets the latest analysis status from the analyzer thread,
+        including the currently-running analysis and any queued analyses
+        """
         with self.in_progress_lock:
             in_progress_analysis = self.in_progress_analysis
         return {

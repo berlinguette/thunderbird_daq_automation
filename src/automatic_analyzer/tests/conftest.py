@@ -39,6 +39,10 @@ def override_inventory():
 
 @pytest.fixture
 def initialized_fs(fs: FakeFilesystem):
+    """
+    Initializes a fake filesystem, creating empty directories
+    for unconverted, converted, and processed data directories
+    """
     fs.create_dir("/unc")
     fs.create_dir("/con")
     fs.create_dir("/pro")
@@ -47,6 +51,11 @@ def initialized_fs(fs: FakeFilesystem):
 
 @pytest.fixture
 def exp_tracker(override_inventory, initialized_fs):
+    """
+    Initializes a test ExperimentTracker with unconverted, converted, and processed
+    data directory paths set to "/unc", "/con", and "/pro" respectively.
+    A default override for experiments matching pattern /ID-1../ has also been set
+    """
     override_inventory.set("ID-1..", make_experiment_props())
     return ExperimentTracker(
         Path("/unc"), Path("/con"), Path("/pro"), override_inventory

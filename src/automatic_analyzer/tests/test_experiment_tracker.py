@@ -1,5 +1,3 @@
-import pytest
-
 from automatic_analyzer.experiment_tracker import ExperimentTracker
 from pyfakefs.fake_filesystem import FakeFilesystem
 

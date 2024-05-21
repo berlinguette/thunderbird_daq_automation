@@ -3,7 +3,10 @@ from flask.testing import FlaskClient
 from pyfakefs.fake_filesystem import FakeFilesystem
 import pytest
 
-from automatic_analyzer.tests.endpoint.conftest import check_experiment_valid, request_get_experiments
+from automatic_analyzer.tests.endpoint.conftest import (
+    check_experiment_valid,
+    request_get_experiments,
+)
 # from automatic_analyzer.tests.endpoint.conftest import AppTuple
 
 
@@ -39,17 +42,19 @@ class TestInventoryEndpoint:
         request_address = "/inventory"
         if filter is not None:
             request_address += f"?filter={filter}"
-        
+
         return request_get_experiments(client, request_address)
 
-    def test_get_all_empty(self, client: FlaskClient):
+    def test_should_initially_be_empty(self, client: FlaskClient):
         assert len(self.get_experiments(client)) == 0
-    
-    def test_get_invalid_filter(self, client: FlaskClient):
+
+    def test_should_return_400_when_filter_invalid(self, client: FlaskClient):
         response = client.get("/inventory?filter=invalid")
         assert response.status_code == 400
 
-    def test_get_all(self, experiments_setup_fs, client):
+    def test_should_return_all_experiments_when_filter_all_or_null(
+        self, experiments_setup_fs, client
+    ):
         """Test GET /inventory and GET /inventory?filter=all"""
         experiments = self.get_experiments(client)
         assert len(experiments) == 5
@@ -63,22 +68,28 @@ class TestInventoryEndpoint:
         assert check_experiment_valid(experiments, "ID-CON-PRO", False, True, True)
         assert check_experiment_valid(experiments, "ID-ALL", True, True, True)
 
-    def test_get_to_be_converted(self, experiments_setup_fs, client):
+    def test_should_return_convertable_experiments_when_filter_to_be_converted(
+        self, experiments_setup_fs, client
+    ):
         """Test GET /inventory?filter=to_be_converted"""
         experiments = self.get_experiments(client, "to_be_converted")
         assert len(experiments) == 2
 
         assert check_experiment_valid(experiments, "ID-UNC", True, False, False)
         assert check_experiment_valid(experiments, "ID-UNC-PRO", True, False, True)
-    
-    def test_get_to_be_processed(self, experiments_setup_fs, client):
+
+    def test_should_return_processable_experiments_when_filter_to_be_processed(
+        self, experiments_setup_fs, client
+    ):
         """Test GET /inventory?filter=to_be_processed"""
         experiments = self.get_experiments(client, "to_be_processed")
         assert len(experiments) == 1
 
         assert check_experiment_valid(experiments, "ID-UNC-CON", True, True, False)
-    
-    def test_get_to_be_analyzed(self, experiments_setup_fs, client):
+
+    def test_should_return_analyzable_experiments_when_filter_to_be_analyzed(
+        self, experiments_setup_fs, client
+    ):
         """Test GET /inventory?filter=to_be_analyzed"""
         experiments = self.get_experiments(client, "to_be_analyzed")
         assert len(experiments) == 3

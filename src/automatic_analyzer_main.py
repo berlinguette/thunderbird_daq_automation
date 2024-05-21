@@ -118,7 +118,8 @@ def create_app(
 
     @app.delete("/overrides/<pattern>")
     def delete_override(pattern: str):
-        # does nothing if override with given pattern is not found
+        if overrides.get(pattern) is None:
+            return "Experiment not found", 404
         overrides.experiments.pop(pattern, None)
         for id in exp_tracker.exp_inventory.experiments.keys():
             # clear old experiments that used to be overridden so exp tracker won't skip it when refreshing

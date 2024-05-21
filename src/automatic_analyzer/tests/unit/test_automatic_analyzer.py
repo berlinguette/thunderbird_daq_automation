@@ -42,7 +42,7 @@ class TestAutomaticAnalyzerConvert:
                 assert mock.call_args.kwargs["destination"] == dest_path
             return mock
 
-    def test_try_convert(
+    def test_should_convert_convertable_experiment(
         self,
         automatic_analyzer: AutomaticAnalyzer,
         analysis_params,
@@ -58,7 +58,7 @@ class TestAutomaticAnalyzerConvert:
         )
         mock.assert_called_once()
 
-    def test_try_convert_converted_present(
+    def test_should_not_convert_when_converted_present(
         self,
         automatic_analyzer: AutomaticAnalyzer,
         analysis_params,
@@ -71,7 +71,7 @@ class TestAutomaticAnalyzerConvert:
         )
         mock.assert_not_called()
 
-    def test_try_convert_unconverted_not_present(
+    def test_should_not_convert_when_unconverted_not_present(
         self,
         automatic_analyzer: AutomaticAnalyzer,
         analysis_params,
@@ -84,7 +84,7 @@ class TestAutomaticAnalyzerConvert:
         )
         mock.assert_not_called()
 
-    def test_try_convert_unconverted_force(
+    def test_should_always_convert_when_force_true(
         self,
         automatic_analyzer: AutomaticAnalyzer,
         analysis_params: AnalysisParams,
@@ -103,7 +103,7 @@ class TestAutomaticAnalyzerConvert:
         )
         mock.assert_called_once()
 
-    def test_try_convert_unconverted_no_convert_param(
+    def test_should_not_convert_when_convert_analysis_param_not_set(
         self,
         automatic_analyzer: AutomaticAnalyzer,
         analysis_params: AnalysisParams,
@@ -138,7 +138,7 @@ class TestAutomaticAnalyzerProcess:
             automatic_analyzer._try_process(analysis)
             return mock
 
-    def test_try_process(
+    def test_should_process_processable_experiment(
         self,
         automatic_analyzer: AutomaticAnalyzer,
         analysis_params,
@@ -150,33 +150,33 @@ class TestAutomaticAnalyzerProcess:
         )
         mock.assert_called_once()
 
-    def test_try_process_processed_present(
+    def test_should_not_process_when_processed_present(
         self,
         automatic_analyzer: AutomaticAnalyzer,
         analysis_params,
         experiment: Experiment,
     ):
-        """Test trying to convert when processed data is already present"""
+        """Test trying to process when processed data is already present"""
         experiment.props.processed_mtime = 0
         mock = self.run_mock_try_process(
             automatic_analyzer, experiment, analysis_params
         )
         mock.assert_not_called()
 
-    def test_try_process_converted_not_present(
+    def test_should_not_process_when_converted_not_present(
         self,
         automatic_analyzer: AutomaticAnalyzer,
         analysis_params,
         experiment: Experiment,
     ):
-        """Test trying to convert when converted data is not present"""
+        """Test trying to process when converted data is not present"""
         experiment.props.converted_mtime = -1
         mock = self.run_mock_try_process(
             automatic_analyzer, experiment, analysis_params
         )
         mock.assert_not_called()
 
-    def test_try_process_converted_force(
+    def test_should_always_process_when_force_true(
         self,
         automatic_analyzer: AutomaticAnalyzer,
         analysis_params: AnalysisParams,
@@ -191,7 +191,7 @@ class TestAutomaticAnalyzerProcess:
         )
         mock.assert_called_once()
 
-    def test_try_process_converted_no_process_param(
+    def test_should_not_process_when_process_analysis_param_not_set(
         self,
         automatic_analyzer: AutomaticAnalyzer,
         analysis_params: AnalysisParams,

@@ -24,14 +24,18 @@ class TestExperimentDict:
     def experiment_dict(self):
         return ExperimentDict()
 
-    def test_set_new_exp(self, experiment_dict: ExperimentDict, experiment_props):
+    def test_should_set_new_experiment(
+        self, experiment_dict: ExperimentDict, experiment_props
+    ):
         """Test adding a new experiment with ExperimentDict.set()"""
         assert experiment_dict.get("ID-TEST") is None
         experiment_dict.set("ID-TEST", experiment_props)
         exp_test = experiment_dict.get("ID-TEST")
         check_exp_props(exp_test, experiment_props)
 
-    def test_set_overwrite_exp(self, experiment_dict: ExperimentDict, experiment_props):
+    def test_should_overwrite_when_setting_existing_experiment(
+        self, experiment_dict: ExperimentDict, experiment_props
+    ):
         """Test overwriting an existing experiment with ExperimentDict.set()"""
         experiment_dict.set("ID-TEST", experiment_props)
 
@@ -44,7 +48,7 @@ class TestExperimentDict:
         experiment_dict.set("ID-TEST", new_experiment_props)
         check_exp_props(experiment_dict.get("ID-TEST"), new_experiment_props)
 
-    def test_set_overwrite_some(
+    def test_should_overwrite_only_non_none_props_when_setting_existing_experiment(
         self, experiment_dict: ExperimentDict, experiment_props
     ):
         """Test overwriting only some props of an existing experiment with ExperimentDict.set()"""
@@ -72,7 +76,9 @@ class TestOverrideInventory:
     def experiment(self):
         return Experiment(id="ID-TEST", props=make_experiment_props())
 
-    def test_load_from_file(self, override_inventory: OverrideInventory, experiment):
+    def test_should_load_inventory_from_pickle_file(
+        self, override_inventory: OverrideInventory, experiment
+    ):
         """Test loading existing override inventory from pickle file with OverrideInventory.load_from_file()"""
         override_inventory.experiments["ID-TEST"] = experiment
         overrides_pickle = pickle.dumps(override_inventory)
@@ -82,7 +88,7 @@ class TestOverrideInventory:
             assert loaded_overrides.get("ID-TEST") == experiment
 
     @patch("builtins.open", mock_open())
-    def test_set(
+    def test_should_set_new_override(
         self,
         override_inventory: OverrideInventory,
         experiment_props: ExperimentProperties,
@@ -98,7 +104,7 @@ class TestOverrideInventory:
             assert exp_test.props.overridden
 
     @patch("builtins.open", mock_open())
-    def test_get_override_exp(
+    def test_should_get_experiment_that_matches_override_pattern(
         self,
         override_inventory: OverrideInventory,
         experiment_props: ExperimentProperties,
@@ -138,14 +144,16 @@ class TestExperimentInventory:
             override_inventory.set("ID-3..", experiment_props)
             return ExperimentInventory(override_inventory)
 
-    def test_set_non_overridden(
+    def test_should_set_non_overrideable_experiment_with_same_props(
         self, exp_inventory: ExperimentInventory, new_exp_props
     ):
         """Test setting an experiment whose ID does not match any override using ExperimentInventory.set()"""
         exp_inventory.set("ID-200", new_exp_props)
         check_exp_props(exp_inventory.get("ID-200"), new_exp_props)
 
-    def test_set_overridden(self, exp_inventory: ExperimentInventory, new_exp_props):
+    def test_should_set_overrideable_experiment_with_override_props(
+        self, exp_inventory: ExperimentInventory, new_exp_props
+    ):
         """Test setting an experiment whose ID matches an override using ExperimentInventory.set()"""
         exp_inventory.set("ID-342", new_exp_props)
 

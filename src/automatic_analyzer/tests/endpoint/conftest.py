@@ -1,6 +1,7 @@
 from pathlib import Path
 from flask import Flask
 from flask.testing import FlaskClient
+from pyfakefs.fake_filesystem import FakeFilesystem
 import pytest
 
 from automatic_analyzer.automatic_analyzer import AutomaticAnalyzer
@@ -17,7 +18,7 @@ def check_experiment_valid(
     unconverted_present: bool,
     converted_present: bool,
     processed_present: bool,
-    overridden: bool = False
+    overridden: bool = False,
 ):
     def valid_experiment_pred(exp: Experiment):
         if exp.id != valid_id:
@@ -34,6 +35,7 @@ def check_experiment_valid(
 
     return next(filter(valid_experiment_pred, experiments), None) is not None
 
+
 def request_get_experiments(client: FlaskClient, request_address: str):
     response = client.get(request_address)
     experiments_raw = response.json
@@ -42,7 +44,8 @@ def request_get_experiments(client: FlaskClient, request_address: str):
     experiments = [Experiment.parse_obj(exp) for exp in experiments_raw]
     return experiments
 
-@pytest.fixture()
+
+@pytest.fixture
 def test_app(
     initialized_fs,
     override_inventory: OverrideInventory,
@@ -74,3 +77,23 @@ def client(test_app: AppTuple, monkeypatch: pytest.MonkeyPatch):
 @pytest.fixture()
 def runner(test_app: AppTuple):
     return test_app[0].test_cli_runner()
+
+
+@pytest.fixture
+def experiments_setup_fs(initialized_fs: FakeFilesystem):
+    initialized_fs.create_dir("/unc/ID-UNC")
+
+    initialized_fs.create_dir("/unc/ID-UNC-CON")
+    initialized_fs.create_dir("/con/ID-UNC-CON")
+
+    initialized_fs.create_dir("/unc/ID-UNC-PRO")
+    initialized_fs.create_dir("/pro/ID-UNC-PRO")
+
+    initialized_fs.create_dir("/con/ID-CON-PRO")
+    initialized_fs.create_dir("/pro/ID-CON-PRO")
+
+    initialized_fs.create_dir("/unc/ID-ALL")
+    initialized_fs.create_dir("/con/ID-ALL")
+    initialized_fs.create_dir("/pro/ID-ALL")
+
+    yield initialized_fs

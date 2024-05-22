@@ -11,25 +11,6 @@ from automatic_analyzer.tests.endpoint.conftest import (
 
 
 class TestInventoryEndpoint:
-    @pytest.fixture
-    def experiments_setup_fs(self, initialized_fs: FakeFilesystem):
-        initialized_fs.create_dir("/unc/ID-UNC")
-
-        initialized_fs.create_dir("/unc/ID-UNC-CON")
-        initialized_fs.create_dir("/con/ID-UNC-CON")
-
-        initialized_fs.create_dir("/unc/ID-UNC-PRO")
-        initialized_fs.create_dir("/pro/ID-UNC-PRO")
-
-        initialized_fs.create_dir("/con/ID-CON-PRO")
-        initialized_fs.create_dir("/pro/ID-CON-PRO")
-
-        initialized_fs.create_dir("/unc/ID-ALL")
-        initialized_fs.create_dir("/con/ID-ALL")
-        initialized_fs.create_dir("/pro/ID-ALL")
-
-        yield initialized_fs
-
     def get_experiments(
         self,
         client: FlaskClient,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import inspect
 import logging
+import time
 from loguru import logger
 
 class InterceptHandler(logging.Handler):
@@ -33,3 +34,18 @@ def log_stream_filter(record) -> bool:
     if "werkzeug" in record["name"] or record["module"] == "sh":
         return False
     return True
+
+
+def follow(file, sleep_sec=0.1):
+    """ Yield each line from a file as they are written.
+    `sleep_sec` is the time to sleep after empty reads. """
+    line = ''
+    while True:
+        tmp = file.readline()
+        if tmp is not None and tmp != "":
+            line += tmp
+            if line.endswith("\n"):
+                yield line
+                line = ''
+        elif sleep_sec:
+            time.sleep(sleep_sec)

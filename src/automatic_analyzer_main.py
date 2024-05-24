@@ -14,11 +14,10 @@ from automatic_analyzer.automatic_analyzer import (
     AnalysisParams,
     AutomaticAnalyzer,
 )
-from automatic_analyzer.logging_intercept import InterceptHandler, log_stream_filter
+from automatic_analyzer.logging_handlers import InterceptHandler, follow, log_stream_filter
 from loguru import logger
 from flask import Flask, Response, request
 from flask_cors import CORS
-from sh import tail
 import sys
 from datetime import datetime
 
@@ -175,8 +174,9 @@ def create_app(
             return msg
 
         def log_reader():
-            for line in tail("-f", log_file_path, _iter=True):
-                yield format_sse(line)
+            with open(log_file_path, 'r') as file:
+                for line in follow(file):
+                    yield format_sse(line)
 
         return Response(log_reader(), mimetype="text/event-stream")
 

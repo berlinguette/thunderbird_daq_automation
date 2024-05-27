@@ -1,10 +1,11 @@
 import { AnalysisParams } from "../types/Analysis";
+import { callEndpoint } from "./callEndpoint";
 import { getServerUrl } from "./getServerUrl"
 
 const serverUrl = getServerUrl();
 
 export const startAnalysis = async (params: AnalysisParams) => {
-  const response = await fetch(`${serverUrl}/analyses`, {
+  return callEndpoint(`${serverUrl}/analyses`, {
     method: "POST",
     headers: {
       "Accept": "application/json",
@@ -12,16 +13,8 @@ export const startAnalysis = async (params: AnalysisParams) => {
     },
     body: JSON.stringify(params)
   });
-  if (!response.ok) {
-    throw new Error('Network response was not ok')
-  }
-  return response.json();
 }
 
 export const getAnalyses = async () => {
-  const response = await fetch(`${serverUrl}/analyses`);
-  if (!response.ok) {
-    throw new Error('Network response was not ok')
-  }
-  return response.json();
+  return callEndpoint(`${serverUrl}/analyses`);
 }

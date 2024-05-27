@@ -26,7 +26,7 @@ const InventoryTable = ({ experimentsList, checkedExperiments, setCheckedExperim
   const isIndeterminate = Object.values(checkedExperiments).some(Boolean) && !allChecked;
 
   const handleCheckAll = () => {
-    const newChecked = isIndeterminate || !allChecked;
+    const newChecked = !allChecked;
     setCheckedExperiments((prev) => {
       const newCheckedExperiments = { ...prev };
       Object.keys(newCheckedExperiments).forEach((key) => newCheckedExperiments[key] = newChecked);

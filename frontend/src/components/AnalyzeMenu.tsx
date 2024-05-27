@@ -3,7 +3,7 @@ import { Button, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
 import { CheckedExperiments } from "./inventory/Inventory";
 import { startAnalysis } from "../api/analyses";
 import { useMutation } from "@tanstack/react-query";
-import { AnalysisParams } from "../types/Analysis";
+import { AnalysisRequestParams } from "../types/Analysis";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -22,7 +22,7 @@ const AnalyzeMenu = ({ analyzeFilter, checkedExperiments, disabled = false, outl
   });
 
   const makeAnalyzeHandler = (type: "all" | "convert" | "process") => async () => {
-    const body: AnalysisParams = {
+    const body: AnalysisRequestParams = {
       convert_unconverted: type === "convert" || type === "all",
       process_converted: type === "process" || type === "all"
     };

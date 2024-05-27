@@ -3,8 +3,11 @@ import { Experiment } from "./Experiment"
 export type AnalysisParams = {
   convert_unconverted?: boolean|undefined,
   process_converted?: boolean|undefined,
-  pattern?: string|undefined,
   force?: boolean|undefined
+}
+
+export type AnalysisRequestParams = AnalysisParams & {
+  pattern?: string|undefined
 }
 
 export type Analysis = {

@@ -1,10 +1,10 @@
-import { AnalysisParams } from "../types/Analysis";
+import { AnalysisRequestParams } from "../types/Analysis";
 import { callEndpoint } from "./callEndpoint";
 import { getServerUrl } from "./getServerUrl"
 
 const serverUrl = getServerUrl();
 
-export const startAnalysis = async (params: AnalysisParams) => {
+export const startAnalysis = async (params: AnalysisRequestParams) => {
   return callEndpoint(`${serverUrl}/analyses`, {
     method: "POST",
     headers: {

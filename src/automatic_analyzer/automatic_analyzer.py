@@ -16,15 +16,19 @@ from queue import Queue
 
 class AnalysisParams(BaseModel):
     """
-    Parameters for analyzing an experiment. Also used to parse analysis requests from the endpoint -
-    the `pattern` attribute is only used upon initial request, not by the AutomaticAnalyzer.
+    Parameters for analyzing an experiment.
     Set `force` to `True` to to run analyses regardless of whether there are already existing files
     """
 
     convert_unconverted: bool = True
     process_converted: bool = True
-    pattern: str|None = None
     force: bool = False
+    
+class AnalysisRequestParams(AnalysisParams):
+    """Parameters in an analysis request from the endpoint.
+    The `pattern` attribute is used to determine which analyses should be done.
+    """
+    pattern: str|None = None
 
 
 class Analysis(BaseModel):

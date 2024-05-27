@@ -12,6 +12,7 @@ from automatic_analyzer.experiment_tracker import ExperimentTracker
 from automatic_analyzer.automatic_analyzer import (
     Analysis,
     AnalysisParams,
+    AnalysisRequestParams,
     AutomaticAnalyzer,
 )
 from automatic_analyzer.logging_handlers import InterceptHandler, follow, log_stream_filter
@@ -135,11 +136,11 @@ def create_app(
 
     @app.post("/analyses")
     def start_analyses():
-        analysis_params = AnalysisParams()
+        analysis_params = AnalysisRequestParams()
         if request.is_json:
             body = request.json
             try:
-                analysis_params = AnalysisParams.parse_obj(body)
+                analysis_params = AnalysisRequestParams.parse_obj(body)
                 logger.info(f"Analysis params: {analysis_params}")
             except ValidationError as err:
                 return err.__str__(), 400
@@ -157,7 +158,12 @@ def create_app(
             f"Experiments to analyze: {[exp.id for exp in experiments_to_analyze]}"
         )
         for exp in experiments_to_analyze:
-            analysis = Analysis(exp=exp, params=analysis_params)
+            params = AnalysisParams(
+                convert_unconverted=analysis_params.convert_unconverted, 
+                process_converted=analysis_params.process_converted,
+                force=analysis_params.force
+            )
+            analysis = Analysis(exp=exp, params=params)
             automatic_analyzer.analyze(analysis)
 
         # Queue might be empty because analysis hasn't been put in queue yet

@@ -106,3 +106,6 @@ config.yaml
 ### OS Specific ###
 # Mac OS X
 .DS_Store
+
+## automatic_conversion ##
+data

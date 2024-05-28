@@ -24,8 +24,8 @@ screen_only_messenger = Messenger(logger, in_log=False)
 def convert_neutron_data(
     config: Config,
     config_setup: ConfigSetup,
-    sources: Optional[List[str]] = None,
-    destination: Optional[str] = None
+    sources: Optional[List[Path|str]] = None,
+    destination: Optional[Path|str] = None
 ):
     """Runs the neutron data conversion process:
         - Running the folder picker GUI if needed

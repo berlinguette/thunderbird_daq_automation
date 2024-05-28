@@ -59,7 +59,16 @@ const fakeOverrides: Experiment[] = [
       converted_mtime: 0,
       processed_mtime: 0,
       overridden: true
-    }
+    },
+  },
+  {
+    id: "ID-OVR-2",
+    props: {
+      unconverted_mtime: 100,
+      converted_mtime: 200,
+      processed_mtime: 300,
+      overridden: true
+    },
   }
 ];
 

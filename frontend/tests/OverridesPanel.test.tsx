@@ -34,16 +34,20 @@ describe("OverridesPanel", () => {
   });
   it("can remove existing overrides", async () => {
     const refetchInventory = openPanel();
-    fireEvent.click(screen.getByText("–"));
-    expect(screen.queryByText("–")).not.toBeInTheDocument();
+    expect(screen.getAllByText("–")).toHaveLength(2);
+    fireEvent.click(screen.getAllByText("–")[0]);
+    expect(screen.getAllByText("–")).toHaveLength(1);
+    expect(screen.queryByText("ID-OVR")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByText("Save"));
     await waitFor(() => expect(refetchInventory).toBeCalled());
   });
   it("will not save changes when the panel is cancelled", async () => {
     const refetchInventory = openPanel();
-    fireEvent.click(screen.getByText("–"));
-    expect(screen.queryByText("–")).not.toBeInTheDocument();
+    expect(screen.getAllByText("–")).toHaveLength(2);
+    fireEvent.click(screen.getAllByText("–")[0]);
+    expect(screen.getAllByText("–")).toHaveLength(1);
+    expect(screen.queryByText("ID-OVR")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByText("Cancel"));
     await waitFor(() => expect(refetchInventory).not.toBeCalled());

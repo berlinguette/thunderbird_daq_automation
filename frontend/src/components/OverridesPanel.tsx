@@ -17,7 +17,7 @@ const OverridesPanel = ({ refetchInventory }: { refetchInventory: () => void }) 
   const [overrides, setOverrides] = useState<Overrides[]>([]);
   const [formErr, setFormErr] = useState<string|null>(null);
 
-  const { isPending, isError, data, error, refetch } = useQuery<Experiment[]>({
+  const { isPending, isError, data, error, refetch } = useQuery({
     queryKey: ["overrides"],
     queryFn: getOverrides,
     staleTime: Infinity

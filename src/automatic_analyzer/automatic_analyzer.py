@@ -14,6 +14,7 @@ import data_converter.data_converter as data_converter
 from threading import Thread, Lock
 from queue import Queue
 
+
 class AnalysisParams(BaseModel):
     """
     Parameters for analyzing an experiment.
@@ -23,12 +24,15 @@ class AnalysisParams(BaseModel):
     convert_unconverted: bool = True
     process_converted: bool = True
     force: bool = False
-    
+
+
 class AnalysisRequestParams(AnalysisParams):
-    """Parameters in an analysis request from the endpoint.
+    """
+    Parameters in an analysis request from the endpoint.
     The `pattern` attribute is used to determine which analyses should be done.
     """
-    pattern: str|None = None
+
+    pattern: str | None = None
 
 
 class Analysis(BaseModel):
@@ -65,7 +69,7 @@ class AutomaticAnalyzer:
     ) -> None:
         """
         Sets up a new AutomaticAnalyzer.
-        `psd_python_binary_path` is the path to the python binary that can run the PSD analysis script - 
+        `psd_python_binary_path` is the path to the python binary that can run the PSD analysis script -
         it is likely located inside a `venv/Scripts` or `venv/bin` folder.
         `psd_program_path` is the path to the actual PSD analysis script.
         `config_setup` and `config` are passed on to the data_analyzer module
@@ -109,7 +113,7 @@ class AutomaticAnalyzer:
 
     def _analyzer(self):
         """
-        Main analyzer function. This should be run as a separate thread that is started when 
+        Main analyzer function. This should be run as a separate thread that is started when
         the AutomaticAnalyzer class is instantiated.
         The function blocks until an analysis is available in the shared queue, at which point it will
         try to convert/process the given experiments.
@@ -199,14 +203,15 @@ class AutomaticAnalyzer:
                     self.in_progress_analysis.stage = "process"
 
             program_input = f"{exp.id.split('-', maxsplit=1)[1]}\n\n\n\n\n\n\n\n"
-            logger.debug(f"Running {self.psd_python_path} {self.psd_program_path} with input {program_input}")
+            logger.debug(
+                f"Running {self.psd_python_path} {self.psd_program_path} with input {program_input}"
+            )
             output = subprocess.run(
                 [self.psd_python_path, self.psd_program_path],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                input=program_input
+                input=program_input,
             )
             logger.info(f"Program output: {output.stdout}")
             logger.info(f"Finished processing experiment {exp}")
-

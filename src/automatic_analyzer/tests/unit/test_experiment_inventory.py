@@ -152,12 +152,13 @@ class TestExperimentInventory:
         check_exp_props(exp_inventory.get("ID-200"), new_exp_props)
 
     def test_should_set_overrideable_experiment_with_override_props(
-        self, exp_inventory: ExperimentInventory, new_exp_props
+        self,
+        exp_inventory: ExperimentInventory,
+        experiment_props: ExperimentProperties,
+        new_exp_props: ExperimentProperties,
     ):
         """Test setting an experiment whose ID matches an override using ExperimentInventory.set()"""
         exp_inventory.set("ID-342", new_exp_props)
 
-        id_3_dot_dot = exp_inventory._override_inventory.get("ID-3..")
-        assert id_3_dot_dot is not None
-        if id_3_dot_dot is not None:
-            check_exp_props(exp_inventory.get("ID-342"), id_3_dot_dot.props)
+        experiment_props.overridden = True
+        check_exp_props(exp_inventory.get("ID-342"), experiment_props)

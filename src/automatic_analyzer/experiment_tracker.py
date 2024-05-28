@@ -114,7 +114,9 @@ class ExperimentTracker:
         unconverted_exps = self._scan_directory(self._unconverted_data_dir)
         logger.debug(f"Found unconverted experiments: {unconverted_exps}")
         for id, mtime in unconverted_exps:
-            self.exp_inventory.set(id, ExperimentProperties(unconverted_mtime=mtime, overridden=False))
+            self.exp_inventory.set(
+                id, ExperimentProperties(unconverted_mtime=mtime, overridden=False)
+            )
 
     def _refresh_converted(self):
         """
@@ -149,7 +151,9 @@ class ExperimentTracker:
                 logger.warning(f"No conversion.log found for experiment {id}")
                 exp_mtime = "Error"
 
-            self.exp_inventory.set(id, ExperimentProperties(converted_mtime=exp_mtime, overridden=False))
+            self.exp_inventory.set(
+                id, ExperimentProperties(converted_mtime=exp_mtime, overridden=False)
+            )
 
     def _refresh_processed(self):
         """
@@ -165,12 +169,21 @@ class ExperimentTracker:
         processed_exps = self._scan_directory(self._processed_data_dir)
         logger.debug(f"Found processed experiments: {processed_exps}")
         for id, mtime in processed_exps:
-            self.exp_inventory.set(id, ExperimentProperties(processed_mtime=mtime, overridden=False))
+            exp_mtime = mtime
+            exp_folder_path = Path(self._processed_data_dir, id)
+            if len(list(exp_folder_path.glob("*.csv"))) == 0:
+                logger.warning(
+                    f"No .csv files found in processed directory for experiment {id}"
+                )
+                exp_mtime = "Error"
+            self.exp_inventory.set(
+                id, ExperimentProperties(processed_mtime=exp_mtime, overridden=False)
+            )
 
     def _scan_directory(self, target_dir: Path) -> list[tuple[str, float]]:
         """Scans target directory and returns a list of pairs of experiment IDs found in target and their mtimes"""
         directories = [
-            (f.parts[-1], f.lstat().st_mtime*1000)
+            (f.parts[-1], f.lstat().st_mtime * 1000)
             for f in target_dir.iterdir()
             if f.is_dir()
         ]

@@ -175,7 +175,7 @@ const MTimeDisplay = ({ mtime, overridden }: { mtime: number | string, overridde
       <Tooltip
         openDelay={150}
         label={
-          error ? "May be malformed - check conversion.log in directory" :
+          error ? "May be malformed - check experiment directory" :
           found ? `Directory last modified on ${new Date(mtime).toLocaleString()}` :
           "Directory not found in QMI storage"
         }

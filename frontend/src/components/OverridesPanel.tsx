@@ -127,7 +127,7 @@ const OverridesPanel = ({ refetchInventory }: { refetchInventory: () => void }) 
           <ModalCloseButton />
           <ModalBody>
             {isPending && <p>Loading...</p>}
-            {isError && <p>{error.message}</p>}
+            {isError && <p><span>An error occurred when fetching data:</span> {error.message}</p>}
             {!isPending && !isError && data &&
               <Grid templateColumns='0.1fr repeat(4, 1fr)' gap={2}>
                 <GridItem />

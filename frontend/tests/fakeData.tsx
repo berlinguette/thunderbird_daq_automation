@@ -83,7 +83,7 @@ export const selectiveAnalysisHandler = (desiredParams: AnalysisRequestParams) =
       body.pattern === desiredParams.pattern &&
       body.force === desiredParams.force
     ) {
-      return HttpResponse.json({});
+      return HttpResponse.json({ current: null, queued: [] });
     } else {
       return HttpResponse.text("Invalid", { status: 400 });
     }

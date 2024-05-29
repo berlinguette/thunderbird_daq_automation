@@ -25,7 +25,7 @@ export const Analysis = z.object({
 export type Analysis = z.infer<typeof Analysis>;
 
 export const AnalysesQueue = z.object({
-  current: Analysis,
+  current: Analysis.or(z.null()),
   queued: z.array(Analysis)
 });
 

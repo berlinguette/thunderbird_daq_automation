@@ -5,7 +5,13 @@ import { ChakraProvider } from "@chakra-ui/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { RenderOptions, render } from "@testing-library/react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false
+    }
+  }
+});
 
 const Providers = ({children}: {children: React.ReactNode}) => {
   return (

@@ -10,6 +10,9 @@ class CAENDataFormat(Enum):
     CSV = ".csv"
     BIN = ".bin"
 
+class CAENChannelFormat(Enum):
+    SINGLE = "single"
+    DUAL = "dual"
 
 class Reason(Enum):
     OK = 'OK'

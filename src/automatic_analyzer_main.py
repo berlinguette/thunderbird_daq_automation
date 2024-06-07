@@ -21,7 +21,9 @@ from flask import Flask, Response, request
 from flask_cors import CORS
 import sys
 from datetime import datetime
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
+from automatic_analyzer.otlp import get_otlp_log_handler
 from data_converter.configuration.configuration import load_config_setup
 from utilities.utilities.configuration.configuration import get_configuration
 
@@ -40,13 +42,14 @@ def analyzer_setup() -> (
     log_file_path = Path(config.log_file_folder, f"{today_date}.log")
 
     logger.remove()
-    logger.add(sys.stderr, level=logging.INFO)
+    # logger.add(sys.stderr, level=logging.INFO)
     logger.add(
         log_file_path, level=logging.NOTSET, serialize=True, filter=log_stream_filter
     )
-    logging.basicConfig(handlers=[InterceptHandler()], level=logging.NOTSET, force=True)
-    # don't log unnecessary debug info from sh module
-    logging.getLogger("sh").setLevel(logging.INFO)
+    logger.add(get_otlp_log_handler(), serialize=True)
+    # logging.basicConfig(handlers=[InterceptHandler()], level=logging.NOTSET, force=True)
+    # # don't log unnecessary debug info from sh module
+    # logging.getLogger("sh").setLevel(logging.INFO)
 
     try:
         overrides = OverrideInventory.load_from_file(config.overrides_file_path)
@@ -83,6 +86,7 @@ def create_app(
     overrides, exp_tracker, automatic_analyzer, log_file_path = analyzer_setup_fn()
 
     app = Flask(__name__)
+    FlaskInstrumentor.instrument_app(app)
     CORS(app, origins=["*"])
 
     @app.get("/inventory")
@@ -191,4 +195,4 @@ def create_app(
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True)
+    app.run()

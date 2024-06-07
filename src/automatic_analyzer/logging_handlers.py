@@ -4,6 +4,7 @@ import logging
 import time
 from loguru import logger
 
+
 class InterceptHandler(logging.Handler):
     """
     Intercepts normal Python logging logs and converts them to loguru logs
@@ -27,6 +28,7 @@ class InterceptHandler(logging.Handler):
             level, record.getMessage()
         )
 
+
 def log_stream_filter(record) -> bool:
     """
     Filters out unnecessary log messages to streamline logs sent to frontend interface
@@ -37,15 +39,15 @@ def log_stream_filter(record) -> bool:
 
 
 def follow(file, sleep_sec=0.1):
-    """ Yield each line from a file as they are written.
-    `sleep_sec` is the time to sleep after empty reads. """
-    line = ''
+    """Yield each line from a file as they are written.
+    `sleep_sec` is the time to sleep after empty reads."""
+    line = ""
     while True:
         tmp = file.readline()
         if tmp is not None and tmp != "":
             line += tmp
             if line.endswith("\n"):
                 yield line
-                line = ''
+                line = ""
         elif sleep_sec:
             time.sleep(sleep_sec)

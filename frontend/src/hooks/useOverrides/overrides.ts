@@ -1,7 +1,7 @@
-import { Experiment } from "../types/Experiment";
-import { getServerUrl } from "./getServerUrl"
-import { callEndpoint } from "./callEndpoint";
 import { z } from "zod";
+import { getServerUrl } from "../../api/getServerUrl";
+import { callEndpoint } from "../../api/callEndpoint";
+import { Experiment } from "../../types/Experiment";
 
 const serverUrl = getServerUrl();
 

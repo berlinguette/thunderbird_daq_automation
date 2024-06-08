@@ -1,15 +1,17 @@
 import { Experiment } from "../types/Experiment";
 import { getServerUrl } from "./getServerUrl"
 import { callEndpoint } from "./callEndpoint";
+import { z } from "zod";
 
 const serverUrl = getServerUrl();
 
 export const getOverrides = async () => {
-  return callEndpoint(`${serverUrl}/overrides`);
+  const overrides = await callEndpoint(`${serverUrl}/overrides`);
+  return z.array(Experiment).parse(overrides);
 }
 
 export const addOverride = async (override: Experiment) => {
-  return callEndpoint(`${serverUrl}/overrides`, {
+  const response = await callEndpoint(`${serverUrl}/overrides`, {
     method: "POST",
     headers: {
       "Accept": "application/json",
@@ -17,10 +19,12 @@ export const addOverride = async (override: Experiment) => {
     },
     body: JSON.stringify(override)
   });
+  return z.array(Experiment).parse(response);
 }
 
 export const deleteOverride = async (pattern: string) => {
-  return callEndpoint(`${serverUrl}/overrides/${pattern}`, {
+  const response = await callEndpoint(`${serverUrl}/overrides/${pattern}`, {
     method: "DELETE"
   });
+  return z.array(Experiment).parse(response);
 }

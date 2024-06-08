@@ -2,8 +2,10 @@ import { setupServer } from "msw/node";
 import React from "react";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { overrideHandlers } from "./fakeData";
+import { getServerUrl } from "../src/api/getServerUrl";
 import OverridesPanel from "../src/components/OverridesPanel";
 import { fireEvent, render, screen, waitFor } from "./testUtils";
+import { HttpResponse, http } from "msw";
 
 const server = setupServer(...overrideHandlers);
 
@@ -28,7 +30,7 @@ describe("OverridesPanel", () => {
       find((el) => el.placeholder === "Pattern");
     expect(patternInput).toBeInTheDocument();
     if (patternInput) patternInput.value = "ID-100";
-    
+
     fireEvent.click(screen.getByText("Save"));
     await waitFor(() => expect(refetchInventory).toBeCalled());
   });
@@ -51,5 +53,19 @@ describe("OverridesPanel", () => {
 
     fireEvent.click(screen.getByText("Cancel"));
     await waitFor(() => expect(refetchInventory).not.toBeCalled());
+  });
+  it("will display error when given malformed data", async () => {
+    server.use(http.get(`${getServerUrl()}/overrides`, () => {
+      return HttpResponse.json([
+        {
+          malformed: true
+        }
+      ]);
+    }));
+
+    openPanel();
+
+    expect(await screen.findByText("An error occurred when fetching data:")).toBeInTheDocument();
+    expect(screen.queryByText("–")).not.toBeInTheDocument();
   });
 });

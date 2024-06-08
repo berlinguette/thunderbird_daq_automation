@@ -1,11 +1,17 @@
-export type ExperimentProps = {
-  unconverted_mtime: number | "Error",
-  converted_mtime: number | "Error",
-  processed_mtime: number | "Error",
-  overridden: boolean
-};
+import { z } from "zod";
 
-export type Experiment = {
-  id: string,
+export const ExperimentProps = z.object({
+  unconverted_mtime: z.number().or(z.literal("Error")),
+  converted_mtime: z.number().or(z.literal("Error")),
+  processed_mtime: z.number().or(z.literal("Error")),
+  overridden: z.boolean()
+})
+
+export type ExperimentProps = z.infer<typeof ExperimentProps>;
+
+export const Experiment = z.object({
+  id: z.string(),
   props: ExperimentProps
-};
+})
+
+export type Experiment = z.infer<typeof Experiment>

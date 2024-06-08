@@ -1,7 +1,6 @@
 import { Box, Button, Flex, Heading, Menu, MenuButton, MenuItem, MenuList, Spinner, Text } from "@chakra-ui/react";
 import NavBar from "../layout/NavBar";
 import QueueCard from "../components/QueueCard";
-import { Analysis } from "../types/Analysis";
 import { getAnalyses } from "../api/analyses";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import LogsDisplay from "../components/logs/LogsDisplay";
@@ -9,15 +8,11 @@ import { ChevronDownIcon } from "@chakra-ui/icons";
 import { useState } from "react";
 import { logColors, orderedLogLevels } from "../helpers/logging";
 import { LogLevels } from "../types/Log";
-
-type Analyses = {
-  current: Analysis,
-  queued: Analysis[]
-};
+import { AnalysesQueue } from "../types/Analysis";
 
 const Queue = () => {
   const queryClient = useQueryClient();
-  const { isPending, isFetching, isError, data, error } = useQuery<Analyses>({
+  const { isPending, isFetching, isError, data, error } = useQuery<AnalysesQueue>({
     queryKey: ["queue"],
     queryFn: getAnalyses,
     refetchInterval: 2000

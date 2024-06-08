@@ -1,6 +1,6 @@
 import { createContext, useEffect, useState } from "react";
 import { getServerUrl } from "../api/getServerUrl";
-import { Log } from "../types/Log";
+import { Log, RawLog } from "../types/Log";
 
 const serverUrl = getServerUrl();
 
@@ -12,21 +12,25 @@ const LogListener = ({ children }: { children: React.ReactNode | React.ReactNode
   useEffect(() => {
     const evtSource = new EventSource(`${serverUrl}/logs`);
     evtSource.onmessage = (ev) => {
-      const data = JSON.parse(ev.data).record;
-      const timestamp = data.time.repr;
-      const level = data.level.name;
-      const icon = data.level.icon;
-      const logLevelNum = data.level.no;
-      const message = data.message;
+      const result = RawLog.safeParse(JSON.parse(ev.data));
+      if (result.success) {
+        const data = result.data.record;
+        const timestamp = data.time.repr;
+        const level = data.level.name;
+        const icon = data.level.icon;
+        const logLevelNum = data.level.no;
+        const message = data.message;
 
-      const log: Log = {
-        timestamp,
-        level,
-        icon,
-        logLevelNum,
-        message
+        const log: Log = {
+          timestamp,
+          level,
+          icon,
+          logLevelNum,
+          message
+        }
+        setLogs((prev) => [...prev, log]);
+
       }
-      setLogs((prev) => [...prev, log]);
     };
 
     return () => evtSource.close();

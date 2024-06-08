@@ -1,42 +1,41 @@
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { Button, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
 import { CheckedExperiments } from "./inventory/Inventory";
-import { startAnalysis } from "../api/analyses";
-import { useMutation } from "@tanstack/react-query";
 import { AnalysisRequestParams } from "../types/Analysis";
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import useAnalyses from "../hooks/useAnalyses";
 
 type AnalyzeMenuProps = {
-  analyzeFilter: "all" | "selected",
-  checkedExperiments: CheckedExperiments,
-  disabled?: boolean
-  outline?: boolean
+  analyzeFilter: "all" | "selected";
+  checkedExperiments: CheckedExperiments;
+  disabled?: boolean;
+  outline?: boolean;
 };
 
-const AnalyzeMenu = ({ analyzeFilter, checkedExperiments, disabled = false, outline = false }: AnalyzeMenuProps) => {
+const AnalyzeMenu = ({
+  analyzeFilter,
+  checkedExperiments,
+  disabled = false,
+  outline = false,
+}: AnalyzeMenuProps) => {
   const navigate = useNavigate();
-  
-  const mutation = useMutation({
-    mutationFn: startAnalysis
-  });
+  const { mutation } = useAnalyses();
 
-  const makeAnalyzeHandler = (type: "all" | "convert" | "process") => async () => {
-    const body: AnalysisRequestParams = {
-      convert_unconverted: type === "convert" || type === "all",
-      process_converted: type === "process" || type === "all"
+  const makeAnalyzeHandler =
+    (type: "all" | "convert" | "process") => async () => {
+      const body: AnalysisRequestParams = {
+        convert_unconverted: type === "convert" || type === "all",
+        process_converted: type === "process" || type === "all",
+      };
+
+      if (analyzeFilter !== "all") {
+        const checkedIds = Object.entries(checkedExperiments).map(
+          ([id, checked]) => (checked ? id : "")
+        );
+        body.pattern = `(${checkedIds.filter((v) => v !== "").join("|")})`;
+      }
+      mutation.mutate(body, { onSuccess: () => navigate("/queue") });
     };
-
-    if (analyzeFilter !== "all") {
-      const checkedIds = Object.entries(checkedExperiments).map(([id, checked]) => checked ? id : "");
-      body.pattern = `(${checkedIds.filter((v) => v !== "").join("|")})`;
-    }
-    mutation.mutate(body);
-  }
-
-  useEffect(() => {
-    if (mutation.isSuccess) navigate("/queue")
-  }, [mutation.isSuccess, navigate]);
 
   return (
     <>
@@ -53,8 +52,12 @@ const AnalyzeMenu = ({ analyzeFilter, checkedExperiments, disabled = false, outl
         </MenuButton>
         <MenuList>
           <MenuItem onClick={makeAnalyzeHandler("all")}>All</MenuItem>
-          <MenuItem onClick={makeAnalyzeHandler("convert")}>Convert Only</MenuItem>
-          <MenuItem onClick={makeAnalyzeHandler("process")}>Process Only</MenuItem>
+          <MenuItem onClick={makeAnalyzeHandler("convert")}>
+            Convert Only
+          </MenuItem>
+          <MenuItem onClick={makeAnalyzeHandler("process")}>
+            Process Only
+          </MenuItem>
         </MenuList>
       </Menu>
       {mutation.isError && <p>{mutation.error.message}</p>}

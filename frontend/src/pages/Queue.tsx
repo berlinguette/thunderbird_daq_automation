@@ -1,22 +1,33 @@
-import { Box, Button, Flex, Heading, Menu, MenuButton, MenuItem, MenuList, Spinner, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  Heading,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+  Spinner,
+  Text,
+} from "@chakra-ui/react";
 import NavBar from "../layout/NavBar";
 import QueueCard from "../components/QueueCard";
-import { getAnalyses } from "../api/analyses";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import LogsDisplay from "../components/logs/LogsDisplay";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { useState } from "react";
 import { logColors, orderedLogLevels } from "../helpers/logging";
 import { LogLevels } from "../types/Log";
-import { AnalysesQueue } from "../types/Analysis";
+import useAnalyses from "../hooks/useAnalyses";
 
 const Queue = () => {
-  const queryClient = useQueryClient();
-  const { isPending, isFetching, isError, data, error } = useQuery<AnalysesQueue>({
-    queryKey: ["queue"],
-    queryFn: getAnalyses,
-    refetchInterval: 2000
-  });
+  const {
+    isPending,
+    isFetching,
+    isError,
+    analyses,
+    error,
+    refetch,
+  } = useAnalyses();
   const [lowestLogLevel, setLowestLogLevel] = useState<LogLevels>("INFO");
 
   return (
@@ -25,8 +36,8 @@ const Queue = () => {
       <Flex gap={8} minHeight={0} flexGrow={1}>
         <Flex flexDir="column" basis="40%" gap={14} flexShrink={0}>
           {isPending && <Text>Loading...</Text>}
-          {isError && <Text>{error.message}</Text>}
-          {!isPending && !isError && data &&
+          {isError && <Text>{error?.message}</Text>}
+          {!isPending && !isError && analyses && (
             <>
               <Flex flexDir="column" gap={4}>
                 <Flex alignItems="center" gap={6}>
@@ -36,32 +47,42 @@ const Queue = () => {
                       color="gray"
                       variant="ghost"
                       gap={2}
-                      onClick={() => queryClient.invalidateQueries({ queryKey: ["queue"] })}
+                      onClick={() => refetch()}
                     >
                       Refresh
                       {isFetching && <Spinner size="sm" speed="0.6s" />}
                     </Button>
                   </Flex>
                 </Flex>
-                {!data.current && <Text>No analyses in progress.</Text>}
-                {data.current &&
-                  <QueueCard analysis={data.current} inProgress />
-                }
+                {!analyses.current && <Text>No analyses in progress.</Text>}
+                {analyses.current && (
+                  <QueueCard analysis={analyses.current} inProgress />
+                )}
               </Flex>
               <Flex flexDir="column" gap={4}>
                 <Heading>Queue</Heading>
-                {!data.current && <Text>No analyses queued.</Text>}
-                {data.queued && data.queued.map((analysis) => <QueueCard analysis={analysis} />)}
+                {!analyses.current && <Text>No analyses queued.</Text>}
+                {analyses.queued &&
+                  analyses.queued.map((analysis) => (
+                    <QueueCard analysis={analysis} />
+                  ))}
               </Flex>
             </>
-          }
+          )}
         </Flex>
         <Flex flexDirection="column" gap={4} flexGrow={1}>
           <Flex gap={4}>
             <Heading>Logs</Heading>
             <Menu>
-              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} variant="ghost">
-                Log level: <Box color={logColors[lowestLogLevel].textColor}>{lowestLogLevel}</Box>
+              <MenuButton
+                as={Button}
+                rightIcon={<ChevronDownIcon />}
+                variant="ghost"
+              >
+                Log level:{" "}
+                <Box color={logColors[lowestLogLevel].textColor}>
+                  {lowestLogLevel}
+                </Box>
               </MenuButton>
               <MenuList>
                 {orderedLogLevels.map((logLevel) => (
@@ -80,7 +101,7 @@ const Queue = () => {
         </Flex>
       </Flex>
     </Flex>
-  )
+  );
 };
 
 export default Queue;

@@ -39,12 +39,10 @@ class ExperimentTracker:
         self._refresh_converted()
         self._refresh_processed()
         logger.info("Refreshed inventory for all directories")
-        logger.debug(f"New inventory: {self.exp_inventory.experiments}")
 
     def get_all_experiments(self) -> list[Experiment]:
         """Get all experiments in internal inventory"""
-        logger.debug(f"All experiments: {self.exp_inventory.experiments.values()}")
-        return list(self.exp_inventory.experiments.values())
+        return list(self.exp_inventory.get_all())
 
     def get_all_to_convert(self) -> list[Experiment]:
         """Get all experiments that are in unconverted directory but not converted"""
@@ -112,7 +110,7 @@ class ExperimentTracker:
                 logger.debug(f"Skip clearing overridden experiment {exp.id}")
 
         unconverted_exps = self._scan_directory(self._unconverted_data_dir)
-        logger.debug(f"Found unconverted experiments: {unconverted_exps}")
+        logger.debug(f"Found unconverted experiments: {[id for id, _ in unconverted_exps]}")
         for id, mtime in unconverted_exps:
             self.exp_inventory.set(
                 id, ExperimentProperties(unconverted_mtime=mtime, overridden=False)
@@ -132,7 +130,7 @@ class ExperimentTracker:
             else:
                 logger.debug(f"Skip clearing overridden experiment {exp.id}")
         converted_exps = self._scan_directory(self._converted_data_dir)
-        logger.debug(f"Found converted experiments: {converted_exps}")
+        logger.debug(f"Found converted experiments: {[id for id, _ in converted_exps]}")
         for id, mtime in converted_exps:
             exp_mtime = mtime
             try:
@@ -167,7 +165,7 @@ class ExperimentTracker:
             else:
                 logger.debug(f"Skip clearing overridden experiment {exp.id}")
         processed_exps = self._scan_directory(self._processed_data_dir)
-        logger.debug(f"Found processed experiments: {processed_exps}")
+        logger.debug(f"Found processed experiments: {[id for id, _ in processed_exps]}")
         for id, mtime in processed_exps:
             exp_mtime = mtime
             exp_folder_path = Path(self._processed_data_dir, id)

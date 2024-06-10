@@ -15,7 +15,7 @@ from automatic_analyzer.automatic_analyzer import (
     AnalysisRequestParams,
     AutomaticAnalyzer,
 )
-from automatic_analyzer.logging_handlers import InterceptHandler, follow, log_stream_filter
+from automatic_analyzer.logging_handlers import follow, log_stream_filter
 from loguru import logger
 from flask import Flask, Response, request
 from flask_cors import CORS
@@ -42,18 +42,18 @@ def analyzer_setup() -> (
     log_file_path = Path(config.log_file_folder, f"{today_date}.log")
 
     logger.remove()
-    # logger.add(sys.stderr, level=logging.INFO)
+    logger.add(sys.stderr, level=logging.INFO)
     logger.add(
         log_file_path, level=logging.NOTSET, serialize=True, filter=log_stream_filter
     )
-    logger.add(get_otlp_log_handler(), serialize=True)
+    logger.add(get_otlp_log_handler())
     # logging.basicConfig(handlers=[InterceptHandler()], level=logging.NOTSET, force=True)
     # # don't log unnecessary debug info from sh module
     # logging.getLogger("sh").setLevel(logging.INFO)
 
     try:
         overrides = OverrideInventory.load_from_file(config.overrides_file_path)
-        logger.info(f"Loading overrides from {config.overrides_file_path}")
+        logger.info(f"Loaded overrides from {config.overrides_file_path}")
     except (NotADirectoryError, FileNotFoundError, EOFError):
         overrides = OverrideInventory(config.overrides_file_path)
         logger.info("Existing overrides not found")
@@ -135,7 +135,7 @@ def create_app(
     @app.get("/analyses")
     def get_analyses_status():
         status = automatic_analyzer.status()
-        # logger.debug(f"Current analysis queue: {status}")
+        logger.debug(f"Current analysis queue: {status}")
         return status
 
     @app.post("/analyses")
@@ -152,7 +152,6 @@ def create_app(
         experiments_to_analyze = exp_tracker.get_all_to_analyze()
         if analysis_params.pattern is not None:
             patt = analysis_params.pattern
-            logger.info(f"Filtering experiments by pattern '{patt}'")
             experiments_to_analyze = [
                 exp
                 for exp in experiments_to_analyze
@@ -163,16 +162,15 @@ def create_app(
         )
         for exp in experiments_to_analyze:
             params = AnalysisParams(
-                convert_unconverted=analysis_params.convert_unconverted, 
+                convert_unconverted=analysis_params.convert_unconverted,
                 process_converted=analysis_params.process_converted,
-                force=analysis_params.force
+                force=analysis_params.force,
             )
             analysis = Analysis(exp=exp, params=params)
             automatic_analyzer.analyze(analysis)
 
         # Queue might be empty because analysis hasn't been put in queue yet
         status = automatic_analyzer.status()
-        logger.info(f"Current analysis status: {status}")
         return status, 200
 
     @app.get("/logs")
@@ -184,7 +182,7 @@ def create_app(
             return msg
 
         def log_reader():
-            with open(log_file_path, 'r') as file:
+            with open(log_file_path, "r") as file:
                 for line in follow(file):
                     yield format_sse(line)
 

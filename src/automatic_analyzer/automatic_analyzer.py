@@ -89,7 +89,8 @@ class AutomaticAnalyzer:
     def analyze(self, analysis: Analysis):
         """Adds given analysis to the queue, where it will be popped off and processed by the analyzer thread"""
         self._analysis_queue.put(analysis)
-        logger.info(f"Added experiment {analysis} to analysis queue")
+        logger.info(f"Added experiment {analysis.exp.id} to analysis queue")
+        logger.debug(f"Analysis params: {analysis}")
 
     def status(self):
         """
@@ -120,7 +121,7 @@ class AutomaticAnalyzer:
         """
         while True:
             current_analysis = self._analysis_queue.get()  # blocks until item available
-            logger.info(f"Starting analysis of experiment {current_analysis.exp}")
+            logger.info(f"Starting analysis of experiment {current_analysis.exp.id}")
             logger.debug(f"Analyzing {current_analysis}")
             with self.in_progress_lock:
                 self.in_progress_analysis = copy.deepcopy(current_analysis)
@@ -129,7 +130,7 @@ class AutomaticAnalyzer:
             self.exp_tracker.refresh_all()
             self._try_process(current_analysis)
 
-            logger.info(f"Analysis of {current_analysis.exp} done")
+            logger.info(f"Analysis of experiment {current_analysis.exp.id} done")
             with self.in_progress_lock:
                 self.in_progress_analysis = None
 
@@ -159,7 +160,7 @@ class AutomaticAnalyzer:
             logger.warning(f"Force running conversion script for {exp.id}")
 
         if run_conversion:
-            logger.info(f"Converting experiment {exp}")
+            logger.info(f"Converting experiment {exp.id}")
             with self.in_progress_lock:
                 if self.in_progress_analysis:
                     self.in_progress_analysis.stage = "convert"
@@ -170,7 +171,7 @@ class AutomaticAnalyzer:
                 sources=[exp_path],
                 destination=self.exp_tracker._converted_data_dir,
             )
-            logger.info(f"Finished converting experiment {exp}")
+            logger.info(f"Finished converting experiment {exp.id}")
 
     def _try_process(self, current_analysis: Analysis):
         """
@@ -197,7 +198,7 @@ class AutomaticAnalyzer:
             logger.warning(f"Force running processing script for {exp.id}")
 
         if run_processing:
-            logger.info(f"Processing experiment {exp}")
+            logger.info(f"Processing experiment {exp.id}")
             with self.in_progress_lock:
                 if self.in_progress_analysis:
                     self.in_progress_analysis.stage = "process"
@@ -214,4 +215,4 @@ class AutomaticAnalyzer:
                 input=program_input,
             )
             logger.info(f"Program output: {output.stdout}")
-            logger.info(f"Finished processing experiment {exp}")
+            logger.info(f"Finished processing experiment {exp.id}")

@@ -3,6 +3,8 @@ from pathlib import Path
 import subprocess
 from typing import Literal
 from loguru import logger
+from opentelemetry import trace
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from pydantic import BaseModel
 from automatic_analyzer.experiment_inventory import Experiment
 from automatic_analyzer.experiment_tracker import ExperimentTracker
@@ -13,6 +15,8 @@ from utilities.utilities.configuration.configuration import (
 import data_converter.data_converter as data_converter
 from threading import Thread, Lock
 from queue import Queue
+
+tracer = trace.get_tracer("automatic-data-analyzer-backend.tracer")
 
 
 class AnalysisParams(BaseModel):
@@ -46,6 +50,7 @@ class Analysis(BaseModel):
     params: AnalysisParams
     stage: Literal["convert"] | Literal["process"] = "convert"
     cancelled: bool = False
+    trace_context: dict[str, str] | None = None
 
 
 class AutomaticAnalyzer:
@@ -88,9 +93,16 @@ class AutomaticAnalyzer:
 
     def analyze(self, analysis: Analysis):
         """Adds given analysis to the queue, where it will be popped off and processed by the analyzer thread"""
-        self._analysis_queue.put(analysis)
-        logger.info(f"Added experiment {analysis.exp.id} to analysis queue")
-        logger.debug(f"Analysis params: {analysis}")
+        # Write the current context into the carrier
+        carrier: dict[str, str] = {}
+        TraceContextTextMapPropagator().inject(carrier)
+        analysis.trace_context = carrier
+
+        with tracer.start_as_current_span("queue_analysis") as span:
+            span.set_attribute("id", analysis.exp.id)
+            self._analysis_queue.put(analysis)
+            logger.info(f"Added experiment {analysis.exp.id} to analysis queue")
+            logger.debug(f"Analysis params: {analysis}")
 
     def status(self):
         """
@@ -121,19 +133,35 @@ class AutomaticAnalyzer:
         """
         while True:
             current_analysis = self._analysis_queue.get()  # blocks until item available
-            logger.info(f"Starting analysis of experiment {current_analysis.exp.id}")
-            logger.debug(f"Analyzing {current_analysis}")
-            with self.in_progress_lock:
-                self.in_progress_analysis = copy.deepcopy(current_analysis)
+            ctx = TraceContextTextMapPropagator().extract(
+                carrier=current_analysis.trace_context
+            )
+            with tracer.start_as_current_span("start_analysis", context=ctx) as span:
+                span.set_attribute("id", current_analysis.exp.id)
+                span.set_attribute(
+                    "convert_unconverted", current_analysis.params.convert_unconverted
+                )
+                span.set_attribute(
+                    "process_converted", current_analysis.params.process_converted
+                )
+                span.set_attribute("force", current_analysis.params.force)
 
-            self._try_convert(current_analysis)
-            self.exp_tracker.refresh_all()
-            self._try_process(current_analysis)
+                logger.info(
+                    f"Starting analysis of experiment {current_analysis.exp.id}"
+                )
+                logger.debug(f"Analyzing {current_analysis}")
+                with self.in_progress_lock:
+                    self.in_progress_analysis = copy.deepcopy(current_analysis)
 
-            logger.info(f"Analysis of experiment {current_analysis.exp.id} done")
-            with self.in_progress_lock:
-                self.in_progress_analysis = None
+                self._try_convert(current_analysis)
+                self.exp_tracker.refresh_all()
+                self._try_process(current_analysis)
 
+                logger.info(f"Analysis of experiment {current_analysis.exp.id} done")
+                with self.in_progress_lock:
+                    self.in_progress_analysis = None
+
+    @tracer.start_as_current_span("convert_analysis")
     def _try_convert(self, current_analysis: Analysis):
         """
         Tries to convert the experiment pattern specified in the current anlysis.
@@ -165,14 +193,16 @@ class AutomaticAnalyzer:
                 if self.in_progress_analysis:
                     self.in_progress_analysis.stage = "convert"
 
-            data_converter.convert_neutron_data(
-                self._config,
-                self._config_setup,
-                sources=[exp_path],
-                destination=self.exp_tracker._converted_data_dir,
-            )
-            logger.info(f"Finished converting experiment {exp.id}")
+            with tracer.start_as_current_span("conversion_script"):
+                data_converter.convert_neutron_data(
+                    self._config,
+                    self._config_setup,
+                    sources=[exp_path],
+                    destination=self.exp_tracker._converted_data_dir,
+                )
+                logger.info(f"Finished converting experiment {exp.id}")
 
+    @tracer.start_as_current_span("process_analysis")
     def _try_process(self, current_analysis: Analysis):
         """
         Tries to process the experiment pattern specified in the current anlysis.
@@ -207,12 +237,13 @@ class AutomaticAnalyzer:
             logger.debug(
                 f"Running {self.psd_python_path} {self.psd_program_path} with input {program_input}"
             )
-            output = subprocess.run(
-                [self.psd_python_path, self.psd_program_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                input=program_input,
-            )
-            logger.info(f"Program output: {output.stdout}")
-            logger.info(f"Finished processing experiment {exp.id}")
+            with tracer.start_as_current_span("processing_script"):
+                output = subprocess.run(
+                    [self.psd_python_path, self.psd_program_path],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    input=program_input,
+                )
+                logger.info(f"Program output: {output.stdout}")
+                logger.info(f"Finished processing experiment {exp.id}")

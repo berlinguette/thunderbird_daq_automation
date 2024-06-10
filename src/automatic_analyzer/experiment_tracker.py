@@ -7,6 +7,9 @@ from automatic_analyzer.experiment_inventory import (
 )
 from pathlib import Path
 from loguru import logger
+from opentelemetry import trace
+
+tracer = trace.get_tracer("automatic-data-analyzer-backend.tracer")
 
 
 class ExperimentTracker:
@@ -30,6 +33,7 @@ class ExperimentTracker:
         self.exp_inventory = ExperimentInventory(overrides)
         self.refresh_all()
 
+    @tracer.start_as_current_span("refresh_all")
     def refresh_all(self):
         """
         Rescans the unconverted, converted, and processed data directories
@@ -97,6 +101,7 @@ class ExperimentTracker:
     #             processed.append(exp)
     #     return processed
 
+    @tracer.start_as_current_span("refresh_unconverted")
     def _refresh_unconverted(self):
         """
         Rescans unconverted data directory and adds all found experiments to inventory,
@@ -110,12 +115,15 @@ class ExperimentTracker:
                 logger.debug(f"Skip clearing overridden experiment {exp.id}")
 
         unconverted_exps = self._scan_directory(self._unconverted_data_dir)
-        logger.debug(f"Found unconverted experiments: {[id for id, _ in unconverted_exps]}")
+        logger.debug(
+            f"Found unconverted experiments: {[id for id, _ in unconverted_exps]}"
+        )
         for id, mtime in unconverted_exps:
             self.exp_inventory.set(
                 id, ExperimentProperties(unconverted_mtime=mtime, overridden=False)
             )
 
+    @tracer.start_as_current_span("refresh_converted")
     def _refresh_converted(self):
         """
         Rescans converted data directory and adds all found experiments to inventory,
@@ -153,6 +161,7 @@ class ExperimentTracker:
                 id, ExperimentProperties(converted_mtime=exp_mtime, overridden=False)
             )
 
+    @tracer.start_as_current_span("refresh_processed")
     def _refresh_processed(self):
         """
         Rescans processed data directory and adds all found experiments to inventory,
@@ -177,7 +186,8 @@ class ExperimentTracker:
             self.exp_inventory.set(
                 id, ExperimentProperties(processed_mtime=exp_mtime, overridden=False)
             )
-
+    
+    @tracer.start_as_current_span("scan_directory")
     def _scan_directory(self, target_dir: Path) -> list[tuple[str, float]]:
         """Scans target directory and returns a list of pairs of experiment IDs found in target and their mtimes"""
         directories = [

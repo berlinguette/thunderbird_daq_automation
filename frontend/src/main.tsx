@@ -9,6 +9,7 @@ import {
 import Queue from './pages/Queue.tsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LogListener from './layout/LogListener.tsx';
+import "./otel.ts";
 
 const router = createBrowserRouter([
   {

@@ -17,17 +17,11 @@ import { ChevronDownIcon } from "@chakra-ui/icons";
 import { useState } from "react";
 import { logColors, orderedLogLevels } from "../helpers/logging";
 import { LogLevels } from "../types/Log";
-import useAnalyses from "../hooks/useAnalyses";
+import { useGetAnalyses } from "../hooks/useAnalyses";
 
 const Queue = () => {
-  const {
-    isPending,
-    isFetching,
-    isError,
-    analyses,
-    error,
-    refetch,
-  } = useAnalyses();
+  const { isPending, isFetching, isError, analyses, error, refetch } =
+    useGetAnalyses();
   const [lowestLogLevel, setLowestLogLevel] = useState<LogLevels>("INFO");
 
   return (

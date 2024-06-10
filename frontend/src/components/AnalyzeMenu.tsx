@@ -3,7 +3,7 @@ import { Button, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
 import { CheckedExperiments } from "./inventory/Inventory";
 import { AnalysisRequestParams } from "../types/Analysis";
 import { useNavigate } from "react-router-dom";
-import useAnalyses from "../hooks/useAnalyses";
+import { useMutateAnalyses } from "../hooks/useAnalyses";
 
 type AnalyzeMenuProps = {
   analyzeFilter: "all" | "selected";
@@ -19,7 +19,7 @@ const AnalyzeMenu = ({
   outline = false,
 }: AnalyzeMenuProps) => {
   const navigate = useNavigate();
-  const { mutation } = useAnalyses();
+  const { mutation } = useMutateAnalyses();
 
   const makeAnalyzeHandler =
     (type: "all" | "convert" | "process") => async () => {

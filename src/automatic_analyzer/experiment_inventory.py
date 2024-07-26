@@ -101,6 +101,10 @@ class ExperimentDict(ABC):
 
     def get(self, id: str) -> Experiment | None:
         return self.experiments.get(id)
+    
+    def get_all(self) -> list[Experiment]:
+        logger.debug(f"All experiments: {self.experiments.values()}")
+        return list(self.experiments.values())
 
 
 class OverrideInventory(ExperimentDict):

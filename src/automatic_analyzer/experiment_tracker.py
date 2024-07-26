@@ -7,6 +7,9 @@ from automatic_analyzer.experiment_inventory import (
 )
 from pathlib import Path
 from loguru import logger
+from opentelemetry import trace
+
+tracer = trace.get_tracer("automatic-data-analyzer-backend.experiment_tracker")
 
 
 class ExperimentTracker:
@@ -30,6 +33,7 @@ class ExperimentTracker:
         self.exp_inventory = ExperimentInventory(overrides)
         self.refresh_all()
 
+    @tracer.start_as_current_span("refresh_all")
     def refresh_all(self):
         """
         Rescans the unconverted, converted, and processed data directories
@@ -39,12 +43,10 @@ class ExperimentTracker:
         self._refresh_converted()
         self._refresh_processed()
         logger.info("Refreshed inventory for all directories")
-        logger.debug(f"New inventory: {self.exp_inventory.experiments}")
 
     def get_all_experiments(self) -> list[Experiment]:
         """Get all experiments in internal inventory"""
-        logger.debug(f"All experiments: {self.exp_inventory.experiments.values()}")
-        return list(self.exp_inventory.experiments.values())
+        return list(self.exp_inventory.get_all())
 
     def get_all_to_convert(self) -> list[Experiment]:
         """Get all experiments that are in unconverted directory but not converted"""
@@ -99,6 +101,7 @@ class ExperimentTracker:
     #             processed.append(exp)
     #     return processed
 
+    @tracer.start_as_current_span("refresh_unconverted")
     def _refresh_unconverted(self):
         """
         Rescans unconverted data directory and adds all found experiments to inventory,
@@ -112,12 +115,15 @@ class ExperimentTracker:
                 logger.debug(f"Skip clearing overridden experiment {exp.id}")
 
         unconverted_exps = self._scan_directory(self._unconverted_data_dir)
-        logger.debug(f"Found unconverted experiments: {unconverted_exps}")
+        logger.debug(
+            f"Found unconverted experiments: {[id for id, _ in unconverted_exps]}"
+        )
         for id, mtime in unconverted_exps:
             self.exp_inventory.set(
                 id, ExperimentProperties(unconverted_mtime=mtime, overridden=False)
             )
 
+    @tracer.start_as_current_span("refresh_converted")
     def _refresh_converted(self):
         """
         Rescans converted data directory and adds all found experiments to inventory,
@@ -132,7 +138,7 @@ class ExperimentTracker:
             else:
                 logger.debug(f"Skip clearing overridden experiment {exp.id}")
         converted_exps = self._scan_directory(self._converted_data_dir)
-        logger.debug(f"Found converted experiments: {converted_exps}")
+        logger.debug(f"Found converted experiments: {[id for id, _ in converted_exps]}")
         for id, mtime in converted_exps:
             exp_mtime = mtime
             try:
@@ -155,6 +161,7 @@ class ExperimentTracker:
                 id, ExperimentProperties(converted_mtime=exp_mtime, overridden=False)
             )
 
+    @tracer.start_as_current_span("refresh_processed")
     def _refresh_processed(self):
         """
         Rescans processed data directory and adds all found experiments to inventory,
@@ -167,7 +174,7 @@ class ExperimentTracker:
             else:
                 logger.debug(f"Skip clearing overridden experiment {exp.id}")
         processed_exps = self._scan_directory(self._processed_data_dir)
-        logger.debug(f"Found processed experiments: {processed_exps}")
+        logger.debug(f"Found processed experiments: {[id for id, _ in processed_exps]}")
         for id, mtime in processed_exps:
             exp_mtime = mtime
             exp_folder_path = Path(self._processed_data_dir, id)
@@ -179,7 +186,8 @@ class ExperimentTracker:
             self.exp_inventory.set(
                 id, ExperimentProperties(processed_mtime=exp_mtime, overridden=False)
             )
-
+    
+    @tracer.start_as_current_span("scan_directory")
     def _scan_directory(self, target_dir: Path) -> list[tuple[str, float]]:
         """Scans target directory and returns a list of pairs of experiment IDs found in target and their mtimes"""
         directories = [

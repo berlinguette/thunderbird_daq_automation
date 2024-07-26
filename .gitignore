@@ -74,6 +74,7 @@ venv/
 .python-version
 .env.*
 .env
+!.env.otel
 
 # Log files
 *.log

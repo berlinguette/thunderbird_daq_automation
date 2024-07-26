@@ -21,7 +21,6 @@ from flask import Flask, Response, request
 from flask_cors import CORS
 import sys
 from datetime import datetime
-from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
 from automatic_analyzer.otlp import get_otlp_log_handler
 from data_converter.configuration.configuration import load_config_setup
@@ -86,7 +85,6 @@ def create_app(
     overrides, exp_tracker, automatic_analyzer, log_file_path = analyzer_setup_fn()
 
     app = Flask(__name__)
-    FlaskInstrumentor.instrument_app(app)
     CORS(app, origins=["*"])
 
     @app.get("/inventory")

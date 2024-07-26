@@ -16,7 +16,7 @@ import data_converter.data_converter as data_converter
 from threading import Thread, Lock
 from queue import Queue
 
-tracer = trace.get_tracer("automatic-data-analyzer-backend.tracer")
+tracer = trace.get_tracer("automatic-data-analyzer-backend.automatic_analyzer")
 
 
 class AnalysisParams(BaseModel):

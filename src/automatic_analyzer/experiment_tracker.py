@@ -9,7 +9,7 @@ from pathlib import Path
 from loguru import logger
 from opentelemetry import trace
 
-tracer = trace.get_tracer("automatic-data-analyzer-backend.tracer")
+tracer = trace.get_tracer("automatic-data-analyzer-backend.experiment_tracker")
 
 
 class ExperimentTracker:

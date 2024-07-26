@@ -23,7 +23,7 @@ const resource = Resource.default().merge(
 const provider = new WebTracerProvider({ resource });
 
 const otlpExporter = new OTLPTraceExporter({
-  // url: "http://localhost:4318/v1/traces",
+  url: `${import.meta.env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT}/v1/traces`,
 });
 provider.addSpanProcessor(new BatchSpanProcessor(otlpExporter));
 

@@ -137,14 +137,14 @@ class AutomaticAnalyzer:
                 carrier=current_analysis.trace_context
             )
             with tracer.start_as_current_span("start_analysis", context=ctx) as span:
-                span.set_attribute("id", current_analysis.exp.id)
-                span.set_attribute(
-                    "convert_unconverted", current_analysis.params.convert_unconverted
+                span.set_attributes(
+                    {
+                        "id": current_analysis.exp.id,
+                        "convert_unconverted": current_analysis.params.convert_unconverted,
+                        "process_converted": current_analysis.params.process_converted,
+                        "force": current_analysis.params.force,
+                    }
                 )
-                span.set_attribute(
-                    "process_converted", current_analysis.params.process_converted
-                )
-                span.set_attribute("force", current_analysis.params.force)
 
                 logger.info(
                     f"Starting analysis of experiment {current_analysis.exp.id}"

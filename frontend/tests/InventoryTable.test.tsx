@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { fireEvent, render, screen } from "./testUtils";
+import { userEvent, render, screen } from "./testUtils";
 import { describe, expect, it } from "vitest";
 import InventoryTable from "../src/components/inventory/InventoryTable";
 import { Experiment } from "../src/types/Experiment";
@@ -45,16 +45,17 @@ const TestEnv = ({ experimentsList }: { experimentsList: Experiment[] }) => {
   );
 };
 
-const testSort = (
+const testSort = async (
   experimentIdsOrder: string[],
   clickText: string | null = null,
   clickTwice: boolean = false
 ) => {
+  const user = userEvent.setup();
   render(<TestEnv experimentsList={fakeData} />);
   if (clickText) {
     const header = screen.getByText(clickText);
-    fireEvent.click(header);
-    if (clickTwice) fireEvent.click(header);
+    await user.click(header);
+    if (clickTwice) await user.click(header);
   }
 
   for (let i = 0; i < experimentIdsOrder.length - 1; i++) {
@@ -65,28 +66,28 @@ const testSort = (
 };
 
 describe("Inventory table", () => {
-  it("is initially sorted by ID", () => {
-    testSort(["ID-100", "ID-101", "ID-102"]);
+  it("is initially sorted by ID", async () => {
+    await testSort(["ID-100", "ID-101", "ID-102"]);
   });
-  it("reverse sorts by ID when clicking corresponding header", () => {
-    testSort(["ID-102", "ID-101", "ID-100"], "ID");
+  it("reverse sorts by ID when clicking corresponding header", async () => {
+    await testSort(["ID-102", "ID-101", "ID-100"], "ID");
   });
-  it("sorts by Unconverted Data when clicking corresponding header", () => {
-    testSort(["ID-102", "ID-100", "ID-101"], "Unconverted Data");
+  it("sorts by Unconverted Data when clicking corresponding header", async () => {
+    await testSort(["ID-102", "ID-100", "ID-101"], "Unconverted Data");
   });
-  it("reverse sorts by Unconverted Data when clicking corresponding header twice", () => {
-    testSort(["ID-101", "ID-100", "ID-102"], "Unconverted Data", true);
+  it("reverse sorts by Unconverted Data when clicking corresponding header twice", async () => {
+    await testSort(["ID-101", "ID-100", "ID-102"], "Unconverted Data", true);
   });
-  it("sorts by Converted Data when clicking corresponding header", () => {
-    testSort(["ID-101", "ID-100", "ID-102"], "Converted Data");
+  it("sorts by Converted Data when clicking corresponding header", async () => {
+    await testSort(["ID-101", "ID-100", "ID-102"], "Converted Data");
   });
-  it("reverse sorts by Converted Data when clicking corresponding header twice", () => {
-    testSort(["ID-102", "ID-100", "ID-101"], "Converted Data", true);
+  it("reverse sorts by Converted Data when clicking corresponding header twice", async () => {
+    await testSort(["ID-102", "ID-100", "ID-101"], "Converted Data", true);
   });
-  it("sorts by Processed Data when clicking corresponding header", () => {
-    testSort(["ID-102", "ID-101", "ID-100"], "Processed Data");
+  it("sorts by Processed Data when clicking corresponding header", async () => {
+    await testSort(["ID-102", "ID-101", "ID-100"], "Processed Data");
   });
-  it("reverse sorts by Processed Data when clicking corresponding header twice", () => {
-    testSort(["ID-100", "ID-101", "ID-102"], "Processed Data", true);
+  it("reverse sorts by Processed Data when clicking corresponding header twice", async () => {
+    await testSort(["ID-100", "ID-101", "ID-102"], "Processed Data", true);
   });
 });

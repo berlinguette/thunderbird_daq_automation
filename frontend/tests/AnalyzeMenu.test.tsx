@@ -2,7 +2,7 @@ import React from "react";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import AnalyzeMenu from "../src/components/AnalyzeMenu";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { fireEvent, render, screen, waitFor } from "./testUtils";
+import { userEvent, render, screen, waitFor } from "./testUtils";
 import { setupServer } from "msw/node";
 import { selectiveAnalysisHandler } from "./fakeData";
 import { HttpResponse, http } from "msw";
@@ -22,31 +22,37 @@ const testSelectAnalysis = async (
   analyzeFilter: "all" | "selected",
   checkedExperiments: { [exp: string]: boolean } = {}
 ) => {
-
   render(
     <MemoryRouter initialEntries={["/"]}>
       <Routes>
         <Route
           path="/"
-          element={<AnalyzeMenu analyzeFilter={analyzeFilter} checkedExperiments={checkedExperiments} />}
+          element={
+            <AnalyzeMenu
+              analyzeFilter={analyzeFilter}
+              checkedExperiments={checkedExperiments}
+            />
+          }
         />
-        <Route
-          path="/queue"
-          element={<p>Queue Page</p>}
-        />
+        <Route path="/queue" element={<p>Queue Page</p>} />
       </Routes>
     </MemoryRouter>
   );
+  const user = userEvent.setup();
 
-  fireEvent.click(screen.getByRole("button"));
+  await user.click(
+    screen.getByRole("button", {
+      name: analyzeFilter === "all" ? "Analyze All" : "Analyze Selected",
+    })
+  );
   await waitFor(() => {
     expect(screen.getByText(filter)).toBeVisible();
   });
-  fireEvent.click(screen.getByText(filter));
+  await user.click(screen.getByText(filter));
   await waitFor(() => {
     expect(screen.getByText("Queue Page")).toBeInTheDocument();
   });
-}
+};
 
 describe("AnalyzeMenu", () => {
   it("loads", () => {
@@ -58,56 +64,69 @@ describe("AnalyzeMenu", () => {
     expect(true).toBe(true);
   });
   it("performs conversions + processing when 'All' option is clicked", async () => {
-    server.use(selectiveAnalysisHandler({
-      convert_unconverted: true,
-      process_converted: true
-    }));
+    server.use(
+      selectiveAnalysisHandler({
+        convert_unconverted: true,
+        process_converted: true,
+      })
+    );
     await testSelectAnalysis("All", "all");
   });
   it("performs conversions only when 'Convert Only' option is clicked", async () => {
-    server.use(selectiveAnalysisHandler({
-      convert_unconverted: true,
-      process_converted: false
-    }));
+    server.use(
+      selectiveAnalysisHandler({
+        convert_unconverted: true,
+        process_converted: false,
+      })
+    );
     await testSelectAnalysis("Convert Only", "all");
   });
   it("performs processing only when 'Process Only' option is clicked", async () => {
-    server.use(selectiveAnalysisHandler({
-      convert_unconverted: false,
-      process_converted: true
-    }));
+    server.use(
+      selectiveAnalysisHandler({
+        convert_unconverted: false,
+        process_converted: true,
+      })
+    );
     await testSelectAnalysis("Process Only", "all");
   });
   it("can request analysis for only some selected experiments", async () => {
-    server.use(selectiveAnalysisHandler({
-      convert_unconverted: true,
-      process_converted: true,
-      pattern: "(ID-NONE|ID-UNC-CON)"
-    }));
+    server.use(
+      selectiveAnalysisHandler({
+        convert_unconverted: true,
+        process_converted: true,
+        pattern: "(ID-NONE|ID-UNC-CON)",
+      })
+    );
     const checkedExperiments = {
       "ID-NONE": true,
-      "ID-UNC-CON": true
-    }
+      "ID-UNC-CON": true,
+    };
     await testSelectAnalysis("All", "selected", checkedExperiments);
   });
   it("displays error if request unsuccessful", async () => {
-    server.use(http.post(`${getServerUrl()}/analyses`, () => {
-      return HttpResponse.text("Error", { status: 400 });
-    }));
+    server.use(
+      http.post(`${getServerUrl()}/analyses`, () => {
+        return HttpResponse.text("Error", { status: 400 });
+      })
+    );
 
     render(
       <MemoryRouter>
         <AnalyzeMenu analyzeFilter="all" checkedExperiments={{}} />
       </MemoryRouter>
     );
+    const user = userEvent.setup();
 
-    fireEvent.click(screen.getByRole("button"));
+    await user.click(screen.getByRole("button", { name: "Analyze All" }));
     await waitFor(() => {
       expect(screen.getByText("All")).toBeVisible();
     });
-    fireEvent.click(screen.getByText("All"));
+    await user.click(screen.getByText("All"));
     await waitFor(() => {
-      expect(screen.getByText("Network response was not ok")).toBeInTheDocument();
+      expect(
+        screen.getByText("Network response was not ok")
+      ).toBeInTheDocument();
     });
-  })
+  });
 });

@@ -2,7 +2,7 @@ from pathlib import Path
 from dotenv import dotenv_values
 from pydantic import BaseModel, validator, fields
 
-class Config(BaseModel):
+class EnvConfig(BaseModel):
   unconverted_data_dir: Path
   converted_data_dir: Path
   processed_data_dir: Path
@@ -16,6 +16,6 @@ class Config(BaseModel):
     return Path(v)
   
 
-def load_env_config(path: str|None = None) -> Config:
+def load_env_config(path: str|None = None) -> EnvConfig:
   config = dotenv_values(path)
-  return Config.parse_obj(config)
+  return EnvConfig.parse_obj(config)

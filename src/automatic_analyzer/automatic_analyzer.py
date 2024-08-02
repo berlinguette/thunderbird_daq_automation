@@ -1,41 +1,35 @@
 import copy
-from pathlib import Path
-import subprocess
-from typing import Literal
+from queue import Queue
+from threading import Lock, Thread
 from loguru import logger
 from opentelemetry import trace
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-from pydantic import BaseModel
-from automatic_analyzer.experiment_inventory import Experiment
-from automatic_analyzer.experiment_tracker import ExperimentTracker
-from utilities.utilities.configuration.configuration import (
-    Config,
-    ConfigSetup,
-)
-import data_converter.data_converter as data_converter
-from threading import Thread, Lock
-from queue import Queue
+from pydantic import BaseModel, validator
 
-tracer = trace.get_tracer("automatic-data-analyzer-backend.automatic_analyzer")
+from automatic_analyzer.analysis_config import ANALYSIS_STEPS_LEN
+from automatic_analyzer.analysis_step import AnalysisStep
+from automatic_analyzer.experiment_tracker import Experiment, ExperimentTracker
+
+tracer = trace.get_tracer("automatic_analyzer_backend.automatic_analyzer")
 
 
 class AnalysisParams(BaseModel):
     """
     Parameters for analyzing an experiment.
-    Set `force` to `True` to to run analyses regardless of whether there are already existing files
+
+    :param steps_to_analyze: List of bools representing whether the analysis step at that index should be performed
     """
 
-    convert_unconverted: bool = True
-    process_converted: bool = True
-    force: bool = False
+    steps_to_analyze: list[bool]
 
+    @validator("steps_to_analyze")
+    def proper_steps_len(cls, v):
+        # IMPORTANT - we want a length of steps - 1 because the last step cannot be analyzed
+        if len(v) != ANALYSIS_STEPS_LEN - 1:
+            raise ValueError("steps_to_analyze list has invalid length")
+        return v
 
 class AnalysisRequestParams(AnalysisParams):
-    """
-    Parameters in an analysis request from the endpoint.
-    The `pattern` attribute is used to determine which analyses should be done.
-    """
-
     pattern: str | None = None
 
 
@@ -48,7 +42,7 @@ class Analysis(BaseModel):
 
     exp: Experiment
     params: AnalysisParams
-    stage: Literal["convert"] | Literal["process"] = "convert"
+    current_step: int = 0
     cancelled: bool = False
     trace_context: dict[str, str] | None = None
 
@@ -65,26 +59,13 @@ class AutomaticAnalyzer:
     in_progress_lock = Lock()
 
     def __init__(
-        self,
-        config_setup: ConfigSetup,
-        config: Config,
-        exp_tracker: ExperimentTracker,
-        psd_python_binary_path: Path,
-        psd_program_path: Path,
+        self, exp_tracker: ExperimentTracker, analysis_steps: list[AnalysisStep]
     ) -> None:
         """
         Sets up a new AutomaticAnalyzer.
-        `psd_python_binary_path` is the path to the python binary that can run the PSD analysis script -
-        it is likely located inside a `venv/Scripts` or `venv/bin` folder.
-        `psd_program_path` is the path to the actual PSD analysis script.
-        `config_setup` and `config` are passed on to the data_analyzer module
         """
-        self.exp_tracker = exp_tracker
-        self.psd_python_path = psd_python_binary_path
-        self.psd_program_path = psd_program_path
-
-        self._config_setup = config_setup
-        self._config = config
+        self._exp_tracker = exp_tracker
+        self._analysis_steps = analysis_steps
 
         self._analysis_queue: "Queue[Analysis]" = Queue()
         self._converter_thread = Thread(target=self._analyzer)
@@ -101,8 +82,8 @@ class AutomaticAnalyzer:
         with tracer.start_as_current_span("queue_analysis") as span:
             span.set_attribute("id", analysis.exp.id)
             self._analysis_queue.put(analysis)
-            logger.info(f"Added experiment {analysis.exp.id} to analysis queue")
-            logger.debug(f"Analysis params: {analysis}")
+            # logger.info(f"Added experiment {analysis.exp.id} to analysis queue")
+            # logger.debug(f"Analysis params: {analysis}")
 
     def status(self):
         """
@@ -140,110 +121,33 @@ class AutomaticAnalyzer:
                 span.set_attributes(
                     {
                         "id": current_analysis.exp.id,
-                        "convert_unconverted": current_analysis.params.convert_unconverted,
-                        "process_converted": current_analysis.params.process_converted,
-                        "force": current_analysis.params.force,
+                        # "convert_unconverted": current_analysis.params.convert_unconverted,
+                        # "process_converted": current_analysis.params.process_converted,
+                        # "force": current_analysis.params.force,
                     }
                 )
 
-                logger.info(
-                    f"Starting analysis of experiment {current_analysis.exp.id}"
-                )
-                logger.debug(f"Analyzing {current_analysis}")
+                # logger.info(
+                #     f"Starting analysis of experiment {current_analysis.exp.id}"
+                # )
+                # logger.debug(f"Analyzing {current_analysis}")
                 with self.in_progress_lock:
                     self.in_progress_analysis = copy.deepcopy(current_analysis)
 
-                self._try_convert(current_analysis)
-                self.exp_tracker.refresh_all()
-                self._try_process(current_analysis)
+                self._exp_tracker.refresh_inventory()
+                # Last step doesn't require analysis because it's the final state
+                for i, step in enumerate(self._analysis_steps[:-1]):
+                    if current_analysis.params.steps_to_analyze[i]:
+                        if current_analysis.exp.analysis_step_props[
+                            i + 1
+                        ].mtime_present():
+                            logger.debug(
+                                f"Experiment {current_analysis.exp.id} already exists in step {i}, skipping"
+                            )
+                            continue
+                        step.analyze(current_analysis.exp)
+                        self._exp_tracker.refresh_inventory()
 
                 logger.info(f"Analysis of experiment {current_analysis.exp.id} done")
                 with self.in_progress_lock:
                     self.in_progress_analysis = None
-
-    @tracer.start_as_current_span("convert_analysis")
-    def _try_convert(self, current_analysis: Analysis):
-        """
-        Tries to convert the experiment pattern specified in the current anlysis.
-        By default, conversion will not be run if the unconverted files do not exist or if converted files already exist.
-        However, if the force param is True then the conversion will be run regardless.
-        """
-        if not current_analysis.params.convert_unconverted:
-            logger.info(
-                f"'convert_unconverted' is False for current analysis of {current_analysis.exp.id}, skipping conversion"
-            )
-            return
-
-        exp_path = Path(self.exp_tracker._unconverted_data_dir, current_analysis.exp.id)
-        exp = current_analysis.exp
-        run_conversion = True
-        if exp.props.unconverted_mtime == -1:
-            run_conversion = False
-            logger.warning(f"Unconverted files for {exp.id} do not exist")
-        if exp.props.converted_mtime != -1:
-            run_conversion = False
-            logger.warning(f"Converted files for {exp.id} already exist")
-        if current_analysis.params.force:
-            run_conversion = True
-            logger.warning(f"Force running conversion script for {exp.id}")
-
-        if run_conversion:
-            logger.info(f"Converting experiment {exp.id}")
-            with self.in_progress_lock:
-                if self.in_progress_analysis:
-                    self.in_progress_analysis.stage = "convert"
-
-            with tracer.start_as_current_span("conversion_script"):
-                data_converter.convert_neutron_data(
-                    self._config,
-                    self._config_setup,
-                    sources=[exp_path],
-                    destination=self.exp_tracker._converted_data_dir,
-                )
-                logger.info(f"Finished converting experiment {exp.id}")
-
-    @tracer.start_as_current_span("process_analysis")
-    def _try_process(self, current_analysis: Analysis):
-        """
-        Tries to process the experiment pattern specified in the current anlysis.
-        By default, processing will not be run if the converted files do not exist or if processed files already exist.
-        However, if the force param is True then the processing will be run regardless.
-        """
-        if not current_analysis.params.process_converted:
-            logger.info(
-                f"'process_converted' is False for current analysis of {current_analysis.exp.id}, skipping processing"
-            )
-            return
-
-        exp = current_analysis.exp
-        run_processing = True
-        if exp.props.converted_mtime == -1:
-            run_processing = False
-            logger.warning(f"Converted files for {exp.id} do not exist")
-        if exp.props.processed_mtime != -1:
-            run_processing = False
-            logger.warning(f"Processed files for {exp.id} already exist")
-        if current_analysis.params.force:
-            run_processing = True
-            logger.warning(f"Force running processing script for {exp.id}")
-
-        if run_processing:
-            logger.info(f"Processing experiment {exp.id}")
-            with self.in_progress_lock:
-                if self.in_progress_analysis:
-                    self.in_progress_analysis.stage = "process"
-
-            program_input = f"{exp.id.split('-', maxsplit=1)[1]}\n\n\n\n\n\n\n\n"
-            logger.debug(
-                f"Running {self.psd_python_path} {self.psd_program_path} with input {program_input}"
-            )
-            with tracer.start_as_current_span("processing_script"):
-                output = subprocess.run(
-                    [self.psd_python_path, self.psd_program_path],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    input=program_input,
-                )
-                logger.info(f"Program output: {output.stdout}")
-                logger.info(f"Finished processing experiment {exp.id}")

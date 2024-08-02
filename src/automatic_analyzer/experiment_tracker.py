@@ -1,199 +1,79 @@
-import re
-from automatic_analyzer.experiment_inventory import (
-    Experiment,
-    ExperimentInventory,
-    ExperimentProperties,
-    OverrideInventory,
-)
-from pathlib import Path
-from loguru import logger
-from opentelemetry import trace
-
-tracer = trace.get_tracer("automatic-data-analyzer-backend.experiment_tracker")
+from automatic_analyzer.analysis_step import AnalysisStep, AnalysisStepProps
+from automatic_analyzer.experiment import Experiment
+from automatic_analyzer.override_inventory import OverrideInventory
 
 
 class ExperimentTracker:
-    """
-    Tracks inventory of all experiments in QMI data drive
-    """
-
     def __init__(
-        self,
-        unconverted_data_dir: Path,
-        converted_data_dir: Path,
-        processed_data_dir: Path,
-        overrides: OverrideInventory,
+        self, analysis_steps: list[AnalysisStep], overrides: OverrideInventory
     ) -> None:
-        """Initializes new experiment inventory and establishes directory baseline"""
-        self._unconverted_data_dir = unconverted_data_dir
-        self._converted_data_dir = converted_data_dir
-        self._processed_data_dir = processed_data_dir
+        self._analysis_steps = analysis_steps
         self._overrides = overrides
+        self._inventory: dict[str, Experiment] = {}
+        self.refresh_inventory()
 
-        self.exp_inventory = ExperimentInventory(overrides)
-        self.refresh_all()
+    def refresh_inventory(self):
+        """
+        Rescans each step in the tracker's list of analysis steps
+        and marks presence of the experiments in all steps
+        """
+        new_inventory: dict[str, Experiment] = {}
+        for i, step in enumerate(self._analysis_steps):
+            for id, props in step.check_experiments():
+                current_exp = new_inventory.get(id, Experiment(id=id))
+                override_exp = self._overrides.get_override_exp(id)
 
-    @tracer.start_as_current_span("refresh_all")
-    def refresh_all(self):
-        """
-        Rescans the unconverted, converted, and processed data directories
-        and marks presence of the experiments in all directories
-        """
-        self._refresh_unconverted()
-        self._refresh_converted()
-        self._refresh_processed()
-        logger.info("Refreshed inventory for all directories")
+                if override_exp is not None:
+                    current_step_ovr = override_exp.analysis_step_overrides[i]
+                    if current_step_ovr is not None:
+                        current_exp.analysis_step_props[i] = (
+                            AnalysisStepProps.make_from_base(current_step_ovr, True)
+                        )
+                else:
+                    current_exp.analysis_step_props[i] = props
+
+                new_inventory[id] = current_exp
+        self._inventory = new_inventory
 
     def get_all_experiments(self) -> list[Experiment]:
-        """Get all experiments in internal inventory"""
-        return list(self.exp_inventory.get_all())
+        return list(self._inventory.values())
 
-    def get_all_to_convert(self) -> list[Experiment]:
-        """Get all experiments that are in unconverted directory but not converted"""
-        to_convert = []
-        for exp in self.exp_inventory.experiments.values():
-            if exp.props.unconverted_mtime != -1 and exp.props.converted_mtime == -1:
-                to_convert.append(exp)
-        logger.debug(f"All to-be-converted experiments: {to_convert}")
-        return to_convert
-
-    def get_all_to_process(self) -> list[Experiment]:
-        """Get all experiments that are in converted directory but not processed"""
-        to_process = []
-        for exp in self.exp_inventory.experiments.values():
-            if exp.props.converted_mtime != -1 and exp.props.processed_mtime == -1:
-                to_process.append(exp)
-        logger.debug(f"All to-be-processed experiments: {to_process}")
-        return to_process
-
-    def get_all_to_analyze(self) -> list[Experiment]:
-        """Get all experiments that are in unconverted directory but not converted or not processed"""
-        to_analyze = []
-        for exp in self.exp_inventory.experiments.values():
-            if exp.props.unconverted_mtime != -1 and (
-                exp.props.converted_mtime == -1 or exp.props.processed_mtime == -1
-            ):
-                to_analyze.append(exp)
-        logger.debug(f"All to-be-analyzed experiments: {to_analyze}")
-        return to_analyze
-
-    # def get_all_unconverted(self) -> list[Experiment]:
-    #     """Get all experiments that are present in unconverted directory"""
-    #     unconverted = []
-    #     for exp in self.experiments.experiments.values():
-    #         if exp.has_unconverted:
-    #             unconverted.append(exp)
-    #     return unconverted
-
-    # def get_all_converted(self) -> list[Experiment]:
-    #     """Get all experiments that are present in converted directory"""
-    #     converted = []
-    #     for exp in self.experiments.experiments.values():
-    #         if exp.has_converted:
-    #             converted.append(exp)
-    #     return converted
-
-    # def get_all_processed(self) -> list[Experiment]:
-    #     """Get all experiments that are present in processed directory"""
-    #     processed = []
-    #     for exp in self.experiments.experiments.values():
-    #         if exp.has_processed:
-    #             processed.append(exp)
-    #     return processed
-
-    @tracer.start_as_current_span("refresh_unconverted")
-    def _refresh_unconverted(self):
+    def get_all_to_analyze(
+        self, steps_to_analyze: list[bool] | None = None
+    ) -> list[Experiment]:
         """
-        Rescans unconverted data directory and adds all found experiments to inventory,
-        or marks presence of unconverted experiment if already exists
-        """
-        # Clear all unconverted statuses at beginning except overridden experiments
-        for exp in self.exp_inventory.experiments.values():
-            if not exp.props.overridden:
-                exp.props.unconverted_mtime = -1
-            else:
-                logger.debug(f"Skip clearing overridden experiment {exp.id}")
+        Returns all analyzable experiments.
+        For an experiment to be analyzable at a certain step,
+        it must be present at that step and not present in the step following.
 
-        unconverted_exps = self._scan_directory(self._unconverted_data_dir)
-        logger.debug(
-            f"Found unconverted experiments: {[id for id, _ in unconverted_exps]}"
-        )
-        for id, mtime in unconverted_exps:
-            self.exp_inventory.set(
-                id, ExperimentProperties(unconverted_mtime=mtime, overridden=False)
-            )
-
-    @tracer.start_as_current_span("refresh_converted")
-    def _refresh_converted(self):
+        The final analysis step will never be considered because
+        experiments that are at this step are considered to be "done" analyzing.
+        
+        In the same vein, the first analysis step will always be analyzable, but
+        this situation should never come up because it would require the first step
+        of an experiment to be deleted after it has already gone through the pipeline
         """
-        Rescans converted data directory and adds all found experiments to inventory,
-        or marks presence of converted experiment if already exists.
-        For each found experiment, the `conversion.log` file in the directory is also verified for errors,
-        and the experiment is marked as `"Error"` if errors are found.
-        """
-        # Clear all converted statuses at beginning except overridden experiments
-        for exp in self.exp_inventory.experiments.values():
-            if not exp.props.overridden:
-                exp.props.converted_mtime = -1
-            else:
-                logger.debug(f"Skip clearing overridden experiment {exp.id}")
-        converted_exps = self._scan_directory(self._converted_data_dir)
-        logger.debug(f"Found converted experiments: {[id for id, _ in converted_exps]}")
-        for id, mtime in converted_exps:
-            exp_mtime = mtime
-            try:
-                exp_log_path = Path(self._converted_data_dir, id, "conversion.log")
-                with open(exp_log_path, "r") as f:
-                    contents = f.read()
-                    if (
-                        "ERROR" in contents
-                        or re.search(f"Conversion of .*{id} complete", contents) is None
-                    ):
-                        logger.warning(
-                            f"Experiment {id} could be malformed, check conversion.log"
-                        )
-                        exp_mtime = "Error"
-            except FileNotFoundError:
-                logger.warning(f"No conversion.log found for experiment {id}")
-                exp_mtime = "Error"
-
-            self.exp_inventory.set(
-                id, ExperimentProperties(converted_mtime=exp_mtime, overridden=False)
-            )
-
-    @tracer.start_as_current_span("refresh_processed")
-    def _refresh_processed(self):
-        """
-        Rescans processed data directory and adds all found experiments to inventory,
-        or marks presence of processed experiment if already exists
-        """
-        # Clear all processed statuses at beginning except overridden experiments
-        for exp in self.exp_inventory.experiments.values():
-            if not exp.props.overridden:
-                exp.props.processed_mtime = -1
-            else:
-                logger.debug(f"Skip clearing overridden experiment {exp.id}")
-        processed_exps = self._scan_directory(self._processed_data_dir)
-        logger.debug(f"Found processed experiments: {[id for id, _ in processed_exps]}")
-        for id, mtime in processed_exps:
-            exp_mtime = mtime
-            exp_folder_path = Path(self._processed_data_dir, id)
-            if len(list(exp_folder_path.glob("*.csv"))) == 0:
-                logger.warning(
-                    f"No .csv files found in processed directory for experiment {id}"
-                )
-                exp_mtime = "Error"
-            self.exp_inventory.set(
-                id, ExperimentProperties(processed_mtime=exp_mtime, overridden=False)
-            )
-    
-    @tracer.start_as_current_span("scan_directory")
-    def _scan_directory(self, target_dir: Path) -> list[tuple[str, float]]:
-        """Scans target directory and returns a list of pairs of experiment IDs found in target and their mtimes"""
-        directories = [
-            (f.parts[-1], f.lstat().st_mtime * 1000)
-            for f in target_dir.iterdir()
-            if f.is_dir()
+        return [
+            exp
+            for exp in self._inventory.values()
+            if self._is_experiment_analyzable(exp, steps_to_analyze)
         ]
-        logger.debug(f"Scanned directories in {target_dir}: {directories}")
-        return directories
+
+    def _is_experiment_analyzable(
+        self, exp: Experiment, steps_to_analyze: list[bool] | None
+    ):
+        for i, prop in enumerate(exp.analysis_step_props):
+            if not prop.mtime_present():
+                if steps_to_analyze is None:
+                    return True
+                # First step will always be analyzable
+                # Bit of a weird edge case anyways since
+                # this could only happen if you manually deleted the first step
+                elif i == 0:
+                    return True
+                # If the experiment at the current step doesn't exist, then
+                # the previous step can perform analysis - if the user
+                # has allowed this step to analyze then return True
+                elif steps_to_analyze[i-1]:
+                    return True
+        return False

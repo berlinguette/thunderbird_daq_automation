@@ -3,9 +3,11 @@ from pathlib import Path
 import re
 from typing import Callable
 from pydantic import ValidationError
+from automatic_analyzer.analysis_config import make_analysis_steps_config
+from automatic_analyzer.analysis_step import AnalysisStep
 import automatic_analyzer.env_keys as env_keys
-from automatic_analyzer.experiment_inventory import (
-    Experiment,
+from automatic_analyzer.override_inventory import (
+    Override,
     OverrideInventory,
 )
 from automatic_analyzer.experiment_tracker import ExperimentTracker
@@ -23,12 +25,16 @@ import sys
 from datetime import datetime
 
 from automatic_analyzer.otlp import get_otlp_log_handler
-from data_converter.configuration.configuration import load_config_setup
-from utilities.utilities.configuration.configuration import get_configuration
 
 
 def analyzer_setup() -> (
-    tuple[OverrideInventory, ExperimentTracker, AutomaticAnalyzer, Path]
+    tuple[
+        OverrideInventory,
+        ExperimentTracker,
+        AutomaticAnalyzer,
+        list[AnalysisStep],
+        Path,
+    ]
 ):
     """
     Loads config from environment and initializes inventory tracker objects.
@@ -57,49 +63,48 @@ def analyzer_setup() -> (
         overrides = OverrideInventory(config.overrides_file_path)
         logger.info("Existing overrides not found")
 
-    exp_tracker = ExperimentTracker(
-        config.unconverted_data_dir,
-        config.converted_data_dir,
-        config.processed_data_dir,
-        overrides,
-    )
+    analysis_steps = make_analysis_steps_config(config)
+    exp_tracker = ExperimentTracker(analysis_steps, overrides)
+    automatic_analyzer = AutomaticAnalyzer(exp_tracker, analysis_steps)
 
-    config_setup = load_config_setup()
-    automatic_analyzer = AutomaticAnalyzer(
-        config_setup,
-        get_configuration({}, config_setup, None),
-        exp_tracker,
-        config.psd_python_binary_path,
-        config.psd_program_path,
-    )
-
-    return (overrides, exp_tracker, automatic_analyzer, log_file_path)
+    return (overrides, exp_tracker, automatic_analyzer, analysis_steps, log_file_path)
 
 
 def create_app(
     analyzer_setup_fn: Callable[
-        [], tuple[OverrideInventory, ExperimentTracker, AutomaticAnalyzer, Path]
+        [],
+        tuple[
+            OverrideInventory,
+            ExperimentTracker,
+            AutomaticAnalyzer,
+            list[AnalysisStep],
+            Path,
+        ],
     ] = analyzer_setup,
 ):
     # Calls analyzer_setup() by default but can be changed for running tests
-    overrides, exp_tracker, automatic_analyzer, log_file_path = analyzer_setup_fn()
+    overrides, exp_tracker, automatic_analyzer, analysis_steps, log_file_path = (
+        analyzer_setup_fn()
+    )
 
     app = Flask(__name__)
     CORS(app, origins=["*"])
 
+    @app.get("/analysis_steps")
+    def get_analysis_steps():
+        return [x.name for x in analysis_steps]
+
     @app.get("/inventory")
     def get_inventory():
-        exp_filter = request.args.get("filter", "all")
+        filter = request.args.get("filter", "all")
         get_exp_mapping = {
             "all": exp_tracker.get_all_experiments,
-            "to_be_converted": exp_tracker.get_all_to_convert,
-            "to_be_processed": exp_tracker.get_all_to_process,
             "to_be_analyzed": exp_tracker.get_all_to_analyze,
         }
-        if exp_filter not in get_exp_mapping:
+        if filter not in get_exp_mapping:
             return "Invalid experiment filter", 400
-        exp_tracker.refresh_all()
-        return [exp.dict() for exp in get_exp_mapping[exp_filter]()]
+        exp_tracker.refresh_inventory()
+        return [exp.dict() for exp in get_exp_mapping[filter]()]
 
     @app.get("/overrides")
     def get_overrides():
@@ -110,9 +115,9 @@ def create_app(
         if request.is_json:
             body = request.json
             try:
-                exp = Experiment.parse_obj(body)
-                overrides.set_exp(exp)
-                return [exp.dict() for exp in overrides.get_all()], 201
+                override = Override.parse_obj(body)
+                overrides.set_exp(override)
+                return [ovr.dict() for ovr in overrides.get_all()], 201
             except ValidationError as err:
                 return err.__str__(), 400
         else:
@@ -122,12 +127,11 @@ def create_app(
     def delete_override(pattern: str):
         if overrides.get(pattern) is None:
             return "Experiment not found", 404
-        overrides.experiments.pop(pattern, None)
-        for id in exp_tracker.exp_inventory.experiments.keys():
-            # clear old experiments that used to be overridden so exp tracker won't skip it when refreshing
-            if overrides.get_override_exp(id) is None:
-                exp_tracker.exp_inventory.experiments[id].props.overridden = False
-        overrides._save_to_file()
+        overrides.delete(pattern)
+        # for id in exp_tracker.exp_inventory.experiments.keys():
+        #     # clear old experiments that used to be overridden so exp tracker won't skip it when refreshing
+        #     if overrides.get_override_exp(id) is None:
+        #         exp_tracker.exp_inventory.experiments[id].props.overridden = False
         return [exp.dict() for exp in overrides.get_all()], 200
 
     @app.get("/analyses")
@@ -138,38 +142,40 @@ def create_app(
 
     @app.post("/analyses")
     def start_analyses():
-        analysis_params = AnalysisRequestParams()
         if request.is_json:
             body = request.json
             try:
                 analysis_params = AnalysisRequestParams.parse_obj(body)
                 logger.info(f"Analysis params: {analysis_params}")
+
+                exp_tracker.refresh_inventory()
+                experiments_to_analyze = exp_tracker.get_all_to_analyze(
+                    analysis_params.steps_to_analyze
+                )
+                if analysis_params.pattern is not None:
+                    patt = analysis_params.pattern
+                    experiments_to_analyze = [
+                        exp
+                        for exp in experiments_to_analyze
+                        if re.search(patt, exp.id) is not None
+                    ]
+                logger.info(
+                    f"Experiments to analyze: {[exp.id for exp in experiments_to_analyze]}"
+                )
+                for exp in experiments_to_analyze:
+                    params = AnalysisParams(
+                        steps_to_analyze=analysis_params.steps_to_analyze
+                    )
+                    analysis = Analysis(exp=exp, params=params)
+                    automatic_analyzer.analyze(analysis)
+
+                # Queue might be empty because analysis hasn't been put in queue yet
+                status = automatic_analyzer.status()
+                return status, 200
             except ValidationError as err:
                 return err.__str__(), 400
-        exp_tracker.refresh_all()
-        experiments_to_analyze = exp_tracker.get_all_to_analyze()
-        if analysis_params.pattern is not None:
-            patt = analysis_params.pattern
-            experiments_to_analyze = [
-                exp
-                for exp in experiments_to_analyze
-                if re.search(patt, exp.id) is not None
-            ]
-        logger.info(
-            f"Experiments to analyze: {[exp.id for exp in experiments_to_analyze]}"
-        )
-        for exp in experiments_to_analyze:
-            params = AnalysisParams(
-                convert_unconverted=analysis_params.convert_unconverted,
-                process_converted=analysis_params.process_converted,
-                force=analysis_params.force,
-            )
-            analysis = Analysis(exp=exp, params=params)
-            automatic_analyzer.analyze(analysis)
-
-        # Queue might be empty because analysis hasn't been put in queue yet
-        status = automatic_analyzer.status()
-        return status, 200
+        else:
+            return "", 415
 
     @app.get("/logs")
     def listen_logs():

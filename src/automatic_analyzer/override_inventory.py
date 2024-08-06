@@ -72,7 +72,7 @@ class OverrideInventory:
 
     def delete(self, pattern: str):
         """
-        Delete experiment with the given pattern, if it exists already - otherwise do nothing.
+        Delete experiment with the given pattern, if it exists - otherwise do nothing.
         The data file will automatically be updated
         """
         self._overrides.pop(pattern, None)

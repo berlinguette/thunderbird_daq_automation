@@ -7,27 +7,40 @@ from typing import Literal
 
 from pyfakefs.fake_filesystem import FakeFilesystem
 import pytest
-from automatic_analyzer.automatic_analyzer import AutomaticAnalyzer
-from automatic_analyzer.experiment_inventory import ExperimentProperties, OverrideInventory
+from automatic_analyzer.analysis_step import (
+    AnalysisStepProps,
+    BaseAnalysisStepProps,
+    ConvertedAnalysisStep,
+    UnconvertedAnalysisStep,
+)
 from automatic_analyzer.experiment_tracker import ExperimentTracker
+from automatic_analyzer.override_inventory import OverrideInventory
 
-def make_experiment_props(
-    unc_mtime: float | Literal["Error"] = 0,
-    con_mtime: float | Literal["Error"] = 0,
-    pro_mtime: float | Literal["Error"] = 0,
-    overridden: bool = False,
+
+def make_analysis_step_props(
+    props: list[tuple[float | Literal["Error"], bool]] = [(0, False), (0, False)],
 ):
-    return ExperimentProperties(
-        unconverted_mtime=unc_mtime,
-        converted_mtime=con_mtime,
-        processed_mtime=pro_mtime,
-        overridden=overridden,
-    )
+    return [AnalysisStepProps(mtime=mtime, overridden=ovr) for mtime, ovr in props]
+
+
+def make_base_analysis_step_props(
+    props: list[float | Literal["Error"] | None] = [0, 0],
+):
+    return [
+        BaseAnalysisStepProps(mtime=mtime) if mtime is not None else None
+        for mtime in props
+    ]
 
 
 @pytest.fixture
-def experiment_props():
-    return make_experiment_props()
+def analysis_step_props():
+    return make_analysis_step_props()
+
+
+@pytest.fixture
+def base_analysis_step_props():
+    return make_base_analysis_step_props()
+
 
 @pytest.fixture
 def override_inventory():
@@ -47,20 +60,31 @@ def initialized_fs(fs: FakeFilesystem):
 
 
 @pytest.fixture
-def exp_tracker(override_inventory, initialized_fs):
+def unconverted_step():
+    return UnconvertedAnalysisStep(
+        "Unconverted Data", Path("/unc"), Path("/con"), {}, {}
+    )
+
+@pytest.fixture
+def converted_step():
+    return ConvertedAnalysisStep(
+        "Converted Data", Path("/con")
+    )
+
+
+@pytest.fixture
+def exp_tracker(override_inventory, initialized_fs, unconverted_step):
     """
     Initializes a test ExperimentTracker with unconverted, converted, and processed
     data directory paths set to "/unc", "/con", and "/pro" respectively.
     A default override for experiments matching pattern `ID-1..` has also been set
     """
-    override_inventory.set("ID-1..", make_experiment_props())
-    return ExperimentTracker(
-        Path("/unc"), Path("/con"), Path("/pro"), override_inventory
-    )
+    override_inventory.set("ID-1..", make_analysis_step_props())
+    return ExperimentTracker([unconverted_step], override_inventory)
 
 
-@pytest.fixture
-def automatic_analyzer(exp_tracker: ExperimentTracker):
-    return AutomaticAnalyzer(
-        {}, {}, exp_tracker, Path("/psd_python"), Path("/psd_program")
-    )
+# @pytest.fixture
+# def automatic_analyzer(exp_tracker: ExperimentTracker):
+#     return AutomaticAnalyzer(
+#         {}, {}, exp_tracker, Path("/psd_python"), Path("/psd_program")
+#     )

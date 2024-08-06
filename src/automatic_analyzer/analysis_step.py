@@ -46,7 +46,7 @@ class AnalysisStep(ABC):
 
     def check_experiments(
         self,
-    ) -> Generator[tuple[str, AnalysisStepProps], None, None]:
+    ) -> Generator[tuple[str, BaseAnalysisStepProps], None, None]:
         """
         Returns a generator that yields pairs of experiment IDs
         found in target and their props
@@ -91,13 +91,13 @@ class UnconvertedAnalysisStep(AnalysisStep):
 
     def check_experiments(
         self,
-    ) -> Generator[tuple[str, AnalysisStepProps], None, None]:
+    ) -> Generator[tuple[str, BaseAnalysisStepProps], None, None]:
         for id, mtime in self._scan_directory(self._unconverted_path):
             exp_folder_path = Path(self._unconverted_path, id)
             if len(list(exp_folder_path.glob("run.info"))) == 0:
-                yield (id, AnalysisStepProps(mtime="Error"))
+                yield (id, BaseAnalysisStepProps(mtime="Error"))
             else:
-                yield (id, AnalysisStepProps(mtime=mtime))
+                yield (id, BaseAnalysisStepProps(mtime=mtime))
 
     def analyze(self, exp: Experiment):
         exp_path = Path(self._unconverted_path, exp.id)
@@ -116,25 +116,25 @@ class ConvertedAnalysisStep(AnalysisStep):
         super().__init__(name)
         self._directory_path = directory_path
 
-    def check_experiments(self) -> Generator[tuple[str, AnalysisStepProps], None, None]:
+    def check_experiments(self) -> Generator[tuple[str, BaseAnalysisStepProps], None, None]:
         for id, mtime in self._scan_directory(self._directory_path):
             try:
                 exp_log_path = Path(self._directory_path, id, "conversion.log")
                 with open(exp_log_path, "r") as f:
                     contents = f.read()
                     if (
-                        "ERROR" in contents
+                        "error" in contents.lower()
                         or re.search(f"Conversion of .*{id} complete", contents) is None
                     ):
                         # logger.warning(
                         #     f"Experiment {id} could be malformed, check conversion.log"
                         # )
-                        yield (id, AnalysisStepProps(mtime="Error"))
+                        yield (id, BaseAnalysisStepProps(mtime="Error"))
                     else:
-                        yield (id, AnalysisStepProps(mtime=mtime))
+                        yield (id, BaseAnalysisStepProps(mtime=mtime))
             except FileNotFoundError:
                 # logger.warning(f"No conversion.log found for experiment {id}")
-                yield (id, AnalysisStepProps(mtime="Error"))
+                yield (id, BaseAnalysisStepProps(mtime="Error"))
 
     def analyze(self, exp: Experiment):
         # Final step

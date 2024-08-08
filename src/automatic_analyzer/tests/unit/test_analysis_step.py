@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from pyfakefs.fake_filesystem import FakeFilesystem
 import pytest
 
@@ -20,24 +20,23 @@ def experiment():
 class TestUnconvertedAnalysisStep:
     def test_should_convert_experiment(
         self,
-        unconverted_step: UnconvertedAnalysisStep,
+        mocked_unconverted_step: tuple[UnconvertedAnalysisStep, MagicMock],
         experiment: Experiment,
     ):
         """Test trying to convert using UnconvertedAnalysisStep.analyze()"""
-        with patch("data_converter.data_converter.convert_neutron_data") as mock:
-            unconverted_step.analyze(experiment)
-            assert mock.call_args.kwargs["sources"] == [
-                Path(unconverted_step._unconverted_path, experiment.id)
-            ]
-            assert mock.call_args.kwargs["destination"] == Path(
-                unconverted_step._converted_path
-            )
-            mock.assert_called_once()
+        mocked_unconverted_step[0].analyze(experiment)
+        assert mocked_unconverted_step[1].call_args.kwargs["sources"] == [
+            Path(mocked_unconverted_step[0]._unconverted_path, experiment.id)
+        ]
+        assert mocked_unconverted_step[1].call_args.kwargs["destination"] == Path(
+            mocked_unconverted_step[0]._converted_path
+        )
+        mocked_unconverted_step[1].assert_called_once()
 
     def test_should_find_experiments_without_error(
         self,
         initialized_fs: FakeFilesystem,
-        unconverted_step: UnconvertedAnalysisStep,
+        mocked_unconverted_step: tuple[UnconvertedAnalysisStep, MagicMock],
     ):
         """Test trying to find experiments using UnconvertedAnalysisStep.check_experiments()"""
         initialized_fs.create_dir("/unc/ID-001")
@@ -45,19 +44,21 @@ class TestUnconvertedAnalysisStep:
         initialized_fs.create_dir("/unc/ID-002")
         initialized_fs.create_file("/unc/ID-002/run.info")
 
-        experiments = list(unconverted_step.check_experiments())
+        experiments = list(mocked_unconverted_step[0].check_experiments())
         assert len(experiments) == 2
         for _, props in experiments:
             assert props.mtime_present()
 
     def test_should_find_experiments_with_error(
-        self, initialized_fs: FakeFilesystem, unconverted_step: UnconvertedAnalysisStep
+        self,
+        initialized_fs: FakeFilesystem,
+        mocked_unconverted_step: tuple[UnconvertedAnalysisStep, MagicMock],
     ):
         """Test trying to detect errored experiments using UnconvertedAnalysisStep.check_experiments()"""
         initialized_fs.create_dir("/unc/ID-001")
         initialized_fs.create_dir("/unc/ID-002")
 
-        experiments = list(unconverted_step.check_experiments())
+        experiments = list(mocked_unconverted_step[0].check_experiments())
         assert len(experiments) == 2
         for _, props in experiments:
             assert not props.mtime_present()

@@ -3,7 +3,9 @@ Contains common fixtures/helpers that may be used across multiple tests
 """
 
 from pathlib import Path
+import threading
 from typing import Literal
+from unittest.mock import MagicMock, patch
 
 from pyfakefs.fake_filesystem import FakeFilesystem
 import pytest
@@ -13,6 +15,7 @@ from automatic_analyzer.analysis_step import (
     ConvertedAnalysisStep,
     UnconvertedAnalysisStep,
 )
+from automatic_analyzer.automatic_analyzer import AutomaticAnalyzer
 from automatic_analyzer.experiment_tracker import ExperimentTracker
 from automatic_analyzer.override_inventory import OverrideInventory
 
@@ -55,36 +58,54 @@ def initialized_fs(fs: FakeFilesystem):
     """
     fs.create_dir("/unc")
     fs.create_dir("/con")
-    fs.create_dir("/pro")
     yield fs
 
 
 @pytest.fixture
-def unconverted_step():
-    return UnconvertedAnalysisStep(
-        "Unconverted Data", Path("/unc"), Path("/con"), {}, {}
-    )
+def mocked_unconverted_step():
+    mock_event = threading.Event()
+
+    def mock_function_with_event(*args, **kwargs):
+        mock_event.set()
+
+    with patch("data_converter.data_converter.convert_neutron_data") as mock:
+        mock.side_effect = mock_function_with_event
+        yield (
+            UnconvertedAnalysisStep(
+                "Unconverted Data", Path("/unc"), Path("/con"), {}, {}
+            ),
+            mock,
+            mock_event,
+        )
+
 
 @pytest.fixture
 def converted_step():
-    return ConvertedAnalysisStep(
-        "Converted Data", Path("/con")
-    )
+    return ConvertedAnalysisStep("Converted Data", Path("/con"))
 
 
 @pytest.fixture
-def exp_tracker(override_inventory, initialized_fs, unconverted_step):
+def exp_tracker(
+    override_inventory: OverrideInventory,
+    initialized_fs,
+    mocked_unconverted_step: tuple[UnconvertedAnalysisStep, MagicMock, threading.Event],
+    converted_step,
+):
     """
     Initializes a test ExperimentTracker with unconverted, converted, and processed
     data directory paths set to "/unc", "/con", and "/pro" respectively.
     A default override for experiments matching pattern `ID-1..` has also been set
     """
-    override_inventory.set("ID-1..", make_analysis_step_props())
-    return ExperimentTracker([unconverted_step], override_inventory)
+    override_inventory.set("ID-1..", make_base_analysis_step_props())
+    yield ExperimentTracker(
+        [mocked_unconverted_step[0], converted_step], override_inventory
+    )
 
 
-# @pytest.fixture
-# def automatic_analyzer(exp_tracker: ExperimentTracker):
-#     return AutomaticAnalyzer(
-#         {}, {}, exp_tracker, Path("/psd_python"), Path("/psd_program")
-#     )
+@pytest.fixture
+def automatic_analyzer(
+    exp_tracker: ExperimentTracker,
+    mocked_unconverted_step: tuple[UnconvertedAnalysisStep, MagicMock, threading.Event],
+    converted_step,
+):
+    yield AutomaticAnalyzer(exp_tracker, [mocked_unconverted_step[0], converted_step])

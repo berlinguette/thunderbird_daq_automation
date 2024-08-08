@@ -30,7 +30,9 @@ class ExperimentTracker:
                             AnalysisStepProps.make_from_base(current_step_ovr, True)
                         )
                 else:
-                    current_exp.analysis_step_props[i] = props
+                    current_exp.analysis_step_props[i] = (
+                        AnalysisStepProps.make_from_base(props)
+                    )
 
                 new_inventory[id] = current_exp
         self._inventory = new_inventory
@@ -48,7 +50,7 @@ class ExperimentTracker:
 
         The final analysis step will never be considered because
         experiments that are at this step are considered to be "done" analyzing.
-        
+
         In the same vein, the first analysis step will always be analyzable, but
         this situation should never come up because it would require the first step
         of an experiment to be deleted after it has already gone through the pipeline
@@ -74,6 +76,6 @@ class ExperimentTracker:
                 # If the experiment at the current step doesn't exist, then
                 # the previous step can perform analysis - if the user
                 # has allowed this step to analyze then return True
-                elif steps_to_analyze[i-1]:
+                elif steps_to_analyze[i - 1]:
                     return True
         return False

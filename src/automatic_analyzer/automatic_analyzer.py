@@ -17,7 +17,8 @@ class AnalysisParams(BaseModel):
     """
     Parameters for analyzing an experiment.
 
-    :param steps_to_analyze: List of bools representing whether the analysis step at that index should be performed
+    :param steps_to_analyze: List of bools representing whether the analysis step at that index should be performed -
+        the length should be one less than number of steps since the last step cannot be analyzed
     """
 
     steps_to_analyze: list[bool]
@@ -28,6 +29,7 @@ class AnalysisParams(BaseModel):
         if len(v) != ANALYSIS_STEPS_LEN - 1:
             raise ValueError("steps_to_analyze list has invalid length")
         return v
+
 
 class AnalysisRequestParams(AnalysisParams):
     pattern: str | None = None
@@ -138,16 +140,17 @@ class AutomaticAnalyzer:
                 # Last step doesn't require analysis because it's the final state
                 for i, step in enumerate(self._analysis_steps[:-1]):
                     if current_analysis.params.steps_to_analyze[i]:
-                        if current_analysis.exp.analysis_step_props[
-                            i + 1
-                        ].mtime_present():
-                            logger.debug(
-                                f"Experiment {current_analysis.exp.id} already exists in step {i}, skipping"
-                            )
-                            continue
-                        step.analyze(current_analysis.exp)
                         self._exp_tracker.refresh_inventory()
+                        self._analyze_step(current_analysis.exp, i)
 
                 logger.info(f"Analysis of experiment {current_analysis.exp.id} done")
                 with self.in_progress_lock:
                     self.in_progress_analysis = None
+
+    def _analyze_step(self, experiment: Experiment, analysis_step_index: int):
+        if experiment.analysis_step_props[analysis_step_index + 1].mtime_present():
+            logger.debug(
+                f"Experiment {experiment.id} already exists in step {analysis_step_index}, skipping"
+            )
+            return
+        self._analysis_steps[analysis_step_index].analyze(experiment)

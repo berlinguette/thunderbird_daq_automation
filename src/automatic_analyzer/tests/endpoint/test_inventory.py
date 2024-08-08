@@ -34,7 +34,7 @@ class TestInventoryEndpoint:
     ):
         """Test GET /inventory and GET /inventory?filter=all"""
         experiments = self.get_experiments(client)
-        assert len(experiments) == 3
+        assert len(experiments) == 4
 
         # Check default behavior is "all" filter
         assert experiments == self.get_experiments(client, "all")
@@ -46,6 +46,9 @@ class TestInventoryEndpoint:
             experiments, "ID-UNC-CON", [True, True], [False, False]
         )
         assert check_experiment_valid(
+            experiments, "ID-UNC-CONERR", [True, False], [False, False]
+        )
+        assert check_experiment_valid(
             experiments, "ID-CON", [False, True], [False, False]
         )
 
@@ -54,8 +57,11 @@ class TestInventoryEndpoint:
     ):
         """Test GET /inventory?filter=to_be_analyzed"""
         experiments = self.get_experiments(client, "to_be_analyzed")
-        assert len(experiments) == 1
+        assert len(experiments) == 2
 
         assert check_experiment_valid(
             experiments, "ID-UNC", [True, False], [False, False]
+        )
+        assert check_experiment_valid(
+            experiments, "ID-UNC-CONERR", [True, False], [False, False]
         )

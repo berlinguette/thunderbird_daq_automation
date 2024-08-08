@@ -120,12 +120,18 @@ def runner(test_app: AppTuple):
 def experiments_setup_fs(initialized_fs: FakeFilesystem):
     initialized_fs.create_dir("/unc/ID-UNC")
     initialized_fs.create_file("/unc/ID-UNC/run.info")
+    initialized_fs.create_dir("/unc/ID-UNC-CONERR")
+    initialized_fs.create_file("/unc/ID-UNC-CONERR/run.info")
 
     initialized_fs.create_dir("/unc/ID-UNC-CON")
     initialized_fs.create_file("/unc/ID-UNC-CON/run.info")
     initialized_fs.create_dir("/con/ID-UNC-CON")
     initialized_fs.create_file(
         "/con/ID-UNC-CON/conversion.log", contents="Conversion of ID-UNC-CON complete"
+    )
+    initialized_fs.create_dir("/con/ID-UNC-CONERR")
+    initialized_fs.create_file(
+        "/con/ID-UNC-CONERR/conversion.log", contents="Error :(("
     )
 
     initialized_fs.create_dir("/con/ID-CON")

@@ -69,11 +69,11 @@ class ExperimentTracker:
     ):
         for i, prop in enumerate(exp.analysis_step_props):
             if not prop.mtime_present():
-                if steps_to_analyze is None:
-                    return True
                 # If first step is missing/malformed it shouldn't be analyzable
-                elif i == 0:
+                if i == 0:
                     return False
+                elif steps_to_analyze is None:
+                    return True
                 # If the experiment at the current step doesn't exist, then
                 # the previous step can perform analysis - if the user
                 # has allowed that step to analyze then return True

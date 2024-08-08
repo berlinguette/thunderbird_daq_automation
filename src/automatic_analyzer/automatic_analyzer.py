@@ -37,15 +37,16 @@ class AnalysisRequestParams(AnalysisParams):
 
 class Analysis(BaseModel):
     """
-    Represents an analysis that we want to queue.
+    Represents an analysis of a single experiment that we want to queue.
     `cancelled` should not be set manually when creating this object -
     it is used by the Analyzer to mark cancelled analyses
     """
 
-    exp: Experiment
+    exp_id: str
     params: AnalysisParams
     current_step: int = 0
     cancelled: bool = False
+    """Does nothing for now"""
     trace_context: dict[str, str] | None = None
 
 
@@ -82,9 +83,9 @@ class AutomaticAnalyzer:
         analysis.trace_context = carrier
 
         with tracer.start_as_current_span("queue_analysis") as span:
-            span.set_attribute("id", analysis.exp.id)
+            span.set_attribute("id", analysis.exp_id)
             self._analysis_queue.put(analysis)
-            # logger.info(f"Added experiment {analysis.exp.id} to analysis queue")
+            # logger.info(f"Added experiment {analysis.exp_id} to analysis queue")
             # logger.debug(f"Analysis params: {analysis}")
 
     def status(self):
@@ -122,7 +123,7 @@ class AutomaticAnalyzer:
             with tracer.start_as_current_span("start_analysis", context=ctx) as span:
                 span.set_attributes(
                     {
-                        "id": current_analysis.exp.id,
+                        "id": current_analysis.exp_id,
                         # "convert_unconverted": current_analysis.params.convert_unconverted,
                         # "process_converted": current_analysis.params.process_converted,
                         # "force": current_analysis.params.force,
@@ -141,16 +142,27 @@ class AutomaticAnalyzer:
                 for i, step in enumerate(self._analysis_steps[:-1]):
                     if current_analysis.params.steps_to_analyze[i]:
                         self._exp_tracker.refresh_inventory()
-                        self._analyze_step(current_analysis.exp, i)
+                        experiment = self._exp_tracker.get(current_analysis.exp_id)
+                        if experiment is not None:
+                            self._analyze_step(experiment, i)
+                        else:
+                            logger.error(
+                                f"Cannot analyze {current_analysis.exp_id} - experiment does not exist"
+                            )
 
-                logger.info(f"Analysis of experiment {current_analysis.exp.id} done")
+                logger.info(f"Analysis of experiment {current_analysis.exp_id} done")
                 with self.in_progress_lock:
                     self.in_progress_analysis = None
 
     def _analyze_step(self, experiment: Experiment, analysis_step_index: int):
+        if not experiment.analysis_step_props[analysis_step_index].mtime_present():
+            logger.debug(
+                f"Experiment {experiment.id} does not exist in step {analysis_step_index}, skipping"
+            )
+            return
         if experiment.analysis_step_props[analysis_step_index + 1].mtime_present():
             logger.debug(
-                f"Experiment {experiment.id} already exists in step {analysis_step_index}, skipping"
+                f"Experiment {experiment.id} already exists in step {analysis_step_index+1}, skipping"
             )
             return
         self._analysis_steps[analysis_step_index].analyze(experiment)

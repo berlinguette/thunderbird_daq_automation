@@ -9,10 +9,9 @@ from automatic_analyzer.analysis_config import ANALYSIS_STEPS_LEN
 
 class Override(BaseModel):
     """Overrides are used to manually override experiment props"""
+
     pattern: str
-    analysis_step_overrides: list[BaseAnalysisStepProps | None] = Field(
-        default_factory=lambda: [None] * ANALYSIS_STEPS_LEN
-    )
+    analysis_step_overrides: list[BaseAnalysisStepProps | None]
 
     @validator("analysis_step_overrides")
     def proper_steps_len(cls, v):

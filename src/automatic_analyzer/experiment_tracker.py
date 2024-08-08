@@ -24,11 +24,11 @@ class ExperimentTracker:
                 override_exp = self._overrides.get_override_exp(id)
 
                 if override_exp is not None:
-                    current_step_ovr = override_exp.analysis_step_overrides[i]
-                    if current_step_ovr is not None:
-                        current_exp.analysis_step_props[i] = (
-                            AnalysisStepProps.make_from_base(current_step_ovr, True)
-                        )
+                    for j, current_step_ovr in enumerate(override_exp.analysis_step_overrides):
+                        if current_step_ovr is not None:
+                            current_exp.analysis_step_props[j] = (
+                                AnalysisStepProps.make_from_base(current_step_ovr, True)
+                            )
                 else:
                     current_exp.analysis_step_props[i] = (
                         AnalysisStepProps.make_from_base(props)
@@ -51,15 +51,18 @@ class ExperimentTracker:
         The final analysis step will never be considered because
         experiments that are at this step are considered to be "done" analyzing.
 
-        In the same vein, the first analysis step will always be analyzable, but
-        this situation should never come up because it would require the first step
-        of an experiment to be deleted after it has already gone through the pipeline
+        :param steps_to_analyze: list specifying whether the step at that index should be considered
+        for analysis. Since the last step will always be unanalyzable the length should be
+        one less than the total number of analysis steps
         """
         return [
             exp
             for exp in self._inventory.values()
             if self._is_experiment_analyzable(exp, steps_to_analyze)
         ]
+
+    def get(self, id: str):
+        return self._inventory.get(id)
 
     def _is_experiment_analyzable(
         self, exp: Experiment, steps_to_analyze: list[bool] | None
@@ -68,14 +71,12 @@ class ExperimentTracker:
             if not prop.mtime_present():
                 if steps_to_analyze is None:
                     return True
-                # First step will always be analyzable
-                # Bit of a weird edge case anyways since
-                # this could only happen if you manually deleted the first step
+                # If first step is missing/malformed it shouldn't be analyzable
                 elif i == 0:
-                    return True
+                    return False
                 # If the experiment at the current step doesn't exist, then
                 # the previous step can perform analysis - if the user
-                # has allowed this step to analyze then return True
+                # has allowed that step to analyze then return True
                 elif steps_to_analyze[i - 1]:
                     return True
         return False

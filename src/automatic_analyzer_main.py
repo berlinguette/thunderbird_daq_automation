@@ -166,7 +166,7 @@ def create_app(
                     params = AnalysisParams(
                         steps_to_analyze=analysis_params.steps_to_analyze
                     )
-                    analysis = Analysis(exp=exp, params=params)
+                    analysis = Analysis(exp_id=exp.id, params=params)
                     automatic_analyzer.analyze(analysis)
 
                 # Queue might be empty because analysis hasn't been put in queue yet

@@ -19,17 +19,10 @@ def analysis_params():
     return AnalysisParams(steps_to_analyze=[True])
 
 
-@pytest.fixture
-def experiment():
-    exp_props = make_analysis_step_props([(-1, False), (-1, False)])
-    return Experiment(id="ID-TEST", analysis_step_props=exp_props)
-
-
 class TestAutomaticAnalyzer:
-    def test_should_do_nothing_if_analysis_params_not_set(
+    def test_should_not_analyze_if_analysis_params_not_set(
         self,
         automatic_analyzer: AutomaticAnalyzer,
-        experiment: Experiment,
         mocked_unconverted_step: tuple[UnconvertedAnalysisStep, MagicMock, Event],
         initialized_fs: FakeFilesystem,
     ):
@@ -38,7 +31,7 @@ class TestAutomaticAnalyzer:
         initialized_fs.create_file("/unc/ID-TEST/run.info")
 
         analysis_params = AnalysisParams(steps_to_analyze=[False])
-        analysis = Analysis(exp=experiment, params=analysis_params)
+        analysis = Analysis(exp_id="ID-TEST", params=analysis_params)
 
         automatic_analyzer.analyze(analysis)
         assert not mocked_unconverted_step[2].wait(
@@ -48,7 +41,6 @@ class TestAutomaticAnalyzer:
     def test_should_analyze_present_experiment(
         self,
         automatic_analyzer: AutomaticAnalyzer,
-        experiment: Experiment,
         analysis_params: AnalysisParams,
         mocked_unconverted_step: tuple[UnconvertedAnalysisStep, MagicMock, Event],
         initialized_fs: FakeFilesystem,
@@ -56,12 +48,48 @@ class TestAutomaticAnalyzer:
         """Test that a present experiment will be analyzed if analysis params are configured"""
         initialized_fs.create_dir("/unc/ID-TEST")
         initialized_fs.create_file("/unc/ID-TEST/run.info")
-        analysis = Analysis(exp=experiment, params=analysis_params)
+        analysis = Analysis(exp_id="ID-TEST", params=analysis_params)
 
         automatic_analyzer.analyze(analysis)
         assert mocked_unconverted_step[2].wait(
             timeout=1.0
         ), "Mocked function was not called within the timeout period"
+
+    def test_should_not_analyze_if_next_step_present(
+        self,
+        automatic_analyzer: AutomaticAnalyzer,
+        analysis_params: AnalysisParams,
+        mocked_unconverted_step: tuple[UnconvertedAnalysisStep, MagicMock, Event],
+        initialized_fs: FakeFilesystem,
+    ):
+        """Test that a step of the experiment will not be run if the next step is already present"""
+        initialized_fs.create_dir("/unc/ID-TEST")
+        initialized_fs.create_file("/unc/ID-TEST/run.info")
+        initialized_fs.create_dir("/con/ID-TEST")
+        initialized_fs.create_file(
+            "/con/ID-TEST/conversion.log", contents="Conversion of ID-TEST complete"
+        )
+        analysis = Analysis(exp_id="ID-TEST", params=analysis_params)
+        automatic_analyzer.analyze(analysis)
+
+        assert not mocked_unconverted_step[2].wait(
+            timeout=1.0
+        ), "Mocked function should not have been called within the timeout period"
+
+    def test_should_not_analyze_if_current_step_missing(
+        self,
+        automatic_analyzer: AutomaticAnalyzer,
+        analysis_params: AnalysisParams,
+        mocked_unconverted_step: tuple[UnconvertedAnalysisStep, MagicMock, Event],
+        initialized_fs: FakeFilesystem,
+    ):
+        """Test that a step of the experiment will not be run if the current step is not present"""
+        analysis = Analysis(exp_id="ID-TEST", params=analysis_params)
+        automatic_analyzer.analyze(analysis)
+
+        assert not mocked_unconverted_step[2].wait(
+            timeout=1.0
+        ), "Mocked function should not have been called within the timeout period"
 
 
 # class TestAutomaticAnalyzerConvert:

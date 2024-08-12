@@ -1,4 +1,4 @@
-import { Button, Flex, Spacer, Spinner } from "@chakra-ui/react";
+import { Button, Flex, Spacer, Spinner, Text } from "@chakra-ui/react";
 import InventoryTable from "./InventoryTable";
 import { Experiment } from "../../types/Experiment";
 import { useEffect, useState } from "react";
@@ -30,8 +30,6 @@ const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
     }
   }, [inventory]);
 
-  const handleRefreshInventory = () => refetchInventory();
-
   return (
     <Flex flexDir="column" gap={4} height="100%">
       <Flex gap={6} padding={4}>
@@ -49,7 +47,7 @@ const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
           variant="ghost"
           gap={2}
           color="grey"
-          onClick={handleRefreshInventory}
+          onClick={() => refetchInventory()}
         >
           Refresh Inventory
           {isFetching && <Spinner size="sm" speed="0.6s" />}
@@ -58,7 +56,7 @@ const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
         <OverridesPanel refetchInventory={refetchInventory} />
       </Flex>
       {isPending && <p>Loading experiments...</p>}
-      {isError && <p>Error while loading experiments: {error?.message}</p>}
+      {isError && <Text color="red">Error while loading experiments: {error?.message}</Text>}
       {!isPending && !error && inventory && steps && (
         <InventoryTable
           experimentsList={inventory}

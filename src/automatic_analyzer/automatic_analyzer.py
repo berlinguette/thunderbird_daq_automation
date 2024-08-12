@@ -96,7 +96,11 @@ class AutomaticAnalyzer:
         with self.in_progress_lock:
             in_progress_analysis = self.in_progress_analysis
         return {
-            "current": in_progress_analysis.dict()
+            "current": {
+                k: v
+                for k, v in in_progress_analysis.dict().items()
+                if k not in ["trace_context"]  # no need to expose to client
+            }
             if in_progress_analysis is not None
             else None,
             "queued": [

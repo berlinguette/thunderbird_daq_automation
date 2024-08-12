@@ -1,32 +1,30 @@
-import { z } from "zod"
-import { Experiment } from "./Experiment"
+import { z } from "zod";
+import { ANALYSIS_STEPS_LEN } from "./AnalysisStep";
 
 export const AnalysisParams = z.object({
-  convert_unconverted: z.boolean().optional(),
-  process_converted: z.boolean().optional(),
-  force: z.boolean().optional(),
+  steps_to_analyze: z.array(z.boolean()).length(ANALYSIS_STEPS_LEN - 1),
 });
 
-export type AnalysisParams = z.infer<typeof AnalysisParams>
+export type AnalysisParams = z.infer<typeof AnalysisParams>;
 
 export const AnalysisRequestParams = AnalysisParams.merge(
   z.object({ pattern: z.string().optional() })
 );
 
-export type AnalysisRequestParams = z.infer<typeof AnalysisRequestParams>
+export type AnalysisRequestParams = z.infer<typeof AnalysisRequestParams>;
 
 export const Analysis = z.object({
-  exp: Experiment,
+  exp_id: z.string(),
   params: AnalysisParams,
-  stage: z.literal("convert").or(z.literal("process")),
-  cancelled: z.boolean()
+  current_step: z.number().int(),
+  cancelled: z.boolean(),
 });
 
 export type Analysis = z.infer<typeof Analysis>;
 
 export const AnalysesQueue = z.object({
   current: Analysis.or(z.null()),
-  queued: z.array(Analysis)
+  queued: z.array(Analysis),
 });
 
-export type AnalysesQueue = z.infer<typeof AnalysesQueue>
+export type AnalysesQueue = z.infer<typeof AnalysesQueue>;

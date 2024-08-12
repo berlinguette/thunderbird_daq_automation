@@ -5,12 +5,14 @@ import { useEffect, useState } from "react";
 import OverridesPanel from "../overrides/OverridesPanel";
 import AnalyzeMenu from "../AnalyzeMenu";
 import useInventory, { InventoryFilter } from "../../hooks/useInventory";
+import { useAnalysisSteps } from "../../hooks/useAnalysisSteps";
 
 export type CheckedExperiments = { [id: string]: boolean };
 
 const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
   const { isPending, isFetching, inventory, isError, error, refetchInventory } =
     useInventory(filter);
+  const { steps } = useAnalysisSteps();
   const [checkedExperiments, setCheckedExperiments] =
     useState<CheckedExperiments>({});
 
@@ -57,9 +59,10 @@ const Inventory = ({ filter = undefined }: { filter?: InventoryFilter }) => {
       </Flex>
       {isPending && <p>Loading experiments...</p>}
       {isError && <p>Error while loading experiments: {error?.message}</p>}
-      {!isPending && !error && inventory && (
+      {!isPending && !error && inventory && steps && (
         <InventoryTable
           experimentsList={inventory}
+          analysisSteps={steps}
           checkedExperiments={checkedExperiments}
           setCheckedExperiments={setCheckedExperiments}
         />

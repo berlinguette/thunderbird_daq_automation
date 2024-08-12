@@ -3,7 +3,7 @@ import { callEndpoint } from "../../api/callEndpoint";
 import { Experiment } from "../../types/Experiment";
 import { z } from "zod";
 
-export type InventoryFilter = "to_be_converted" | "to_be_processed" | "to_be_analyzed" | undefined;
+export type InventoryFilter = "to_be_analyzed" | undefined;
 
 const getInventory = async (filter: InventoryFilter = undefined) => {
   const inventory = await callEndpoint(`/inventory${filter ? `?filter=${filter}` : ""}`);

@@ -10,40 +10,50 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@chakra-ui/react";
-import { FlattenedOverride } from "./flattenedOverride";
+import { UnstrictOverride } from "./unstrictOverride";
+import { produce } from "immer";
 
 type OverrideProps = {
-  override: FlattenedOverride;
+  unstrictOverride: UnstrictOverride;
+  steps: string[];
   index: number;
-  setOverrides: React.Dispatch<React.SetStateAction<FlattenedOverride[]>>;
+  setUnstrictOverrides: React.Dispatch<
+    React.SetStateAction<UnstrictOverride[]>
+  >;
 };
 
-const Override = ({ override, index: i, setOverrides }: OverrideProps) => {
-  const makeOnModifyProp = (
-    index: number,
-    key: keyof FlattenedOverride
-  ) => {
+const Override = ({
+  unstrictOverride,
+  steps,
+  index: i,
+  setUnstrictOverrides,
+}: OverrideProps) => {
+  const makeOnModifyMTime = (stepIndex: number) => {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
-      setOverrides((prev) => {
-        const newOverrides = [...prev];
-        newOverrides[index][key] = e.target.value;
-        return newOverrides;
-      });
+      setUnstrictOverrides(
+        produce((draft) => {
+          draft[i].analysis_step_overrides[stepIndex].mtime = e.target.value;
+        })
+      );
     };
   };
 
-  const onDeleteOverride = (i: number) => {
-    setOverrides((prev) => [...prev.slice(0, i), ...prev.slice(i + 1)]);
+  const onModifyPattern: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    setUnstrictOverrides(
+      produce((draft) => {
+        draft[i].pattern = e.target.value;
+      })
+    );
+  };
+
+  const onDeleteOverride = () => {
+    setUnstrictOverrides((prev) => [...prev.slice(0, i), ...prev.slice(i + 1)]);
   };
 
   return (
     <div style={{ display: "contents" }} key={i}>
       <GridItem>
-        <Button
-          colorScheme="red"
-          variant="outline"
-          onClick={() => onDeleteOverride(i)}
-        >
+        <Button colorScheme="red" variant="outline" onClick={onDeleteOverride}>
           –
         </Button>
       </GridItem>
@@ -51,46 +61,39 @@ const Override = ({ override, index: i, setOverrides }: OverrideProps) => {
         <Input
           placeholder="Pattern"
           aria-label={`Pattern ${i}`}
-          value={override.pattern}
-          onChange={makeOnModifyProp(i, "pattern")}
+          value={unstrictOverride.pattern}
+          onChange={onModifyPattern}
         />
       </GridItem>
-      <GridItem w="100%">
-        <MTimeInput
-          placeholder="Unconverted Data Modified Time"
-          aria-label={`Unconverted Data Modified Time ${i}`}
-          value={override.unconverted_mtime}
-          onChange={makeOnModifyProp(i, "unconverted_mtime")}
-        />
-      </GridItem>
-      <GridItem w="100%">
-        <MTimeInput
-          placeholder="Converted Data Modified Time"
-          aria-label={`Converted Data Modified Time ${i}`}
-          value={override.converted_mtime}
-          onChange={makeOnModifyProp(i, "converted_mtime")}
-        />
-      </GridItem>
-      <GridItem w="100%">
-        <MTimeInput
-          placeholder="Processed Data Modified Time"
-          aria-label={`Processed Data Modified Time ${i}`}
-          value={override.processed_mtime}
-          onChange={makeOnModifyProp(i, "processed_mtime")}
-        />
-      </GridItem>
+      {steps.map((step, stepIndex) => (
+        <GridItem w="100%">
+          <MTimeInput
+            placeholder={`${step} Modified Time`}
+            aria-label={`${step} Modified Time ${i}`}
+            value={
+              unstrictOverride.analysis_step_overrides[stepIndex]?.mtime ?? ""
+            }
+            onChange={makeOnModifyMTime(stepIndex)}
+          />
+        </GridItem>
+      ))}
     </div>
   );
 };
 
 type MTimeInputProps = {
   placeholder: string;
-  "aria-label": string
+  "aria-label": string;
   value: string;
   onChange: React.ChangeEventHandler<HTMLInputElement>;
 };
 
-const MTimeInput = ({ placeholder, "aria-label": ariaLabel, value, onChange }: MTimeInputProps) => {
+const MTimeInput = ({
+  placeholder,
+  "aria-label": ariaLabel,
+  value,
+  onChange,
+}: MTimeInputProps) => {
   return (
     <InputGroup>
       <Popover>

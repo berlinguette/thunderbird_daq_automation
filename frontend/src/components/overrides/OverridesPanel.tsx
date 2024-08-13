@@ -16,11 +16,8 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import useOverrides from "../../hooks/useOverrides";
 import Override from "./Override";
-import {
-  FlattenedOverride,
-  flattenOverride,
-  unflattenOverride,
-} from "./flattenedOverride";
+import { useAnalysisSteps } from "../../hooks/useAnalysisSteps";
+import { makeStrictOverride, makeUnstrictOverride, UnstrictOverride } from "./unstrictOverride";
 
 const OverridesPanel = ({
   refetchInventory,
@@ -28,7 +25,9 @@ const OverridesPanel = ({
   refetchInventory: () => void;
 }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [overrides, setOverrides] = useState<FlattenedOverride[]>([]);
+  const [unstrictOverrides, setUnstrictOverrides] = useState<
+    UnstrictOverride[]
+  >([]);
   const [formErr, setFormErr] = useState<string | null>(null);
   const {
     isPending,
@@ -39,11 +38,12 @@ const OverridesPanel = ({
     deleteOvrMutation,
     addOvrMutation,
   } = useOverrides();
+  const { steps } = useAnalysisSteps();
 
   const reloadData = useCallback(async () => {
     await refetchOverrides();
     if (fetchedOverrides) {
-      setOverrides(fetchedOverrides.map(flattenOverride));
+      setUnstrictOverrides(fetchedOverrides.map(makeUnstrictOverride));
     }
   }, [fetchedOverrides, refetchOverrides]);
 
@@ -53,13 +53,14 @@ const OverridesPanel = ({
   };
 
   const onAddOverride = () => {
-    setOverrides((prev) => [
+    setUnstrictOverrides((prev) => [
       ...prev,
       {
         pattern: "",
-        unconverted_mtime: "",
-        converted_mtime: "",
-        processed_mtime: "",
+        analysis_step_overrides:
+          steps?.map(() => ({
+            mtime: "",
+          })) ?? [],
       },
     ]);
   };
@@ -67,17 +68,20 @@ const OverridesPanel = ({
   const onSavePanel = async () => {
     if (fetchedOverrides) {
       const ovrToDelete = fetchedOverrides.filter(
-        (exp) => !overrides.find((ovrExp) => exp.id === ovrExp.pattern)
+        (ovr) =>
+          !unstrictOverrides.find(
+            (unstrictOvr) => ovr.pattern === unstrictOvr.pattern
+          )
       );
       for (const ovr of ovrToDelete) {
-        await deleteOvrMutation.mutateAsync(ovr.id);
+        await deleteOvrMutation.mutateAsync(ovr.pattern);
       }
-      for (const ovr of overrides) {
+      for (const ovr of unstrictOverrides) {
         if (ovr.pattern === "") {
           setFormErr("Pattern cannot be blank");
           return;
         }
-        const newOvr = unflattenOverride(ovr);
+        const newOvr = makeStrictOverride(ovr);
         await addOvrMutation.mutateAsync(newOvr);
       }
     }
@@ -115,29 +119,29 @@ const OverridesPanel = ({
                 {error?.message}
               </p>
             )}
-            {!isPending && !isError && fetchedOverrides && (
-              <Grid templateColumns="0.1fr repeat(4, 1fr)" gap={2}>
+            {!isPending && !isError && fetchedOverrides && steps && (
+              <Grid
+                templateColumns={`0.1fr repeat(${steps.length + 1}, 1fr)`}
+                gap={2}
+              >
                 <GridItem />
                 <GridItem>Pattern</GridItem>
-                <GridItem>Unconverted Data Modified Time</GridItem>
-                <GridItem>Converted Data Modified Time</GridItem>
-                <GridItem>Processed Data Modified Time</GridItem>
+                {steps.map((step) => (
+                  <GridItem>{step} Modified Time</GridItem>
+                ))}
 
-                {overrides.map((override, i) => (
+                {unstrictOverrides.map((override, i) => (
                   <Override
-                    override={override}
+                    unstrictOverride={override}
+                    steps={steps}
                     index={i}
-                    setOverrides={setOverrides}
+                    setUnstrictOverrides={setUnstrictOverrides}
                     key={i}
                   />
                 ))}
               </Grid>
             )}
-            <Button
-              marginTop={4}
-              colorScheme="green"
-              onClick={onAddOverride}
-            >
+            <Button marginTop={4} colorScheme="green" onClick={onAddOverride}>
               + Add Override
             </Button>
           </ModalBody>

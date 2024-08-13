@@ -49,7 +49,7 @@ class ConverterGui(QMainWindow):
         self._settings_button = QPushButton(
             text="Settings"
         )
-        self._add_file_button = QPushButton(text='+📄')
+        # self._add_file_button = QPushButton(text='+📄')
         self._add_folder_button = QPushButton(text='+📂')
         self._remove_button = QPushButton(text='-')
         self._set_destination_button = QPushButton(text='Set Destination')
@@ -91,9 +91,9 @@ class ConverterGui(QMainWindow):
         self._settings_button.clicked.connect(  # type: ignore
             self.handle_button_clicked_settings
         )
-        self._add_file_button.clicked.connect(  # type: ignore
-            self.handle_button_clicked_add_file
-        )
+        # self._add_file_button.clicked.connect(  # type: ignore
+        #     self.handle_button_clicked_add_file
+        # )
         self._add_folder_button.clicked.connect(  # type: ignore
             self.handle_button_clicked_add_folder
         )
@@ -121,7 +121,7 @@ class ConverterGui(QMainWindow):
         """
         list_edit_button_layout = QHBoxLayout()
         list_edit_button_layout.addStretch()
-        list_edit_button_layout.addWidget(self._add_file_button)
+        # list_edit_button_layout.addWidget(self._add_file_button)
         list_edit_button_layout.addWidget(self._add_folder_button)
         list_edit_button_layout.addWidget(self._remove_button)
 
@@ -189,16 +189,16 @@ class ConverterGui(QMainWindow):
         if result == QDialog.Accepted:  # type: ignore
             self._config = self._settings_dialog.config
 
-    @Slot()
-    def handle_button_clicked_add_file(self):
-        selected_files, _ = QFileDialog.getOpenFileNames(
-            self, 'Choose Experiment Data File')
-        if selected_files:
-            if not isinstance(selected_files, list):
-                selected_files = [selected_files]
-            valid_files = [source for source in selected_files
-                           if Path(str(source)).is_file()]
-            self._source_list.addItems(valid_files)
+    # @Slot()
+    # def handle_button_clicked_add_file(self):
+    #     selected_files, _ = QFileDialog.getOpenFileNames(
+    #         self, 'Choose Experiment Data File')
+    #     if selected_files:
+    #         if not isinstance(selected_files, list):
+    #             selected_files = [selected_files]
+    #         valid_files = [source for source in selected_files
+    #                        if Path(str(source)).is_file()]
+    #         self._source_list.addItems(valid_files)
 
     @Slot()
     def handle_button_clicked_add_folder(self):

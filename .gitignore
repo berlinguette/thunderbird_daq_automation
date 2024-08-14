@@ -107,5 +107,9 @@ config.yaml
 # Mac OS X
 .DS_Store
 
+## Sphinx docs ##
+docs/_build
+
 ## automatic_conversion ##
 data
+

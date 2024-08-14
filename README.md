@@ -4,6 +4,36 @@ This code is designed to automate general data collection and conversion.
 
 ## Installation
 
+This program has been tested with Python 3.10.5.
+
+We recommend using a virtual environment for the required Python packages.
+
+To create a virtual environment run:
+
+```shell
+$ python -m venv .venv
+```
+
+which will create a new virtual environment at `.venv`.
+
+For Linux/macOS, activate the virtual environment with:
+
+```shell
+$ source .venv/bin/activate
+```
+
+or for Windows, activate with:
+
+```
+> .venv\Scripts\activate
+```
+
+Then install the required packages with:
+
+```
+$ pip install -r requirements.txt
+```
+
 To convert PicoScope data, the PicoScope software must be installed separately.
 
 To more easily install submodules, use the `--recursive` option when using `git clone`.
@@ -21,6 +51,19 @@ To get all updates to the `utilities` submodule:
 
 ```shell
 git submodule update --remote --rebase
+```
+
+## Running
+
+To run the main data converter program, use the `src/data_converter.py` program.
+
+On Windows, just run the `tbird_data_converter.bat` executable.
+
+For Linux, first activate the virtual environment before running the program:
+
+```shell
+$ source .venv/bin/activate
+$ python src/data_converter.py
 ```
 
 ## Packaging

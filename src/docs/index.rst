@@ -6,12 +6,15 @@
 Thunderbird DAQ Automation documentation
 ========================================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
-
+This repository contains the code that is responsible for converting neutron data from
+raw CSVs to more processable parquet files.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+
+.. autosummary::
+   :toctree: _autosummary
+   :recursive:
+
+   data_converter
+   utilities.utilities
 

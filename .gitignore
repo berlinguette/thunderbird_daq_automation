@@ -108,7 +108,7 @@ config.yaml
 .DS_Store
 
 ## Sphinx docs ##
-docs/_build
+_build
 
 ## automatic_conversion ##
 data

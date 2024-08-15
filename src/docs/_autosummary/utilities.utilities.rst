@@ -2,6 +2,9 @@
 ===================
 
 .. automodule:: utilities.utilities
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
    
 .. rubric:: Modules

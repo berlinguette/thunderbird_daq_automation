@@ -2,6 +2,9 @@ utilities.utilities.check\_type
 ===============================
 
 .. automodule:: utilities.utilities.check_type
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
    
    .. rubric:: Functions

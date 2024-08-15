@@ -2,6 +2,9 @@ data\_converter.utilities.logging
 =================================
 
 .. automodule:: data_converter.utilities.logging
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
    
    .. rubric:: Functions

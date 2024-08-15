@@ -2,6 +2,9 @@ data\_converter.configuration.configuration
 ===========================================
 
 .. automodule:: data_converter.configuration.configuration
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
    
    .. rubric:: Functions

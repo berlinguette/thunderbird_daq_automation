@@ -2,6 +2,9 @@ utilities.utilities.logging\_helpers.setup\_logger
 ==================================================
 
 .. automodule:: utilities.utilities.logging_helpers.setup_logger
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
    
    .. rubric:: Functions

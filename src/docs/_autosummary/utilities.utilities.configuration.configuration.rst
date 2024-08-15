@@ -2,6 +2,9 @@ utilities.utilities.configuration.configuration
 ===============================================
 
 .. automodule:: utilities.utilities.configuration.configuration
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
    
    .. rubric:: Functions

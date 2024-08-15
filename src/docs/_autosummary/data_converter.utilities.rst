@@ -2,6 +2,9 @@ data\_converter.utilities
 =========================
 
 .. automodule:: data_converter.utilities
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
    
 .. rubric:: Modules

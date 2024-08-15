@@ -30,6 +30,15 @@ def set_up_file_logging(
     source_file: Path,
     logfile_path: Path
 ) -> Tuple[logging.Logger, Messenger]:
+    """Sets up a logger to track conversion progress for a new file
+    
+    Parameters
+    ----------
+    source_file : Path
+        Path to the source file to track
+    logfile_path : Path
+        Path to file to store logs in
+    """
     source_name = source_file.name
     new_logger = logging.getLogger(f'proc-{source_name}')
     setup_logger(new_logger, logfile_path)

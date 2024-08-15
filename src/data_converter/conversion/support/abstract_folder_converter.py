@@ -13,6 +13,22 @@ from utilities.utilities.timing import Timer
 
 
 class AbstractFolderConverter(ABC):
+    """Represents a folder converter that can take a source folder
+    and transform all files in it before saving to some destination.
+
+    Parameters
+    ----------
+    source_folder : Path
+        Path to the folder where the source files can be found
+    destination : Path
+        Path to the destination folder where converted files will be stored
+    config : Config
+        Configuration data. See configuration.py for more info
+    logfile_path : Path
+        Path to logfile
+    logger_name : str
+        Name to use for the logger
+    """
     def __init__(self,
                  source_folder: Path,
                  destination: Union[Path, Iterable[Path]],
@@ -31,6 +47,7 @@ class AbstractFolderConverter(ABC):
 
     @abstractmethod
     def convert_folder(self):
+        """Performs the conversion with the parameters given upon initialization of the class."""
         pass
 
     def _pre_conversion_actions(self):

@@ -12,6 +12,20 @@ from utilities.utilities.logging_helpers.setup_logger import (Messenger,
 
 
 class AbstractDataConverter(ABC):
+    """Represents a data converter that can take an experiment source
+    and transform it before saving to some destination.
+
+    Parameters
+    ----------
+    experiment_source : Path
+        Path to the folder/file where the source experiment can be found
+    config : Config
+        Configuration data. See configuration.py for more info
+    config_setup : ConfigSetup
+        Configuration setup data
+    destination : Path
+        Path to the destination folder where converted files will be stored
+    """
     def __init__(
         self,
         experiment_source: Path,
@@ -43,6 +57,7 @@ class AbstractDataConverter(ABC):
 
     @abstractmethod
     def convert(self) -> bool:
+        """Performs the conversion with the parameters given upon initialization of the class."""
         pass
 
     def _prepare_destinations(

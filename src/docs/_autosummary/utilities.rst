@@ -1,6 +1,0 @@
-﻿utilities
-=========
-
-.. automodule:: utilities
-
-   

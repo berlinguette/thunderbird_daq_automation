@@ -66,6 +66,25 @@ $ source .venv/bin/activate
 $ python src/data_converter.py
 ```
 
+## Documentation
+
+Sphinx documentation is located in the `src/docs/` folder. To build the documentation,
+navigate to the folder and run:
+
+```
+$ make html
+```
+
+or 
+
+```
+> make.bat
+```
+
+for Linux/macOS and Windows, respectively.
+Generated documentation will be in the `src/docs/_build` folder, where you can
+find the entry point under `_build/html/index.html`.
+
 ## Packaging
 
 To package the converter to a Windows executable, just run `src/data_converter_packager.bat` on a Windows machine.

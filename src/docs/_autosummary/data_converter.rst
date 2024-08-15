@@ -14,5 +14,7 @@
    :recursive:
 
    configuration
+   conversion
    data_converter
+   ui
    utilities

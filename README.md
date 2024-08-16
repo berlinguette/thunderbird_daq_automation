@@ -45,7 +45,9 @@ git submodule init
 git submodule update
 ```
 
-## Utilities Updating
+## Utilities
+
+This repo makes use of the Thunderbird `utilities` submodule. More information and documentation can be found [here](https://github.com/berlinguette/thunderbird_utilities).
 
 To get all updates to the `utilities` submodule:
 

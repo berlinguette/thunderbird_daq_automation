@@ -16,5 +16,3 @@ raw CSVs to more processable parquet files.
    :recursive:
 
    data_converter
-   utilities.utilities
-

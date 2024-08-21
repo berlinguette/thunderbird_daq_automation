@@ -29,14 +29,16 @@ def convert_reactor_data_to_parquet(
     log_only_messenger.debug(f"Starting reactor data conversion in {source.name}")
     timer = Timer(start_now=True)
 
-    reactor_data_matches = [
-        file_path
-        for file_path in source.iterdir()
-        if _is_reactor_data_archive(file_path)
-    ]
-    if len(reactor_data_matches) < 1:
-        raise ValueError(f"No reactor data archive files found in {source}")
-    reactor_data_path = reactor_data_matches[0]
+    get_reactor_data_path_with_source = get_reactor_data_path(source)  # type: ignore
+    reactor_data_path: str | Path = (
+        Result(source)  # Path
+        .then(get_possible_reactor_data_paths)  # list[Path]
+        .then(get_reactor_data_path_with_source)  # Path
+        .either(lambda e: e, lambda x: x)  # type: ignore
+    )
+    if isinstance(reactor_data_path, str):
+        messenger.info(reactor_data_path)
+        return
     log_only_messenger.debug(f"Found reactor data archive at {reactor_data_path}")
     experiment_id: str = archive_pattern.match(reactor_data_path.name).group(1)  # type: ignore
 
@@ -44,7 +46,7 @@ def convert_reactor_data_to_parquet(
     with tarfile.open(reactor_data_path, "r:*") as reactor_tar:
         get_df_match_from_reactor_tar = get_df_with_match(reactor_tar)  # type: ignore
         for filename in reactor_tar.getnames():
-            result: str | tuple[re.Match, pd.DataFrame] = (  # type: ignore
+            csv_result: str | tuple[re.Match, pd.DataFrame] = (  # type: ignore
                 Result(filename)  # str
                 .then(Path)  # Path
                 .then(only_csv_paths)  # Path
@@ -52,10 +54,10 @@ def convert_reactor_data_to_parquet(
                 .then(get_df_match_from_reactor_tar)  # (Match, Dataframe)
                 .either(lambda e: e, lambda x: x)  # type: ignore
             )
-            if isinstance(result, str):
-                print(result)
+            if isinstance(csv_result, str):
+                print(csv_result)
                 continue
-            match, df = result
+            match, df = csv_result
             reactor_dfs[match.group(1)].append(df)
     for device_param, dfs in reactor_dfs.items():
         merged_df = pd.concat(dfs).sort_values("Timestamp", ignore_index=True)
@@ -67,6 +69,23 @@ def convert_reactor_data_to_parquet(
     messenger.info("Reactor data processed")
     log_only_messenger.debug(f"Elapsed time: {formatted_time}")
     cleanup_logger(logger)
+
+
+def get_possible_reactor_data_paths(source: Path) -> list[Path]:
+    return [
+        file_path
+        for file_path in source.iterdir()
+        if _is_reactor_data_archive(file_path)
+    ]
+
+
+@curry(2)
+def get_reactor_data_path(source: Path, matches: list[Path]) -> Path | _Error:
+    return (
+        matches[0]
+        if len(matches) >= 1
+        else Error(f"No reactor data archive files found in {source}")
+    )
 
 
 def _is_reactor_data_archive(file_path: Path) -> bool:

@@ -1,22 +1,25 @@
-from pathlib import Path
 import logging
-import pandas as pd
 import re
 import tarfile
+from collections import defaultdict
+from pathlib import Path
 
-from pydantic import FilePath
+import pandas as pd
+from pymonad.either import Error, Result, _Error
+from pymonad.tools import curry
+
 from utilities.utilities.logging_helpers.setup_logger import (
     Messenger,
-    setup_logger,
     cleanup_logger,
+    setup_logger,
 )
 from utilities.utilities.timing import Timer
 
 logger = logging.getLogger("reactor_data_to_parquet")
 messenger = Messenger(logger)
 log_only_messenger = Messenger(logger, on_screen=False)
-archive_pattern = re.compile(r".+_\d{8}-\d{9}_data")
-data_file_pattern = re.compile(r"ID-\S. (.+) (\d+)")
+archive_pattern = re.compile(r"(.+)_\d{8}-\d{9}_data")
+data_file_pattern = re.compile(r"ID-\S+ (.+) (\d+)")
 
 
 def convert_reactor_data_to_parquet(
@@ -35,12 +38,30 @@ def convert_reactor_data_to_parquet(
         raise ValueError(f"No reactor data archive files found in {source}")
     reactor_data_path = reactor_data_matches[0]
     log_only_messenger.debug(f"Found reactor data archive at {reactor_data_path}")
+    experiment_id: str = archive_pattern.match(reactor_data_path.name).group(1)  # type: ignore
 
-    # TODO scan tarfile for each device/parameter csv file set and process
+    reactor_dfs: dict[str, list[pd.DataFrame]] = defaultdict(list)
     with tarfile.open(reactor_data_path, "r:*") as reactor_tar:
-        all_filenames = [x for x in reactor_tar.getnames()]
-    # TODO csv -> pandas
-    # TODO save to parquet in destination folder
+        get_df_match_from_reactor_tar = get_df_with_match(reactor_tar)  # type: ignore
+        for filename in reactor_tar.getnames():
+            result: str | tuple[re.Match, pd.DataFrame] = (  # type: ignore
+                Result(filename)  # str
+                .then(Path)  # Path
+                .then(only_csv_paths)  # Path
+                .then(get_name_match)  # Match
+                .then(get_df_match_from_reactor_tar)  # (Match, Dataframe)
+                .either(lambda e: e, lambda x: x)  # type: ignore
+            )
+            if isinstance(result, str):
+                print(result)
+                continue
+            match, df = result
+            reactor_dfs[match.group(1)].append(df)
+    for device_param, dfs in reactor_dfs.items():
+        merged_df = pd.concat(dfs).sort_values("Timestamp", ignore_index=True)
+        parquet_path = destination / f"{experiment_id}_{device_param}_data.parquet"
+        merged_df.to_parquet(parquet_path)
+
     exec_time = timer.stop_timer()
     formatted_time = timer.format_elapsed_time(exec_time, decimals=4)
     messenger.info("Reactor data processed")
@@ -53,3 +74,36 @@ def _is_reactor_data_archive(file_path: Path) -> bool:
     is_gzip = "gz" in file_path.suffixes
     name_pattern_match = archive_pattern.match(file_path.name)
     return file_path.is_file() and is_tar and is_gzip and name_pattern_match is not None
+
+
+def only_csv_paths(path: Path) -> Path | _Error:
+    return path if path.suffix.lower() == ".csv" else Error("Not a CSV file")
+
+
+def get_name_match(path: Path) -> re.Match | _Error:
+    name_match = data_file_pattern.match(path.name)
+    if name_match is None:
+        return Error("No match")
+    return name_match
+
+
+@curry(2)
+def get_df_with_match(
+    tarfile: tarfile.TarFile, match: re.Match
+) -> tuple[re.Match, pd.DataFrame] | _Error:
+    result = get_df_from_tarfile(tarfile, match.group(0))
+    if isinstance(result, _Error):
+        return result
+    return match, result
+
+
+def get_df_from_tarfile(
+    tarfile: tarfile.TarFile, filename: str
+) -> pd.DataFrame | _Error:
+    x = tarfile.extractfile(filename)
+    if x is None:
+        return Error(f"Could not extract {filename} from archive")
+    try:
+        return pd.read_csv(x, encoding="windows-1252")
+    except Exception as err:
+        return Error(str(err))

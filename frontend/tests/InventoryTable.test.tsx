@@ -1,47 +1,52 @@
 import React, { useState } from "react";
 import { userEvent, render, screen } from "./testUtils";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import InventoryTable from "../src/components/inventory/InventoryTable";
 import { Experiment } from "../src/types/Experiment";
+import { useAnalysisSteps } from "../src/hooks/useAnalysisSteps";
+import { setupServer } from "msw/node";
+import { analysisStepsHandler } from "./fakeData";
+
+const server = setupServer();
+
+beforeEach(() => server.use(analysisStepsHandler));
 
 const fakeData: Experiment[] = [
   {
     id: "ID-100",
-    props: {
-      unconverted_mtime: 100,
-      converted_mtime: 200,
-      processed_mtime: 500,
-      overridden: false
-    }
+    analysis_step_props: [
+      { mtime: 100, overridden: false },
+      { mtime: 200, overridden: false },
+    ],
   },
   {
     id: "ID-101",
-    props: {
-      unconverted_mtime: 200,
-      converted_mtime: 100,
-      processed_mtime: 400,
-      overridden: false
-    }
+    analysis_step_props: [
+      { mtime: 200, overridden: false },
+      { mtime: 100, overridden: false },
+    ],
   },
   {
     id: "ID-102",
-    props: {
-      unconverted_mtime: 50,
-      converted_mtime: 300,
-      processed_mtime: 300,
-      overridden: false
-    }
-  }
+    analysis_step_props: [
+      { mtime: 50, overridden: false },
+      { mtime: 300, overridden: false },
+    ],
+  },
 ];
 
 const TestEnv = ({ experimentsList }: { experimentsList: Experiment[] }) => {
   const [checkedExperiments, setCheckedExperiments] = useState({});
+  const { steps } = useAnalysisSteps();
   return (
-    <InventoryTable
-      experimentsList={experimentsList}
-      checkedExperiments={checkedExperiments}
-      setCheckedExperiments={setCheckedExperiments}
-    />
+    steps && (
+      <InventoryTable
+        analysisSteps={steps}
+        experimentsList={experimentsList}
+        checkedExperiments={checkedExperiments}
+        setCheckedExperiments={setCheckedExperiments}
+      />
+    )
   );
 };
 
@@ -53,14 +58,14 @@ const testSort = async (
   const user = userEvent.setup();
   render(<TestEnv experimentsList={fakeData} />);
   if (clickText) {
-    const header = screen.getByText(clickText);
+    const header = await screen.findByText(clickText);
     await user.click(header);
     if (clickTwice) await user.click(header);
   }
 
   for (let i = 0; i < experimentIdsOrder.length - 1; i++) {
-    const firstExp = screen.getByText(experimentIdsOrder[i]);
-    const secondExp = screen.getByText(experimentIdsOrder[i + 1]);
+    const firstExp = await screen.findByText(experimentIdsOrder[i]);
+    const secondExp = await screen.findByText(experimentIdsOrder[i + 1]);
     expect(firstExp.compareDocumentPosition(secondExp)).toBe(2);
   }
 };
@@ -83,11 +88,5 @@ describe("Inventory table", () => {
   });
   it("reverse sorts by Converted Data when clicking corresponding header twice", async () => {
     await testSort(["ID-102", "ID-100", "ID-101"], "Converted Data", true);
-  });
-  it("sorts by Processed Data when clicking corresponding header", async () => {
-    await testSort(["ID-102", "ID-101", "ID-100"], "Processed Data");
-  });
-  it("reverse sorts by Processed Data when clicking corresponding header twice", async () => {
-    await testSort(["ID-100", "ID-101", "ID-102"], "Processed Data", true);
   });
 });

@@ -141,7 +141,7 @@ const InventoryTable = ({
                   </Box>
                 </Th>
                 {analysisSteps?.map((step, i) => (
-                  <Th>
+                  <Th key={step+i}>
                     <Box cursor="pointer" onClick={makeColumnClickHandler(i)}>
                       {step}
                       {sort === i && !reverseSort && (
@@ -171,10 +171,11 @@ const InventoryTable = ({
                     />
                   </Td>
                   <Td>{exp.id}</Td>
-                  {analysisSteps?.map((_, i) => (
+                  {analysisSteps?.map((step, i) => (
                     <MTimeDisplay
                       mtime={exp.analysis_step_props[i].mtime}
                       overridden={exp.analysis_step_props[i].overridden}
+                      key={step+i}
                     />
                   ))}
                 </Tr>

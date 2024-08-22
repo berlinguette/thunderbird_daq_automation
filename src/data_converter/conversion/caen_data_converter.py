@@ -264,6 +264,7 @@ class CaenDataConverter(AbstractDataConverter):
 
     def _input_caen_start_time(self) -> datetime:
         now = datetime.now(timezone.utc).astimezone()
+        now_tz = now.tzinfo
         valid_date = False
         while not valid_date:
             year = self._get_valid_value(
@@ -302,7 +303,7 @@ class CaenDataConverter(AbstractDataConverter):
             min=0,
             max=59,
         )
-        return datetime(year, month, day, hour, minute)
+        return datetime(year, month, day, hour, minute, tzinfo=now_tz)
 
     CT = TypeVar("CT", bound=Comparable)
 

@@ -54,12 +54,6 @@ describe("OverridesPanel", () => {
     await user.click(conInput);
     await user.keyboard("0");
 
-    const proInput = screen.getByRole("textbox", {
-      name: "Processed Data Modified Time 2",
-    });
-    await user.click(proInput);
-    await user.keyboard("0");
-
     user.click(screen.getByText("Save"));
     await waitFor(() => expect(refetchInventory).toBeCalled());
   });

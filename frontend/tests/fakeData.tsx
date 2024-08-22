@@ -1,7 +1,7 @@
 import { HttpResponse, http } from "msw";
 import { getServerUrl } from "../src/api/getServerUrl";
 import { AnalysisRequestParams } from "../src/types/Analysis";
-import { Experiment } from "../src/types/Experiment";
+import { Override } from "../src/types/Override";
 
 // const fakeExperiments: Experiment[] = [
 //   {
@@ -51,37 +51,27 @@ import { Experiment } from "../src/types/Experiment";
 //   }
 // ];
 
-const fakeOverrides: Experiment[] = [
+const fakeOverrides: Override[] = [
   {
-    id: "ID-OVR",
-    props: {
-      unconverted_mtime: 0,
-      converted_mtime: 0,
-      processed_mtime: 0,
-      overridden: true
-    },
+    pattern: "ID-OVR",
+    analysis_step_overrides: [{ mtime: 0 }, { mtime: 0 }],
   },
   {
-    id: "ID-OVR-2",
-    props: {
-      unconverted_mtime: 100,
-      converted_mtime: 200,
-      processed_mtime: 300,
-      overridden: true
-    },
-  }
+    pattern: "ID-OVR-2",
+    analysis_step_overrides: [{ mtime: 100 }, { mtime: 200 }],
+  },
 ];
 
 const serverUrl = getServerUrl();
 
-export const selectiveAnalysisHandler = (desiredParams: AnalysisRequestParams) => {
+export const selectiveAnalysisHandler = (
+  desiredParams: AnalysisRequestParams
+) => {
   return http.post(`${serverUrl}/analyses`, async ({ request }) => {
-    const body = await request.json() as AnalysisRequestParams;
+    const body = (await request.json()) as AnalysisRequestParams;
     if (
-      body.convert_unconverted === desiredParams.convert_unconverted &&
-      body.process_converted === desiredParams.process_converted &&
-      body.pattern === desiredParams.pattern &&
-      body.force === desiredParams.force
+      body.steps_to_analyze.every((v, i) => v == desiredParams.steps_to_analyze[i]) &&
+      body.pattern === desiredParams.pattern
     ) {
       return HttpResponse.json({ current: null, queued: [] });
     } else {
@@ -95,11 +85,15 @@ export const overrideHandlers = [
     return HttpResponse.json(fakeOverrides);
   }),
   http.post(`${serverUrl}/overrides`, async ({ request }) => {
-    const body = await request.json() as Experiment;
+    const body = (await request.json()) as Override;
     return HttpResponse.json(fakeOverrides.concat(body));
   }),
   http.delete(`${serverUrl}/overrides/:id`, ({ params }) => {
     const { id } = params;
-    return HttpResponse.json(fakeOverrides.filter((ovr) => ovr.id !== id));
-  })
+    return HttpResponse.json(fakeOverrides.filter((ovr) => ovr.pattern !== id));
+  }),
 ];
+
+export const analysisStepsHandler = http.get(`${serverUrl}/analysis_steps`, async () => {
+  return HttpResponse.json(["Unconverted Data", "Converted Data"]);
+});

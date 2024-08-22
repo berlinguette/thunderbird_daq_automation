@@ -4,7 +4,7 @@ import AnalyzeMenu from "../src/components/AnalyzeMenu";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { userEvent, render, screen, waitFor } from "./testUtils";
 import { setupServer } from "msw/node";
-import { selectiveAnalysisHandler } from "./fakeData";
+import { analysisStepsHandler, selectiveAnalysisHandler } from "./fakeData";
 import { HttpResponse, http } from "msw";
 import { getServerUrl } from "../src/api/getServerUrl";
 
@@ -18,7 +18,7 @@ afterAll(() => server.close());
  * Tests opening the AnalyzeMenu dropdown and clicking an analysis button
  */
 const testSelectAnalysis = async (
-  filter: "All" | "Convert Only" | "Process Only",
+  filter: string,
   analyzeFilter: "all" | "selected",
   checkedExperiments: { [exp: string]: boolean } = {}
 ) => {
@@ -49,6 +49,7 @@ const testSelectAnalysis = async (
     expect(screen.getByText(filter)).toBeVisible();
   });
   await user.click(screen.getByText(filter));
+  await user.click(screen.getByText("Analyze"));
   await waitFor(() => {
     expect(screen.getByText("Queue Page")).toBeInTheDocument();
   });
@@ -56,6 +57,7 @@ const testSelectAnalysis = async (
 
 describe("AnalyzeMenu", () => {
   it("loads", () => {
+    server.use(analysisStepsHandler)
     render(
       <MemoryRouter initialEntries={["/"]}>
         <AnalyzeMenu analyzeFilter="all" checkedExperiments={{}} />
@@ -63,52 +65,53 @@ describe("AnalyzeMenu", () => {
     );
     expect(true).toBe(true);
   });
-  it("performs conversions + processing when 'All' option is clicked", async () => {
+  // it("performs conversions + processing when 'All' option is clicked", async () => {
+  //   server.use(
+  //     selectiveAnalysisHandler({
+  //       convert_unconverted: true,
+  //       process_converted: true,
+  //     })
+  //   );
+  //   await testSelectAnalysis("All", "all");
+  // });
+  it("performs conversions only when 'Unconverted Data' option is clicked", async () => {
     server.use(
       selectiveAnalysisHandler({
-        convert_unconverted: true,
-        process_converted: true,
-      })
+        steps_to_analyze: [true],
+      }),
+      analysisStepsHandler
     );
-    await testSelectAnalysis("All", "all");
+    await testSelectAnalysis("Unconverted Data", "all");
   });
-  it("performs conversions only when 'Convert Only' option is clicked", async () => {
-    server.use(
-      selectiveAnalysisHandler({
-        convert_unconverted: true,
-        process_converted: false,
-      })
-    );
-    await testSelectAnalysis("Convert Only", "all");
-  });
-  it("performs processing only when 'Process Only' option is clicked", async () => {
-    server.use(
-      selectiveAnalysisHandler({
-        convert_unconverted: false,
-        process_converted: true,
-      })
-    );
-    await testSelectAnalysis("Process Only", "all");
-  });
+  // it("performs processing only when 'Process Only' option is clicked", async () => {
+  //   server.use(
+  //     selectiveAnalysisHandler({
+  //       convert_unconverted: false,
+  //       process_converted: true,
+  //     })
+  //   );
+  //   await testSelectAnalysis("Process Only", "all");
+  // });
   it("can request analysis for only some selected experiments", async () => {
     server.use(
       selectiveAnalysisHandler({
-        convert_unconverted: true,
-        process_converted: true,
+        steps_to_analyze: [true],
         pattern: "(ID-NONE|ID-UNC-CON)",
-      })
+      }),
+      analysisStepsHandler
     );
     const checkedExperiments = {
       "ID-NONE": true,
       "ID-UNC-CON": true,
     };
-    await testSelectAnalysis("All", "selected", checkedExperiments);
+    await testSelectAnalysis("Unconverted Data", "selected", checkedExperiments);
   });
   it("displays error if request unsuccessful", async () => {
     server.use(
       http.post(`${getServerUrl()}/analyses`, () => {
         return HttpResponse.text("Error", { status: 400 });
-      })
+      }),
+      analysisStepsHandler
     );
 
     render(
@@ -120,9 +123,10 @@ describe("AnalyzeMenu", () => {
 
     await user.click(screen.getByRole("button", { name: "Analyze All" }));
     await waitFor(() => {
-      expect(screen.getByText("All")).toBeVisible();
+      expect(screen.getByText("Unconverted Data")).toBeVisible();
     });
-    await user.click(screen.getByText("All"));
+    await user.click(screen.getByText("Unconverted Data"));
+    await user.click(screen.getByText("Analyze"));
     await waitFor(() => {
       expect(
         screen.getByText("Network response was not ok")

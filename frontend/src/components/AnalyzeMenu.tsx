@@ -84,8 +84,8 @@ const AnalyzeMenu = ({
             </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-              {steps.slice(0, -1).map((step) => (
-                <CheckboxGroup value={value}>
+              {steps.slice(0, -1).map((step, i) => (
+                <CheckboxGroup value={value} key={step+i}>
                   <Stack>
                     <Checkbox {...getCheckboxProps({ value: step })}>
                       {step}

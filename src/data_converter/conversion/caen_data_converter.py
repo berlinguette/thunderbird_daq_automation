@@ -13,7 +13,9 @@ from data_converter.conversion.support.folder_converter_factory import (
 from data_converter.conversion.support.spectrum_to_parquet import (
     convert_spectra_to_parquet,
 )
+from data_converter.utilities.interrupt import interruptable
 from utilities.utilities.check_type import get_and_check
+from utilities.utilities.configuration.configuration import Config
 
 KEY_RAW_DATA = "raw_data_folder"
 KEY_FILTERED_DATA = "filtered_data_folder"
@@ -163,7 +165,7 @@ class CaenDataConverter(AbstractDataConverter):
         dataset_unfiltered_spectra_folder = paths[KEY_DATASET_UNFILTERED_SPECTRA]
 
         self._messenger.info("Generating metadata file")
-        self._generate_metadata_file(paths)
+        self._generate_metadata_file(paths, self._config)
         self._screen_only_messenger.info("")
 
         self._messenger.info("Converting unfiltered data to Parquet")
@@ -197,7 +199,9 @@ class CaenDataConverter(AbstractDataConverter):
                 )
         self._screen_only_messenger.info("")
 
-    def _generate_metadata_file(self, paths: Dict[str, Path]):
+    def _generate_metadata_file(
+        self, paths: Dict[str, Path], config: Config
+    ):  # TODO use config to get and use start time (if provided via CLI)
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         run_info_path = self._experiment_source / "run.info"
         metadata_dest_path = dataset_root_folder.joinpath(
@@ -220,19 +224,23 @@ class CaenDataConverter(AbstractDataConverter):
             self._messenger.info(f"Using experiment ID {id}")
             id_line = f"id={id}"
 
-            self._messenger.info(
-                "Please enter the start date and time of neutron detection:"
-            )
-            start_time = self._input_caen_start_time()
+            start_time_arg = get_and_check(self._config, str, "start_time")
+            if start_time_arg is not None:
+                try:
+                    start_time = datetime.strptime(start_time_arg, "%Y/%m/%d-%H:%M")
+                except ValueError:
+                    self._messenger.info(
+                        "Please enter the start date and time of neutron detection:"
+                    )
+                    start_time = self._input_caen_start_time()
+            now = datetime.now(timezone.utc).astimezone()
+            now_tz = now.tzinfo
+            start_time = start_time.astimezone(now_tz)
             start_time_str = start_time.strftime("%Y/%m/%d %H:%M:%S.%f%z")
             start_time_line = f"time.start={start_time_str}"
 
             info_lines = [id_line, start_time_line]
             from_run_info = False
-            # TODO find ID from source path
-            # TODO ask for start time
-            # id=ID-508
-            # time.start=2024/08/02 15:12:22.695-0700
 
         id_pattern = re.compile(r"^id=(.*)$")
         id_matches = [id_pattern.match(line) for line in info_lines]
@@ -263,11 +271,11 @@ class CaenDataConverter(AbstractDataConverter):
             tomli_w.dump(metadata, savefile)
 
     def _input_caen_start_time(self) -> datetime:
-        now = datetime.now(timezone.utc).astimezone()
-        now_tz = now.tzinfo
+        now = datetime.now()
         valid_date = False
         while not valid_date:
-            year = self._get_valid_value(
+            interrupt_get_valid_value = interruptable(20)(self._get_valid_value)
+            year = interrupt_get_valid_value(
                 f"Enter year (default = {now.year})", int, default=now.year
             )
             month = self._get_valid_value(
@@ -303,7 +311,7 @@ class CaenDataConverter(AbstractDataConverter):
             min=0,
             max=59,
         )
-        return datetime(year, month, day, hour, minute, tzinfo=now_tz)
+        return datetime(year, month, day, hour, minute)
 
     CT = TypeVar("CT", bound=Comparable)
 

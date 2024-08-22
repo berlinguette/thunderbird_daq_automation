@@ -130,6 +130,16 @@ mem_use_threshold:
       When converted rows take up more memory than the threshold, 
       they are saved to disk as a Parquet file, 
       freeing memory for further conversion."
+start_time:
+  cli:
+    flags:
+      - "--start-time"
+    help: "time when detector data collection started, written as YYYY/MM/DD-HH:mm, 
+    where YYYY is the year, MM is the month number (2 digits), DD is the day (2 digits), 
+    HH is the hour (2 digits, 24 hour format), and mm is the minutes (2 digits).
+    This is normally read from the exp.info metadata file provided by CAEN Compass, 
+    but providing this value allows conversion to proceed 
+    if that file is missing or unusable for some reason."
 text_ui:
   cli:
     flags:

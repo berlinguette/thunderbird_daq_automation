@@ -20,6 +20,8 @@ CAEN_RAW_DATA_FOLDERS = [
 
 
 class DataConverterFactory:
+    reactor_data_pattern = re.compile(r"(.+)_\d{8}-\d{9}_data.tar.gz", flags=re.IGNORECASE)
+    
     def make_converter(
         self,
         exp_folder: Path,
@@ -73,6 +75,7 @@ class DataConverterFactory:
             checks = [
                 (source_path / constants.CAEN_RUN_INFO).exists(),
                 (source_path / constants.CAEN_SETTINGS_XML).exists(),
+                self._does_matching_file_exist(source_path, self.reactor_data_pattern),
                 check_caen_subfolder(constants.CAEN_FILTERED_FOLDER_NAME),
                 # check_caen_subfolder(constants.CAEN_OFFLINE_FOLDER_NAME),
                 check_caen_subfolder(constants.CAEN_RAW_FOLDER_NAME),

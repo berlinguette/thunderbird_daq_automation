@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Protocol, TypeVar
 
+from data_converter.utilities import input_with_timeout
 import tomli_w
 
 from data_converter.conversion.abstract_data_converter import AbstractDataConverter
@@ -13,7 +14,7 @@ from data_converter.conversion.support.folder_converter_factory import (
 from data_converter.conversion.support.spectrum_to_parquet import (
     convert_spectra_to_parquet,
 )
-from data_converter.utilities.interrupt import interruptable
+from data_converter.utilities.input_with_timeout import input_with_timeout
 from utilities.utilities.check_type import get_and_check
 from utilities.utilities.configuration.configuration import Config
 
@@ -165,7 +166,7 @@ class CaenDataConverter(AbstractDataConverter):
         dataset_unfiltered_spectra_folder = paths[KEY_DATASET_UNFILTERED_SPECTRA]
 
         self._messenger.info("Generating metadata file")
-        self._generate_metadata_file(paths, self._config)
+        self._generate_metadata_file(paths)
         self._screen_only_messenger.info("")
 
         self._messenger.info("Converting unfiltered data to Parquet")
@@ -200,7 +201,7 @@ class CaenDataConverter(AbstractDataConverter):
         self._screen_only_messenger.info("")
 
     def _generate_metadata_file(
-        self, paths: Dict[str, Path], config: Config
+        self, paths: Dict[str, Path]
     ):  # TODO use config to get and use start time (if provided via CLI)
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         run_info_path = self._experiment_source / "run.info"
@@ -224,7 +225,12 @@ class CaenDataConverter(AbstractDataConverter):
             self._messenger.info(f"Using experiment ID {id}")
             id_line = f"id={id}"
 
-            start_time_arg = get_and_check(self._config, str, "start_time")
+            self._messenger.info(str(self._config.get("start_time", None)))
+            try:
+                start_time_arg = get_and_check(self._config, str, "start_time")
+            except ValueError:
+                start_time_arg = None
+            self._messenger.info(f"Start time arg: {start_time_arg}")
             if start_time_arg is not None:
                 try:
                     start_time = datetime.strptime(start_time_arg, "%Y/%m/%d-%H:%M")
@@ -233,6 +239,12 @@ class CaenDataConverter(AbstractDataConverter):
                         "Please enter the start date and time of neutron detection:"
                     )
                     start_time = self._input_caen_start_time()
+            else:
+                self._messenger.info(
+                    "Please enter the start date and time of neutron detection:"
+                )
+                start_time = self._input_caen_start_time()
+
             now = datetime.now(timezone.utc).astimezone()
             now_tz = now.tzinfo
             start_time = start_time.astimezone(now_tz)
@@ -274,12 +286,12 @@ class CaenDataConverter(AbstractDataConverter):
         now = datetime.now()
         valid_date = False
         while not valid_date:
-            interrupt_get_valid_value = interruptable(20)(self._get_valid_value)
-            year = interrupt_get_valid_value(
-                f"Enter year (default = {now.year})", int, default=now.year
+            print("try start input")
+            year = self._get_valid_value(
+                f"Enter year (default = {now.year}) >", int, default=now.year, timeout=20
             )
             month = self._get_valid_value(
-                f"Enter month (1-12, default = {now.month})",
+                f"Enter month (1-12, default = {now.month}) >",
                 int,
                 default=now.month,
                 min=1,
@@ -322,6 +334,7 @@ class CaenDataConverter(AbstractDataConverter):
         default: CT | None = None,
         min: CT | None = None,
         max: CT | None = None,
+        timeout: int | None = None
     ) -> CT:
         if default is not None:
             if min is not None and default < min:
@@ -330,7 +343,7 @@ class CaenDataConverter(AbstractDataConverter):
                 raise ValueError("Default value must not be more than maximum value")
 
         while True:
-            in_str = input(prompt)
+            in_str = input_with_timeout(prompt, timeout=timeout)
             try:
                 in_val = converter(in_str)
             except ValueError:

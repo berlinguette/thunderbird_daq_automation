@@ -72,18 +72,21 @@ class DataConverterFactory:
                     found_subfolder == folder_name or
                     (source_path / folder_name).exists())
 
-            checks = [
-                (source_path / constants.CAEN_RUN_INFO).exists(),
-                (source_path / constants.CAEN_SETTINGS_XML).exists(),
-                self._does_matching_file_exist(source_path, self.reactor_data_pattern),
-                check_caen_subfolder(constants.CAEN_FILTERED_FOLDER_NAME),
-                # check_caen_subfolder(constants.CAEN_OFFLINE_FOLDER_NAME),
-                check_caen_subfolder(constants.CAEN_RAW_FOLDER_NAME),
-                # check_caen_subfolder(constants.CAEN_SCREENSHOTS_FOLDER_NAME),
-                check_caen_subfolder(constants.CAEN_UNFILTERED_FOLDER_NAME)
-            ]
-            if all(checks):
+            checks: dict[str, bool] = {
+                "Missing CAEN metadata file (exp.info)": (source_path / constants.CAEN_RUN_INFO).exists(),
+                "Missing CAEN settings XML file": (source_path / constants.CAEN_SETTINGS_XML).exists(),
+                "Missing reactor data archive": self._does_matching_file_exist(source_path, self.reactor_data_pattern),
+                "Missing FILTERED folder": check_caen_subfolder(constants.CAEN_FILTERED_FOLDER_NAME),
+                "Missing RAW folder": check_caen_subfolder(constants.CAEN_RAW_FOLDER_NAME),
+                "Missing UNFILTERED folder": check_caen_subfolder(constants.CAEN_UNFILTERED_FOLDER_NAME)
+            }
+            if all(list(checks.values())):
                 root_path = source_path
+            else:
+                errors = [k for k, v in checks.items() if not v]
+                print(f"Possible root folder {source_path} was missing:")
+                for error in errors:
+                    print(f" - {error}")
         return root_path
 
     def _is_wendi_logfile(self, source_path: Path) -> bool:

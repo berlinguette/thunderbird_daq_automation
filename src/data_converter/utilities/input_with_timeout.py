@@ -7,7 +7,6 @@ T = TypeVar("T")
 
 def input_with_timeout(prompt: str, timeout: int | None = None) -> str:
     queue = multiprocessing.Queue()
-    something = sys.stdin.fileno()
     process = multiprocessing.Process(target=_input_with_timeout_process, args=(sys.stdin.fileno(), queue, prompt))
     process.start()
     try:

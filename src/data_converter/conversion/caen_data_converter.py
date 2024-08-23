@@ -288,17 +288,17 @@ class CaenDataConverter(AbstractDataConverter):
         while not valid_date:
             print("try start input")
             year = self._get_valid_value(
-                f"Enter year (default = {now.year}) >", int, default=now.year, timeout=20
+                f"Enter year (default = {now.year})> ", int, default=now.year, timeout=20
             )
             month = self._get_valid_value(
-                f"Enter month (1-12, default = {now.month}) >",
+                f"Enter month (1-12, default = {now.month})> ",
                 int,
                 default=now.month,
                 min=1,
                 max=12,
             )
             day = self._get_valid_value(
-                f"Enter day (1-31, default = {now.day})",
+                f"Enter day (1-31, default = {now.day})> ",
                 int,
                 default=now.day,
                 min=1,
@@ -310,14 +310,14 @@ class CaenDataConverter(AbstractDataConverter):
             except ValueError:
                 self._messenger.info("Invalid date, please try again")
         hour = self._get_valid_value(
-            f"Enter hour (0-23, default = {now.hour})",
+            f"Enter hour (0-23, default = {now.hour})> ",
             int,
             default=now.hour,
             min=0,
             max=23,
         )
         minute = self._get_valid_value(
-            f"Enter minute (0-59, default = {now.minute})",
+            f"Enter minute (0-59, default = {now.minute})> ",
             int,
             default=now.minute,
             min=0,
@@ -343,7 +343,12 @@ class CaenDataConverter(AbstractDataConverter):
                 raise ValueError("Default value must not be more than maximum value")
 
         while True:
-            in_str = input_with_timeout(prompt, timeout=timeout)
+            try:
+                in_str = input_with_timeout(prompt, timeout=timeout)
+            except ValueError as err:
+                print()
+                print(f"Timeout: {err}")
+                raise err
             try:
                 in_val = converter(in_str)
             except ValueError:

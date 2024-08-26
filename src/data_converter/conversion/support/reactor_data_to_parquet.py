@@ -18,8 +18,8 @@ from utilities.utilities.timing import Timer
 logger = logging.getLogger("reactor_data_to_parquet")
 messenger = Messenger(logger)
 log_only_messenger = Messenger(logger, on_screen=False)
-archive_pattern = re.compile(r"(.+)_\d{8}-\d{9}_data")
-data_file_pattern = re.compile(r"ID-\S+ (.+) (\d+)")
+archive_pattern = re.compile(r"(.+)_\d{8}-\d{9}_data.tar.gz")
+data_file_pattern = re.compile(r"ID-\S+ (.+) (\d+).csv")
 
 
 def convert_reactor_data_to_parquet(
@@ -89,8 +89,8 @@ def get_reactor_data_path(source: Path, matches: list[Path]) -> Path | _Error:
 
 
 def _is_reactor_data_archive(file_path: Path) -> bool:
-    is_tar = "tar" in file_path.suffixes
-    is_gzip = "gz" in file_path.suffixes
+    is_tar = ".tar" in file_path.suffixes
+    is_gzip = ".gz" in file_path.suffixes
     name_pattern_match = archive_pattern.match(file_path.name)
     return file_path.is_file() and is_tar and is_gzip and name_pattern_match is not None
 
@@ -119,7 +119,10 @@ def get_df_with_match(
 def get_df_from_tarfile(
     tarfile: tarfile.TarFile, filename: str
 ) -> pd.DataFrame | _Error:
-    x = tarfile.extractfile(filename)
+    try:
+        x = tarfile.extractfile(filename)
+    except KeyError:
+        return Error(f"Could not find {filename} in the archive")
     if x is None:
         return Error(f"Could not extract {filename} from archive")
     try:

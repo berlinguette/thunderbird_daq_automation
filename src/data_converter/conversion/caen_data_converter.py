@@ -183,15 +183,17 @@ class CaenDataConverter(AbstractDataConverter):
         for file in raw_data_folder.iterdir():
             if file.is_file() and file.suffix.lower() in [".csv", ".bin"]:
                 # file.rename(dataset_raw_csv_folder / file.name)
-                self._handle_raw_file(
+                status_msg = self._handle_raw_file(
                     file, dataset_raw_csv_folder / file.name, move_file=move_files
                 )
+                self._messenger.info(status_msg)
         for file in self._experiment_source.iterdir():
             if file.is_file() and file.name.lower() == "settings.xml":
                 # file.rename(dataset_root_folder / file.name)
-                self._handle_raw_file(
+                status_msg = self._handle_raw_file(
                     file, dataset_root_folder / file.name, move_file=move_files
                 )
+                self._messenger.info(status_msg)
         self._screen_only_messenger.info("")
 
     def _generate_metadata_file(self, paths: Dict[str, Path]):

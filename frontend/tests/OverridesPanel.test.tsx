@@ -9,13 +9,13 @@ import {
   it,
   vi,
 } from "vitest";
-import { overrideHandlers } from "./fakeData";
+import { analysisStepsHandler, overrideHandlers } from "./fakeData";
 import { getServerUrl } from "../src/api/getServerUrl";
 import OverridesPanel from "../src/components/overrides/OverridesPanel";
 import { userEvent, render, screen, waitFor, UserEvent } from "./testUtils";
 import { HttpResponse, http } from "msw";
 
-const server = setupServer(...overrideHandlers);
+const server = setupServer(...overrideHandlers, analysisStepsHandler);
 
 beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());

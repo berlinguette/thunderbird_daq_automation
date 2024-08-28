@@ -1,15 +1,8 @@
 import React, { useState } from "react";
 import { userEvent, render, screen } from "./testUtils";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import InventoryTable from "../src/components/inventory/InventoryTable";
 import { Experiment } from "../src/types/Experiment";
-import { useAnalysisSteps } from "../src/hooks/useAnalysisSteps";
-import { setupServer } from "msw/node";
-import { analysisStepsHandler } from "./fakeData";
-
-const server = setupServer();
-
-beforeEach(() => server.use(analysisStepsHandler));
 
 const fakeData: Experiment[] = [
   {
@@ -37,16 +30,14 @@ const fakeData: Experiment[] = [
 
 const TestEnv = ({ experimentsList }: { experimentsList: Experiment[] }) => {
   const [checkedExperiments, setCheckedExperiments] = useState({});
-  const { steps } = useAnalysisSteps();
+  const steps = ["Unconverted Data", "Converted Data"];
   return (
-    steps && (
-      <InventoryTable
-        analysisSteps={steps}
-        experimentsList={experimentsList}
-        checkedExperiments={checkedExperiments}
-        setCheckedExperiments={setCheckedExperiments}
-      />
-    )
+    <InventoryTable
+      analysisSteps={steps}
+      experimentsList={experimentsList}
+      checkedExperiments={checkedExperiments}
+      setCheckedExperiments={setCheckedExperiments}
+    />
   );
 };
 

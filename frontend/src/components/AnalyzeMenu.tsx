@@ -88,7 +88,7 @@ const AnalyzeMenu = ({
                 <CheckboxGroup value={value} key={step+i}>
                   <Stack>
                     <Checkbox {...getCheckboxProps({ value: step })}>
-                      {step}
+                      {step} → {steps[i+1]}
                     </Checkbox>
                   </Stack>
                 </CheckboxGroup>

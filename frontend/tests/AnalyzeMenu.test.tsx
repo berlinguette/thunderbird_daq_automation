@@ -81,7 +81,7 @@ describe("AnalyzeMenu", () => {
       }),
       analysisStepsHandler
     );
-    await testSelectAnalysis("Unconverted Data", "all");
+    await testSelectAnalysis("Unconverted Data → Converted Data", "all");
   });
   // it("performs processing only when 'Process Only' option is clicked", async () => {
   //   server.use(
@@ -104,7 +104,7 @@ describe("AnalyzeMenu", () => {
       "ID-NONE": true,
       "ID-UNC-CON": true,
     };
-    await testSelectAnalysis("Unconverted Data", "selected", checkedExperiments);
+    await testSelectAnalysis("Unconverted Data → Converted Data", "selected", checkedExperiments);
   });
   it("displays error if request unsuccessful", async () => {
     server.use(
@@ -123,9 +123,9 @@ describe("AnalyzeMenu", () => {
 
     await user.click(screen.getByRole("button", { name: "Analyze All" }));
     await waitFor(() => {
-      expect(screen.getByText("Unconverted Data")).toBeVisible();
+      expect(screen.getByText("Unconverted Data → Converted Data")).toBeVisible();
     });
-    await user.click(screen.getByText("Unconverted Data"));
+    await user.click(screen.getByText("Unconverted Data → Converted Data"));
     await user.click(screen.getByText("Analyze"));
     await waitFor(() => {
       expect(

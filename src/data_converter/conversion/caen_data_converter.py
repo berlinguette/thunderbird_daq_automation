@@ -214,7 +214,7 @@ class CaenDataConverter(AbstractDataConverter):
                 info_lines = infofile.readlines()
             from_run_info = True
         except FileNotFoundError:
-            self._messenger.info("Could not find exp.info file")
+            self._messenger.info("Could not find run.info file")
             if self._experiment_source.is_dir():
                 id = self._experiment_source.name
                 self._messenger.info("Experiment ID found from folder")

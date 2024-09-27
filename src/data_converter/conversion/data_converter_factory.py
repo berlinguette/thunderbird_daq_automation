@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter

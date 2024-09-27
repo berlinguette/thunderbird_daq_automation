@@ -26,6 +26,7 @@ KEY_DATASET_RAW = "dataset_raw_data"
 KEY_DATASET_RAW_CSV = "dataset_raw_data_csv"
 KEY_DATASET_RAW_PARQUET = "dataset_raw_data_parquet"
 KEY_DATASET_PROCESSED = "dataset_processed_data"
+KEY_DATASET_REACTOR = "dataset_reactor_data"
 KEY_DATASET_FILTERED = "dataset_processed_filtered"
 KEY_DATASET_FILTERED_PSD = "dataset_filtered_psd"
 KEY_DATASET_FILTERED_SIGNALS = "dataset_filtered_signals"
@@ -73,6 +74,9 @@ class CaenDataConverter(AbstractDataConverter):
         dataset_processed_folder = self._destination.joinpath(
             constants.DATASET_PROCESSED_DATA_FOLDER_NAME
         )
+        dataset_reactor_folder = dataset_processed_folder.joinpath(
+            constants.DATASET_REACTOR_DATA_FOLDER_NAME
+        )
         dataset_filtered_folder = dataset_processed_folder.joinpath(
             constants.CAEN_PROCESSED_FILTERED_FOLDER_NAME
         )
@@ -106,6 +110,7 @@ class CaenDataConverter(AbstractDataConverter):
             KEY_DATASET_RAW_CSV: dataset_raw_original_folder,
             KEY_DATASET_RAW_PARQUET: dataset_raw_parquet_folder,
             KEY_DATASET_PROCESSED: dataset_processed_folder,
+            KEY_DATASET_REACTOR: dataset_reactor_folder,
             KEY_DATASET_FILTERED: dataset_filtered_folder,
             KEY_DATASET_FILTERED_PSD: dataset_filtered_psd_folder,
             KEY_DATASET_FILTERED_SIGNALS: dataset_filtered_signals_folder,
@@ -148,6 +153,7 @@ class CaenDataConverter(AbstractDataConverter):
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_csv_folder = paths[KEY_DATASET_RAW_CSV]
         dataset_processed_folder = paths[KEY_DATASET_PROCESSED]
+        dataset_reactor_folder = paths[KEY_DATASET_REACTOR]
         unfiltered_data_folder = paths[KEY_UNFILTERED_DATA]
         dataset_unfiltered_psd_folder = paths[KEY_DATASET_UNFILTERED_PSD]
         dataset_unfiltered_signals_folder = paths[KEY_DATASET_UNFILTERED_SIGNALS]
@@ -174,7 +180,7 @@ class CaenDataConverter(AbstractDataConverter):
 
         self._messenger.info("Converting reactor data to Parquet")
         convert_reactor_data_to_parquet(
-            self._experiment_source, dataset_processed_folder, self._logfile_path
+            self._experiment_source, dataset_reactor_folder, self._logfile_path
         )
         self._screen_only_messenger.info("")
 
@@ -183,15 +189,17 @@ class CaenDataConverter(AbstractDataConverter):
         for file in raw_data_folder.iterdir():
             if file.is_file() and file.suffix.lower() in [".csv", ".bin"]:
                 # file.rename(dataset_raw_csv_folder / file.name)
-                self._handle_raw_file(
+                status_msg = self._handle_raw_file(
                     file, dataset_raw_csv_folder / file.name, move_file=move_files
                 )
+                self._messenger.info(status_msg)
         for file in self._experiment_source.iterdir():
             if file.is_file() and file.name.lower() == "settings.xml":
                 # file.rename(dataset_root_folder / file.name)
-                self._handle_raw_file(
+                status_msg = self._handle_raw_file(
                     file, dataset_root_folder / file.name, move_file=move_files
                 )
+                self._messenger.info(status_msg)
         self._screen_only_messenger.info("")
 
     def _generate_metadata_file(self, paths: Dict[str, Path]):

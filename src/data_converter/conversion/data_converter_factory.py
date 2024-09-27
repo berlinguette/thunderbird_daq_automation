@@ -54,13 +54,13 @@ class DataConverterFactory:
             found_subfolder = source_path.name
             if source_path.name == constants.CAEN_RAW_FOLDER_NAME:
                 data_file_pattern = re.compile(
-                    r'SDataR_.*\.[CSV|BIN]$)', flags=re.IGNORECASE)
+                    r'SDataR_.*\.(?:CSV|BIN)$', flags=re.IGNORECASE)
                 if not self._does_matching_file_exist(
                         source_path, data_file_pattern):
                     return None
             elif source_path.name == constants.CAEN_UNFILTERED_FOLDER_NAME:
                 data_file_pattern = re.compile(
-                    r'SData_.*\.[CSV|BIN]$', flags=re.IGNORECASE)
+                    r'SData_.*\.(?:CSV|BIN)$', flags=re.IGNORECASE)
                 if not self._does_matching_file_exist(
                         source_path, data_file_pattern):
                     return None

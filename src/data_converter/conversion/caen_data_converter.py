@@ -215,7 +215,7 @@ class CaenDataConverter(AbstractDataConverter):
         except FileNotFoundError:
             info_lines = self._get_info_lines()
             from_run_info = False
-            
+
         if from_run_info and len(info_lines) < 2:
             print("run.info did not have enough data to use")
             info_lines = self._get_info_lines()
@@ -350,18 +350,19 @@ class CaenDataConverter(AbstractDataConverter):
             id = input("Please enter the ID of this experiment")
         if "ID-" not in id or "TB-" not in id:
             id_format = input(
-"""What kind of ID format are you using?
+                """What kind of ID format are you using?
 1: Old format (ID-XXX)
 2: New format (TB-XXX) (default)
 Enter a value or press Enter for default
-""")
+"""
+            )
             if id_format == "1":
                 id_prefix = "ID-"
             elif id_format == "2":
                 id_prefix = "TB-"
             else:
                 print("Using default value")
-                id_prefix = "TB-"      
+                id_prefix = "TB-"
             id = f"{id_prefix}{id}"
         self._messenger.info(f"Using experiment ID {id}")
         id_line = f"id={id}"

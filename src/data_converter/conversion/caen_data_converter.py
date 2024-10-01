@@ -5,18 +5,18 @@ from typing import Dict
 
 import tomli_w
 
-from data_converter.conversion.support.reactor_data_to_parquet import (
-    convert_reactor_data_to_parquet,
-)
-from utilities.utilities.check_type import get_and_check
 from data_converter.conversion.abstract_data_converter import AbstractDataConverter
 from data_converter.conversion.support import constants
 from data_converter.conversion.support.folder_converter_factory import (
     FolderConverterFactory,
 )
+from data_converter.conversion.support.reactor_data_to_parquet import (
+    convert_reactor_data_to_parquet,
+)
 from data_converter.conversion.support.spectrum_to_parquet import (
     convert_spectra_to_parquet,
 )
+from utilities.utilities.check_type import get_and_check
 
 KEY_RAW_DATA = "raw_data_folder"
 KEY_FILTERED_DATA = "filtered_data_folder"
@@ -142,7 +142,7 @@ class CaenDataConverter(AbstractDataConverter):
                 dataset_unfiltered_folder_psd,
                 dataset_unfiltered_signals_folder,
                 dataset_unfiltered_spectra_folder,
-                dataset_unfiltered_reactor_folder
+                dataset_unfiltered_reactor_folder,
             ]
         )
         self._messenger.debug(" - Processed data destination done")

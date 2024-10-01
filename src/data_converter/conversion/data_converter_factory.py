@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 from data_converter.conversion.abstract_data_converter import \
     AbstractDataConverter
@@ -54,23 +54,21 @@ class DataConverterFactory:
             found_subfolder = source_path.name
             if source_path.name == constants.CAEN_RAW_FOLDER_NAME:
                 data_file_pattern = re.compile(
-                    r'SDataR_.*\.[CSV|BIN]$)', flags=re.IGNORECASE)
+                    r'SDataR_.*\.(?:CSV|BIN)$', flags=re.IGNORECASE)
                 if not self._does_matching_file_exist(
                         source_path, data_file_pattern):
                     return None
             elif source_path.name == constants.CAEN_UNFILTERED_FOLDER_NAME:
                 data_file_pattern = re.compile(
-                    r'SData_.*\.[CSV|BIN]$', flags=re.IGNORECASE)
+                    r'SData_.*\.(?:CSV|BIN)$', flags=re.IGNORECASE)
                 if not self._does_matching_file_exist(
                         source_path, data_file_pattern):
                     return None
             root_path = self._find_caen_root(
                 source_path.parent, found_subfolder=found_subfolder)
         else:
-            def check_caen_subfolder(folder_name: str) -> bool:
-                return (
-                    found_subfolder == folder_name or
-                    (source_path / folder_name).exists())
+            def check_caen_subfolder(expected_subfolder: str) -> bool:
+                return self._is_expected_subfolder(expected_subfolder, found_subfolder, source_path)
 
             checks: dict[str, bool] = {
                 "Missing CAEN metadata file (exp.info)": (source_path / constants.CAEN_RUN_INFO).exists(),
@@ -115,6 +113,11 @@ class DataConverterFactory:
         return any((
             pattern.fullmatch(file.name) for file in folder_path.iterdir()
         ))
+        
+    def _is_expected_subfolder(self, expected_subfolder: str, subfolder: str | None, parent_folder: Path) -> bool:
+        return (
+            subfolder == expected_subfolder or
+            (parent_folder / expected_subfolder).exists())
 
     def _are_psdata_files_here(self, folder_path: Path) -> bool:
         return self._does_matching_file_exist(

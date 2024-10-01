@@ -129,6 +129,7 @@ class CaenDataConverter(AbstractDataConverter):
         dataset_unfiltered_folder_psd = paths[KEY_DATASET_UNFILTERED_PSD]
         dataset_unfiltered_signals_folder = paths[KEY_DATASET_UNFILTERED_SIGNALS]
         dataset_unfiltered_spectra_folder = paths[KEY_DATASET_UNFILTERED_SPECTRA]
+        dataset_unfiltered_reactor_folder = paths[KEY_DATASET_REACTOR]
 
         self._messenger.info("Preparing destination folders")
         self._prepare_destinations([dataset_raw_folder, dataset_raw_original_folder])
@@ -141,6 +142,7 @@ class CaenDataConverter(AbstractDataConverter):
                 dataset_unfiltered_folder_psd,
                 dataset_unfiltered_signals_folder,
                 dataset_unfiltered_spectra_folder,
+                dataset_unfiltered_reactor_folder
             ]
         )
         self._messenger.debug(" - Processed data destination done")

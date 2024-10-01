@@ -19,7 +19,7 @@ logger = logging.getLogger("reactor_data_to_parquet")
 messenger = Messenger(logger)
 log_only_messenger = Messenger(logger, on_screen=False)
 archive_pattern = re.compile(r"(.+)_\d{8}-\d{9}_data.tar.gz")
-data_file_pattern = re.compile(r"ID-\S+ (.+) (\d+).csv")
+data_file_pattern = re.compile(r"(?:ID|TB)-\S+ (.+) (\d+).csv")
 
 
 def convert_reactor_data_to_parquet(

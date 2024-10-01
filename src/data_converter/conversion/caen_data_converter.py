@@ -213,44 +213,12 @@ class CaenDataConverter(AbstractDataConverter):
                 info_lines = infofile.readlines()
             from_run_info = True
         except FileNotFoundError:
-            self._messenger.info("Could not find run.info file")
-            if self._experiment_source.is_dir():
-                id = self._experiment_source.name
-                self._messenger.info("Experiment ID found from folder")
-            else:
-                id = input("Please enter the ID of this experiment")
-            if "ID-" not in id:
-                id = f"ID-{id}"
-            self._messenger.info(f"Using experiment ID {id}")
-            id_line = f"id={id}"
-
-            self._messenger.info(str(self._config.get("start_time", None)))
-            try:
-                start_time_arg = get_and_check(self._config, str, "start_time")
-            except ValueError:
-                start_time_arg = None
-            self._messenger.info(f"Start time arg: {start_time_arg}")
-            if start_time_arg is not None:
-                try:
-                    start_time = datetime.strptime(start_time_arg, "%Y/%m/%d-%H:%M")
-                except ValueError:
-                    self._messenger.info(
-                        "Please enter the start date and time of neutron detection:"
-                    )
-                    start_time = self._input_caen_start_time()
-            else:
-                self._messenger.info(
-                    "Please enter the start date and time of neutron detection:"
-                )
-                start_time = self._input_caen_start_time()
-
-            now = datetime.now(timezone.utc).astimezone()
-            now_tz = now.tzinfo
-            start_time = start_time.astimezone(now_tz)
-            start_time_str = start_time.strftime("%Y/%m/%d %H:%M:%S.%f%z")
-            start_time_line = f"time.start={start_time_str}"
-
-            info_lines = [id_line, start_time_line]
+            info_lines = self._get_info_lines()
+            from_run_info = False
+            
+        if from_run_info and len(info_lines) < 2:
+            print("run.info did not have enough data to use")
+            info_lines = self._get_info_lines()
             from_run_info = False
 
         id_pattern = re.compile(r"^id=(.*)$")
@@ -372,3 +340,56 @@ class CaenDataConverter(AbstractDataConverter):
                 self._messenger.info(
                     "Input value was lower that minimum allowed, please try again"
                 )
+
+    def _get_info_lines(self) -> list[str]:
+        self._messenger.info("Could not find run.info file")
+        if self._experiment_source.is_dir():
+            id = self._experiment_source.name
+            self._messenger.info("Experiment ID found from folder")
+        else:
+            id = input("Please enter the ID of this experiment")
+        if "ID-" not in id or "TB-" not in id:
+            id_format = input(
+"""What kind of ID format are you using?
+1: Old format (ID-XXX)
+2: New format (TB-XXX) (default)
+Enter a value or press Enter for default
+""")
+            if id_format == "1":
+                id_prefix = "ID-"
+            elif id_format == "2":
+                id_prefix = "TB-"
+            else:
+                print("Using default value")
+                id_prefix = "TB-"      
+            id = f"{id_prefix}{id}"
+        self._messenger.info(f"Using experiment ID {id}")
+        id_line = f"id={id}"
+
+        self._messenger.info(str(self._config.get("start_time", None)))
+        try:
+            start_time_arg = get_and_check(self._config, str, "start_time")
+        except ValueError:
+            start_time_arg = None
+        self._messenger.info(f"Start time arg: {start_time_arg}")
+        if start_time_arg is not None:
+            try:
+                start_time = datetime.strptime(start_time_arg, "%Y/%m/%d-%H:%M")
+            except ValueError:
+                self._messenger.info(
+                    "Please enter the start date and time of neutron detection:"
+                )
+                start_time = self._input_caen_start_time()
+        else:
+            self._messenger.info(
+                "Please enter the start date and time of neutron detection:"
+            )
+            start_time = self._input_caen_start_time()
+
+        now = datetime.now(timezone.utc).astimezone()
+        now_tz = now.tzinfo
+        start_time = start_time.astimezone(now_tz)
+        start_time_str = start_time.strftime("%Y/%m/%d %H:%M:%S.%f%z")
+        start_time_line = f"time.start={start_time_str}"
+
+        return [id_line, start_time_line]

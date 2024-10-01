@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Protocol, TypeVar
 
-from data_converter.utilities import input_with_timeout
 import tomli_w
 
 from data_converter.conversion.abstract_data_converter import AbstractDataConverter
@@ -14,9 +13,9 @@ from data_converter.conversion.support.folder_converter_factory import (
 from data_converter.conversion.support.spectrum_to_parquet import (
     convert_spectra_to_parquet,
 )
+from data_converter.utilities import input_with_timeout
 from data_converter.utilities.input_with_timeout import input_with_timeout
 from utilities.utilities.check_type import get_and_check
-from utilities.utilities.configuration.configuration import Config
 
 KEY_RAW_DATA = "raw_data_folder"
 KEY_FILTERED_DATA = "filtered_data_folder"
@@ -288,7 +287,10 @@ class CaenDataConverter(AbstractDataConverter):
         while not valid_date:
             print("try start input")
             year = self._get_valid_value(
-                f"Enter year (default = {now.year})> ", int, default=now.year, timeout=20
+                f"Enter year (default = {now.year})> ",
+                int,
+                default=now.year,
+                timeout=20,
             )
             month = self._get_valid_value(
                 f"Enter month (1-12, default = {now.month})> ",
@@ -334,7 +336,7 @@ class CaenDataConverter(AbstractDataConverter):
         default: CT | None = None,
         min: CT | None = None,
         max: CT | None = None,
-        timeout: int | None = None
+        timeout: int | None = None,
     ) -> CT:
         if default is not None:
             if min is not None and default < min:

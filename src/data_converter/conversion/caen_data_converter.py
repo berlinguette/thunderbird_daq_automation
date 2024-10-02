@@ -272,7 +272,6 @@ class CaenDataConverter(AbstractDataConverter):
         now = datetime.now()
         valid_date = False
         while not valid_date:
-            print("try start input")
             year = self._get_valid_value(
                 f"Enter year (default = {now.year})> ",
                 int,
@@ -364,7 +363,7 @@ class CaenDataConverter(AbstractDataConverter):
         self._messenger.info("Could not find run.info file")
         if self._experiment_source.is_dir():
             id = self._experiment_source.name
-            self._messenger.info("Experiment ID found from folder")
+            self._messenger.info(f"Experiment ID {id} found from folder")
         else:
             id = input("Please enter the ID of this experiment")
         if "ID-" not in id and "TB-" not in id:
@@ -386,12 +385,10 @@ Enter a value or press Enter for default
         self._messenger.info(f"Using experiment ID {id}")
         id_line = f"id={id}"
 
-        self._messenger.info(str(self._config.get("start_time", None)))
         try:
             start_time_arg = get_and_check(self._config, str, "start_time")
         except ValueError:
             start_time_arg = None
-        self._messenger.info(f"Start time arg: {start_time_arg}")
         if start_time_arg is not None:
             try:
                 start_time = datetime.strptime(start_time_arg, "%Y/%m/%d-%H:%M")

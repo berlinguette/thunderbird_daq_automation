@@ -55,7 +55,7 @@ def convert_reactor_data_to_parquet(
                 .either(lambda e: e, lambda x: x)  # type: ignore
             )
             if isinstance(csv_result, str):
-                print(csv_result)
+                print(f"Error - {csv_result}")
                 continue
             match, df = csv_result
             reactor_dfs[match.group(1)].append(df)

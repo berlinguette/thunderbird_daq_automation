@@ -367,7 +367,7 @@ class CaenDataConverter(AbstractDataConverter):
             self._messenger.info("Experiment ID found from folder")
         else:
             id = input("Please enter the ID of this experiment")
-        if "ID-" not in id or "TB-" not in id:
+        if "ID-" not in id and "TB-" not in id:
             id_format = input(
                 """What kind of ID format are you using?
 1: Old format (ID-XXX)

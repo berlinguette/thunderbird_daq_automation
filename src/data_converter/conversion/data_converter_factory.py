@@ -19,6 +19,10 @@ CAEN_RAW_DATA_FOLDERS = [
 
 
 class DataConverterFactory:
+    reactor_data_pattern = re.compile(
+        r"(.+)_\d{8}-\d{9}_data.tar.gz", flags=re.IGNORECASE
+    )
+
     def make_converter(
         self,
         exp_folder: Path,
@@ -50,13 +54,13 @@ class DataConverterFactory:
             found_subfolder = source_path.name
             if source_path.name == constants.CAEN_RAW_FOLDER_NAME:
                 data_file_pattern = re.compile(
-                    r"SDataR_.*\.[CSV|BIN]$)", flags=re.IGNORECASE
+                    r"SDataR_.*\.(?:CSV|BIN)$", flags=re.IGNORECASE
                 )
                 if not self._does_matching_file_exist(source_path, data_file_pattern):
                     return None
             elif source_path.name == constants.CAEN_UNFILTERED_FOLDER_NAME:
                 data_file_pattern = re.compile(
-                    r"SData_.*\.[CSV|BIN]$", flags=re.IGNORECASE
+                    r"SData_.*\.(?:CSV|BIN)$", flags=re.IGNORECASE
                 )
                 if not self._does_matching_file_exist(source_path, data_file_pattern):
                     return None
@@ -65,23 +69,38 @@ class DataConverterFactory:
             )
         else:
 
-            def check_caen_subfolder(folder_name: str) -> bool:
-                return (
-                    found_subfolder == folder_name
-                    or (source_path / folder_name).exists()
+            def check_caen_subfolder(expected_subfolder: str) -> bool:
+                return self._is_expected_subfolder(
+                    expected_subfolder, found_subfolder, source_path
                 )
 
-            checks = [
-                # (source_path / constants.CAEN_RUN_INFO).exists(),
-                (source_path / constants.CAEN_SETTINGS_XML).exists(),
-                check_caen_subfolder(constants.CAEN_FILTERED_FOLDER_NAME),
-                # check_caen_subfolder(constants.CAEN_OFFLINE_FOLDER_NAME),
-                check_caen_subfolder(constants.CAEN_RAW_FOLDER_NAME),
-                # check_caen_subfolder(constants.CAEN_SCREENSHOTS_FOLDER_NAME),
-                check_caen_subfolder(constants.CAEN_UNFILTERED_FOLDER_NAME),
-            ]
-            if all(checks):
+            checks: dict[str, bool] = {
+                "Missing CAEN metadata file (exp.info)": (
+                    source_path / constants.CAEN_RUN_INFO
+                ).exists(),
+                "Missing CAEN settings XML file": (
+                    source_path / constants.CAEN_SETTINGS_XML
+                ).exists(),
+                "Missing reactor data archive": self._does_matching_file_exist(
+                    source_path, self.reactor_data_pattern
+                ),
+                "Missing FILTERED folder": check_caen_subfolder(
+                    constants.CAEN_FILTERED_FOLDER_NAME
+                ),
+                "Missing RAW folder": check_caen_subfolder(
+                    constants.CAEN_RAW_FOLDER_NAME
+                ),
+                "Missing UNFILTERED folder": check_caen_subfolder(
+                    constants.CAEN_UNFILTERED_FOLDER_NAME
+                ),
+            }
+            if all(list(checks.values())):
                 root_path = source_path
+            else:
+                errors = [k for k, v in checks.items() if not v]
+                print(f"Possible root folder {source_path} was missing:")
+                for error in errors:
+                    print(f" - {error}")
         return root_path
 
     def _is_wendi_logfile(self, source_path: Path) -> bool:
@@ -109,6 +128,14 @@ class DataConverterFactory:
     @staticmethod
     def _does_matching_file_exist(folder_path: Path, pattern: re.Pattern) -> bool:
         return any((pattern.fullmatch(file.name) for file in folder_path.iterdir()))
+
+    def _is_expected_subfolder(
+        self, expected_subfolder: str, subfolder: str | None, parent_folder: Path
+    ) -> bool:
+        return (
+            subfolder == expected_subfolder
+            or (parent_folder / expected_subfolder).exists()
+        )
 
     def _are_psdata_files_here(self, folder_path: Path) -> bool:
         return self._does_matching_file_exist(

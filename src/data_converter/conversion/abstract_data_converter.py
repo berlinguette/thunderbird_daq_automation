@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Union
-from shutil import copy
+from shutil import SameFileError, copy
 
 from data_converter.utilities.logging import get_conversion_logfile_path
 from utilities.utilities.configuration.configuration import Config, ConfigSetup
@@ -75,8 +75,16 @@ class AbstractDataConverter(ABC):
         self._screen_only_messenger.info('')
         cleanup_logger(self._logger)
         
-    def _handle_raw_file(self, raw_file: Path, destination: Path, move_file: bool = False):
-        if move_file:
-            raw_file.rename(destination)
-        else:
-            copy(raw_file, destination)
+    def _handle_raw_file(self, raw_file: Path, destination: Path, move_file: bool = False) -> str:
+        try:
+            if move_file:
+                raw_file.rename(destination)
+                return f"Successful move: {destination}"
+            else:
+                try:
+                    copy(raw_file, destination)
+                    return f"Successful copy: {destination}"
+                except SameFileError:
+                    return f"Copy already exists: {destination}"
+        except IOError:
+            return f"IO failure: {raw_file} -> {destination}"

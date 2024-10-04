@@ -13,8 +13,10 @@ from data_converter.conversion.support.folder_converter_factory import (
 from data_converter.conversion.support.spectrum_to_parquet import (
     convert_spectra_to_parquet,
 )
-from data_converter.utilities import input_with_timeout
 from data_converter.utilities.input_with_timeout import input_with_timeout
+from data_converter.conversion.support.reactor_data_to_parquet import (
+    convert_reactor_data_to_parquet,
+)
 from utilities.utilities.check_type import get_and_check
 
 KEY_RAW_DATA = "raw_data_folder"
@@ -25,6 +27,7 @@ KEY_DATASET_RAW = "dataset_raw_data"
 KEY_DATASET_RAW_CSV = "dataset_raw_data_csv"
 KEY_DATASET_RAW_PARQUET = "dataset_raw_data_parquet"
 KEY_DATASET_PROCESSED = "dataset_processed_data"
+KEY_DATASET_REACTOR = "dataset_reactor_data"
 KEY_DATASET_FILTERED = "dataset_processed_filtered"
 KEY_DATASET_FILTERED_PSD = "dataset_filtered_psd"
 KEY_DATASET_FILTERED_SIGNALS = "dataset_filtered_signals"
@@ -86,6 +89,9 @@ class CaenDataConverter(AbstractDataConverter):
         dataset_processed_folder = self._destination.joinpath(
             constants.DATASET_PROCESSED_DATA_FOLDER_NAME
         )
+        dataset_reactor_folder = dataset_processed_folder.joinpath(
+            constants.DATASET_REACTOR_DATA_FOLDER_NAME
+        )
         dataset_filtered_folder = dataset_processed_folder.joinpath(
             constants.CAEN_PROCESSED_FILTERED_FOLDER_NAME
         )
@@ -119,6 +125,7 @@ class CaenDataConverter(AbstractDataConverter):
             KEY_DATASET_RAW_CSV: dataset_raw_original_folder,
             KEY_DATASET_RAW_PARQUET: dataset_raw_parquet_folder,
             KEY_DATASET_PROCESSED: dataset_processed_folder,
+            KEY_DATASET_REACTOR: dataset_reactor_folder,
             KEY_DATASET_FILTERED: dataset_filtered_folder,
             KEY_DATASET_FILTERED_PSD: dataset_filtered_psd_folder,
             KEY_DATASET_FILTERED_SIGNALS: dataset_filtered_signals_folder,
@@ -137,6 +144,7 @@ class CaenDataConverter(AbstractDataConverter):
         dataset_unfiltered_folder_psd = paths[KEY_DATASET_UNFILTERED_PSD]
         dataset_unfiltered_signals_folder = paths[KEY_DATASET_UNFILTERED_SIGNALS]
         dataset_unfiltered_spectra_folder = paths[KEY_DATASET_UNFILTERED_SPECTRA]
+        dataset_unfiltered_reactor_folder = paths[KEY_DATASET_REACTOR]
 
         self._messenger.info("Preparing destination folders")
         self._prepare_destinations([dataset_raw_folder, dataset_raw_original_folder])
@@ -149,6 +157,7 @@ class CaenDataConverter(AbstractDataConverter):
                 dataset_unfiltered_folder_psd,
                 dataset_unfiltered_signals_folder,
                 dataset_unfiltered_spectra_folder,
+                dataset_unfiltered_reactor_folder,
             ]
         )
         self._messenger.debug(" - Processed data destination done")
@@ -159,6 +168,8 @@ class CaenDataConverter(AbstractDataConverter):
         raw_data_folder = paths[KEY_RAW_DATA]
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_csv_folder = paths[KEY_DATASET_RAW_CSV]
+        dataset_processed_folder = paths[KEY_DATASET_PROCESSED]
+        dataset_reactor_folder = paths[KEY_DATASET_REACTOR]
         unfiltered_data_folder = paths[KEY_UNFILTERED_DATA]
         dataset_unfiltered_psd_folder = paths[KEY_DATASET_UNFILTERED_PSD]
         dataset_unfiltered_signals_folder = paths[KEY_DATASET_UNFILTERED_SIGNALS]
@@ -183,20 +194,28 @@ class CaenDataConverter(AbstractDataConverter):
         )
         self._screen_only_messenger.info("")
 
+        self._messenger.info("Converting reactor data to Parquet")
+        convert_reactor_data_to_parquet(
+            self._experiment_source, dataset_reactor_folder, self._logfile_path
+        )
+        self._screen_only_messenger.info("")
+
         self._messenger.info("Moving raw data files to destination")
         move_files = get_and_check(self._config, bool, "move_files", False)
         for file in raw_data_folder.iterdir():
             if file.is_file() and file.suffix.lower() in [".csv", ".bin"]:
                 # file.rename(dataset_raw_csv_folder / file.name)
-                self._handle_raw_file(
+                status_msg = self._handle_raw_file(
                     file, dataset_raw_csv_folder / file.name, move_file=move_files
                 )
+                self._messenger.info(status_msg)
         for file in self._experiment_source.iterdir():
             if file.is_file() and file.name.lower() == "settings.xml":
                 # file.rename(dataset_root_folder / file.name)
-                self._handle_raw_file(
+                status_msg = self._handle_raw_file(
                     file, dataset_root_folder / file.name, move_file=move_files
                 )
+                self._messenger.info(status_msg)
         self._screen_only_messenger.info("")
 
     def _generate_metadata_file(
@@ -253,7 +272,6 @@ class CaenDataConverter(AbstractDataConverter):
         now = datetime.now()
         valid_date = False
         while not valid_date:
-            print("try start input")
             year = self._get_valid_value(
                 f"Enter year (default = {now.year})> ",
                 int,
@@ -345,10 +363,10 @@ class CaenDataConverter(AbstractDataConverter):
         self._messenger.info("Could not find run.info file")
         if self._experiment_source.is_dir():
             id = self._experiment_source.name
-            self._messenger.info("Experiment ID found from folder")
+            self._messenger.info(f"Experiment ID {id} found from folder")
         else:
             id = input("Please enter the ID of this experiment")
-        if "ID-" not in id or "TB-" not in id:
+        if "ID-" not in id and "TB-" not in id:
             id_format = input(
                 """What kind of ID format are you using?
 1: Old format (ID-XXX)
@@ -367,12 +385,10 @@ Enter a value or press Enter for default
         self._messenger.info(f"Using experiment ID {id}")
         id_line = f"id={id}"
 
-        self._messenger.info(str(self._config.get("start_time", None)))
         try:
             start_time_arg = get_and_check(self._config, str, "start_time")
         except ValueError:
             start_time_arg = None
-        self._messenger.info(f"Start time arg: {start_time_arg}")
         if start_time_arg is not None:
             try:
                 start_time = datetime.strptime(start_time_arg, "%Y/%m/%d-%H:%M")

@@ -168,7 +168,7 @@ class CaenDataConverter(AbstractDataConverter):
         raw_data_folder = paths[KEY_RAW_DATA]
         dataset_root_folder = paths[KEY_DATASET_ROOT]
         dataset_raw_csv_folder = paths[KEY_DATASET_RAW_CSV]
-        dataset_processed_folder = paths[KEY_DATASET_PROCESSED]
+        # dataset_processed_folder = paths[KEY_DATASET_PROCESSED]
         dataset_reactor_folder = paths[KEY_DATASET_REACTOR]
         unfiltered_data_folder = paths[KEY_UNFILTERED_DATA]
         dataset_unfiltered_psd_folder = paths[KEY_DATASET_UNFILTERED_PSD]

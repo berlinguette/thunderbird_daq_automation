@@ -81,9 +81,6 @@ class DataConverterFactory:
                 "Missing CAEN settings XML file": (
                     source_path / constants.CAEN_SETTINGS_XML
                 ).exists(),
-                "Missing reactor data archive": self._does_matching_file_exist(
-                    source_path, self.reactor_data_pattern
-                ),
                 "Missing FILTERED folder": check_caen_subfolder(
                     constants.CAEN_FILTERED_FOLDER_NAME
                 ),

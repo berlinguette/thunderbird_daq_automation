@@ -31,6 +31,7 @@ def convert_csv_file_to_parquet(
         destination)
     warnings.filterwarnings('ignore',
                             '`to_parquet` is not currently supported')
+    print(f"Converting {source_file_name}")
     try:
         if SAMPLES_COL_NAME in headers:
             psd_dest_name, signals_dest_name = _get_split_parquet_names(
@@ -51,13 +52,16 @@ def convert_csv_file_to_parquet(
             signals_df = df_raw[signal_cols]
             psd_df.to_parquet(psd_destination / psd_dest_name)
             signals_df.to_parquet(signals_destination / signals_dest_name)
+            print(f"Saved as {psd_dest_name} and {signals_dest_name}")
             worked = True
         else:
             destination_name = f"caen_{source_file_name}.parquet"
             data_df = read_csv(source_file, sep=DELIMITER, dtype=str)
             data_df.to_parquet(psd_destination / destination_name)
+            print(f"Saved as {destination_name}")
             worked = True
     except (MemoryError, IOError) as err:
+        print(f"Error: {err}")
         new_logger.exception(err)
         tqdm.write(
             f"Conversion failed for {source_file.name}. " +

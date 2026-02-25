@@ -200,22 +200,24 @@ class CaenDataConverter(AbstractDataConverter):
         )
         self._screen_only_messenger.info("")
 
-        self._messenger.info("Moving raw data files to destination")
         move_files = get_and_check(self._config, bool, "move_files", False)
+        self._messenger.info(f"{'Moving' if move_files else 'Copying'} raw data files to destination")
         for file in raw_data_folder.iterdir():
             if file.is_file() and file.suffix.lower() in [".csv", ".bin"]:
                 # file.rename(dataset_raw_csv_folder / file.name)
                 status_msg = self._handle_raw_file(
                     file, dataset_raw_csv_folder / file.name, move_file=move_files
                 )
-                self._messenger.info(status_msg)
+                # self._messenger.info(status_msg)
+                print(status_msg)
         for file in self._experiment_source.iterdir():
             if file.is_file() and file.name.lower() == "settings.xml":
                 # file.rename(dataset_root_folder / file.name)
                 status_msg = self._handle_raw_file(
                     file, dataset_root_folder / file.name, move_file=move_files
                 )
-                self._messenger.info(status_msg)
+                # self._messenger.info(status_msg)
+                print(status_msg)
         self._screen_only_messenger.info("")
 
     def _generate_metadata_file(

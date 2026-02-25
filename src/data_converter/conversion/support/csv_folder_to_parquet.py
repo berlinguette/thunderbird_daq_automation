@@ -89,6 +89,7 @@ class AbstractCSVtoParquetFolderConverter(AbstractFolderConverter):
             bar_format=BAR_FORMAT,
             disable=not text_ui,
         ) as progress_bar:
+            
             if small_files_support:  # eg. run in parallel
                 with ThreadPoolExecutor(max_workers=max_workers) as ex:
                     futures = [

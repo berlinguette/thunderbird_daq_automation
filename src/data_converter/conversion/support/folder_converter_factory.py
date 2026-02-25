@@ -17,6 +17,11 @@ from data_converter.conversion.support.csv_folder_to_parquet import (
     DualChannelCSVConverter,
     SingleChannelCSVConverter,
 )
+from data_converter.conversion.support.csv_folder_to_parquet_polars import (
+    AbstractCSVtoParquetPolarsFolderConverter,
+    DualChannelCSVPolarsConverter,
+    SingleChannelCSVPolarsConverter,
+)
 from data_converter.conversion.support.enums import CAENDataFormat, CAENChannelFormat
 from utilities.utilities.configuration.configuration import Config
 
@@ -52,7 +57,41 @@ class CSVConverterFactory:
             return CAENChannelFormat.SINGLE
         if contains_dual:
             return CAENChannelFormat.DUAL
-        return None  # STUB
+        return None
+    
+
+class CSVPolarsConverterFactory:
+    def make_csv_converter(
+        self,
+        folder: Path,
+        destination: Union[Path, Iterable[Path]],
+        config: Config,
+        logfile_path: Path,
+    ) -> AbstractCSVtoParquetPolarsFolderConverter:
+        csv_format = self._single_or_dual_channel(folder)
+        if csv_format == CAENChannelFormat.SINGLE:
+            return SingleChannelCSVPolarsConverter(folder, destination, config, logfile_path)
+        elif csv_format == CAENChannelFormat.DUAL:
+            return DualChannelCSVPolarsConverter(folder, destination, config, logfile_path)
+        else:
+            raise ValueError(
+                f"Folder {folder.name} channel type (single/dual) could not be determined"
+            )
+
+    def _single_or_dual_channel(self, folder: Path) -> Optional[CAENChannelFormat]:
+        single_pattern = re.compile(f"{SINGLE_CHANNEL_DATA_PREFIX}.*")
+        dual_pattern = re.compile(f"{DUAL_CHANNEL_DATA_PREFIX}.*")
+        contains_single = any(
+            (single_pattern.fullmatch(file.name) for file in folder.iterdir())
+        )
+        contains_dual = any(
+            (dual_pattern.fullmatch(file.name) for file in folder.iterdir())
+        )
+        if contains_single:
+            return CAENChannelFormat.SINGLE
+        if contains_dual:
+            return CAENChannelFormat.DUAL
+        return None
 
 
 class FolderConverterFactory:
@@ -68,6 +107,9 @@ class FolderConverterFactory:
             return CSVConverterFactory().make_csv_converter(
                 folder, destination, config, logfile_path
             )
+            # return CSVPolarsConverterFactory().make_csv_converter(
+            #     folder, destination, config, logfile_path
+            # )
         elif folder_format == CAENDataFormat.BIN:
             return BINtoParquetFolderConverter(
                 folder, destination, config, logfile_path

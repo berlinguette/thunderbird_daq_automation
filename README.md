@@ -2,15 +2,19 @@
 
 ## Overview
 
-This code is designed to convert neutron detector data for easier data processing. It currently supports
-the BIN and CSV formats output by CAEN's CoMPASS DAQ software.
+This code is designed to convert neutron detector data into Parquet format for easier data processing.
+
+### Supported formats
+
+- CAEN CoMPASS:
+  - Binary (.bin)
+  - Comma-separated values (.csv)
 
 ## System Requirements
 
 ### Hardware requirements
 
-The converter requires only a standard computer with sufficient RAM to support in-memory operation on 
-a data set file.
+The converter requires only a standard computer with sufficient RAM to support in-memory operation on a data set file.
 
 The converter has been successfully run on the following computer configuration:
 
@@ -31,7 +35,9 @@ This converter has been tested on Python version 3.10.5. Python package dependen
 
 Installation of this code requires git, and has been tested with version 2.42.0.windows.2.
 
-The converter supports data files from CoMPASS 2.1.0.
+The converter has been tested with data files from the following:
+
+- CAEN CoMPASS version 2.1.0
 
 ## Installation
 

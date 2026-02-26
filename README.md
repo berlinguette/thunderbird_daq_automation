@@ -70,4 +70,21 @@ TODO make demo GIF and add here
 
 ## Use instructions
 
-TODO add this
+1. Open converter UI (using the shortcut)
+   - You will see a blank terminal window for a moment until the UI loads
+2. [OPTIONAL] Change settings
+   - Click the `Settings` button to open the Settings dialog.
+   - In the dialog:
+     - Click the `Save` button to save the current settings.
+     - Click the `Load` button to load a settings file.
+     - Click the `OK` button to confirm settings changes, or the `Cancel` button to discard those changes.
+3. Select input data sources
+   - Click the `+📁` button to open the Folder Select dialog, where you can select the desired data folders
+4. [OPTIONAL] Remove input data sources
+   - On the main screen, click a data source in the list, then click the `-` button to remove it.
+5. Select output destination
+   - Click the `Set Destination` button to open the Destination Select dialog, where you can select the desired destination folder
+   - Each converted data source will be saved here in a separate folder per source
+6. Start conversion
+   - Click the `Start Conversion` button to start conversion
+   - The UI will close, and conversion process will be shown on the terminal window

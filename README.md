@@ -1,28 +1,67 @@
 # Thunderbird DAQ Automation
 
-This code is designed to automate general data collection and conversion.
+## Overview
+
+This code is designed to convert neutron detector data for easier data processing. It currently supports
+the BIN and CSV formats output by CAEN's CoMPASS DAQ software.
+
+## System Requirements
+
+### Hardware requirements
+
+The converter requires only a standard computer with sufficient RAM to support in-memory operation on 
+a data set file.
+
+The converter has been successfully run on the following computer configuration:
+
+- Processor: AMD Ryzen 9 5950X 16-core 3.40 GHz
+- RAM: 32 GB
+
+### Software requirements
+
+#### OS requirements
+
+The converter is officially supported for Windows. It has been tested on Windows 10 Enterprise version 22H2.
+
+#### Python dependencies
+
+This converter has been tested on Python version 3.10.5. Python package dependencies are given in requirements.txt.
+
+#### Other dependencies
+
+Installation of this code requires git, and has been tested with version 2.42.0.windows.2.
+
+The converter supports data files from CoMPASS 2.1.0.
 
 ## Installation
 
-To convert PicoScope data, the PicoScope software must be installed separately.
+The code lines given for each step must be entered on the Windows command line.
 
-To more easily install submodules, use the `--recursive` option when using `git clone`.
+1. Clone the source code
+    - `git clone --recursive https://github.com/berlinguette/thunderbird_daq_automation.git`
+    - `cd thunderbird_daq_automation`
+2. [OPTIONAL] Set up git submodules (only if you omit the `--recursive` flag in Step 1)
+    - `git submodule init`
+    - `git submodule update`
+3. Create and activate Python virtual environment
+    - `python -m venv .venv`
+    - `.\.venv\Scripts\activate`
+4. Install Python dependencies
+    - `pip install -r requirements.txt`
+5. Create start-up shortcut
+    a. Find code folder in File Explorer
+        - `start .`
+    b. Find file `tbird_data_converter.bat`
+    c. Create shortcut
+        - Drag file to desired destination while holding down the ALT key, or...
+        - Right-click file and choose `Create shortcut`
 
-If cloning normally, set up submodules as follows:
+Installation should typically take 5-10 minutes on a "normal" desktop computer.
 
-```shell
-git submodule init
-git submodule update
-```
+## Demo
 
-## Utilities Updating
+TODO make demo GIF and add here
 
-To get all updates to the `utilities` submodule:
+## Use instructions
 
-```shell
-git submodule update --remote --rebase
-```
-
-## Packaging
-
-To package the converter to a Windows executable, just run `src/data_converter_packager.bat` on a Windows machine.
+TODO add this
